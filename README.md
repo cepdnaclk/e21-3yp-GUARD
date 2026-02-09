@@ -1,57 +1,285 @@
-___
-# DELETE THIS INSTRUCTIONS AND ADD AN INTRODUCTION ABOUT YOUR PROJECT
-___
+# 3YP-GUARD
 
-# eYY-3yp-project-template
+## 👨‍💻 Team
 
-This is a sample repository you can use for your Embedded Systems project. Once you followed these instructions, remove the text and add a brief introduction to here.
+Third Year Project — Team 08
+* E/21/231 - Thisen
+* E/21/362 - Shashika
+* E/21/056 - Ashan
+* E/21/067 - Asindu
+---
 
-### Enable GitHub Pages
+## 🐠 What is G.U.A.R.D?
 
-You can put the things to be shown in GitHub pages into the _docs/_ folder. Both html and md file formats are supported. You need to go to settings and enable GitHub pages and select _main_ branch and _docs_ folder from the dropdowns, as shown in the below image.
+## General Unit for Aquatic Risk Detection
 
-![image](https://user-images.githubusercontent.com/11540782/98789936-028d3600-2429-11eb-84be-aaba665fdc75.png)
+### A Modular Safety & Monitoring System for Multi-Tank Ornamental Fish Shops
 
-### Special Configurations
+**G.U.A.R.D** is a smart monitoring and automation system designed to continuously watch aquarium conditions and immediately alert the owner before damage happens.
 
-These projects will be automatically added into [https://projects.ce.pdn.ac.lk](). If you like to show more details about your project on this site, you can fill the parameters in the file, _/docs/index.json_
+**Goal:** Prevent fish mortality, reduce manual work, and improve reliability using automation and real-time monitoring.
+
+---
+
+## ❗Mortivation
+
+### Practical Problems
+
+Ornamental fish shops manage multiple aquariums simultaneously, each containing species with different environmental requirements.
+Small invisible changes in water quality can quickly lead to fish stress, disease, or death — often before the owner notices.
+
+However:
+
+* Manual testing is slow and reactive
+* Measurements are sometimes inaccurate
+* Continuous monitoring is impossible for humans
+
+
+### Real-World Impact
+
+| Impact            | Description                          |
+| ----------------- | ------------------------------------ |
+| Financial Loss    | Expensive fish (ex: Arowana) may die |
+| Reputation Damage | Customer trust decreases             |
+| Labor Stress      | Staff must constantly check tanks    |
+
+
+---
+
+## 🚫 Why Existing Solutions Are Not Enough
+
+Current aquarium systems are mostly designed for **single home aquariums**.
+
+They suffer from:
+
+* No scalability
+* No modular expansion
+* Expensive to scale
+* Limited alert features
+* No centralized monitoring
+
+
+---
+
+
+## 🔍 Core Features
+
+### Water Monitoring
+
+The system continuously measures critical water parameters:
+
+* Temperature
+* pH
+* Ammonia
+* Water Level
+* Turbidity
+
+### Alert System
+
+* Mobile notifications
+* Web dashboard alerts
+* Local LED indicators
+
+### Automation
+
+* Automatic filtration
+* Water circulation control
+* Optional water change
+* Automatic fish feeding
+* Lighting control
+
+### Intelligence & Dashboard
+
+* Real-time monitoring
+* Historical data visualization
+* Centralized control panel
+
+### Scalability
+
+* Plug-and-play tank modules
+* Multi-tank architecture
+* Easy expansion without shutdown
+
+
+---
+
+## 🏗 System Architecture
 
 ```
-{
-  "title": "This is the title of the project",
-  "team": [
-    {
-      "name": "Team Member Name 1",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    },
-    {
-      "name": "Team Member Name 2",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    },
-    {
-      "name": "Team Member Name 3",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    }
-  ],
-  "supervisors": [
-    {
-      "name": "Dr. Supervisor 1",
-      "email": "email@eng.pdn.ac.lk"
-    },
-    {
-      "name": "Supervisor 2",
-      "email": "email@eng.pdn.ac.lk"
-    }
-  ],
-  "tags": ["Web", "Embedded Systems"]
-}
+Sensors → Microcontroller → Cloud → User Interface → Actuators
 ```
 
-Once you filled this _index.json_ file, please verify the syntax is correct. (You can use [this](https://jsonlint.com/) tool).
+### Data Flow
 
-### Page Theme
+1. Sensors read water parameters
+2. ESP32 processes and evaluates thresholds
+3. Data stored locally + cloud
+4. Alerts sent to user
+5. System automatically reacts (heater/pump/feeder)
 
-A custom theme integrated with this GitHub Page, which is based on [github.com/cepdnaclk/eYY-project-theme](https://github.com/cepdnaclk/eYY-project-theme). If you like to remove this default theme, you can remove the file, _docs/\_config.yml_ and use HTML based website.
+### Components Overview
+
+| Category     | Elements                            |
+| ------------ | ----------------------------------- |
+| Sensors      | Temp, pH, Level, Turbidity, Ammonia |
+| Controller   | ESP32 Microcontroller               |
+| Storage      | Local + Cloud Database              |
+| Interface    | Web App + Mobile App                |
+| Actuators    | Heater, Pump, Feeder, Lights        |
+| Connectivity | Wi-Fi                               |
+
+
+---
+
+## 🔧 Hardware Design
+
+### 1️⃣ Central Control Unit
+
+* ESP32 microcontroller
+* Relay module
+* Power management unit
+* Voltage regulators
+* Surge & fuse protection
+
+### 2️⃣ Sensor Modules
+
+* DS18B20 Temperature sensor
+* pH sensor
+* Water level sensor
+* Turbidity sensor
+* Leak detection sensor
+* Ammonia sensor
+
+### 3️⃣ Actuator Modules
+
+* Aquarium heater
+* Water pump
+* Air pump
+* Automatic feeder (servo/stepper)
+* Solenoid valve
+* LED lighting system
+
+### 4️⃣ Connectivity
+
+* Built-in Wi-Fi (ESP32)
+
+
+---
+
+## 💻 Software Design
+
+### 1️⃣ Embedded System (Microcontroller)
+
+Handles real-time operations:
+
+* Sensor reading
+* Decision logic
+* Scheduling
+* Actuator control
+* Alerts
+* Communication
+* Data logging
+
+### 2️⃣ Cloud & Backend
+
+* IoT platform (MQTT / REST API)
+* Cloud database
+* Backend services (Node.js + NestJS)
+
+### 3️⃣ Frontend
+
+| Platform | Technology      |
+| -------- | --------------- |
+| Web      | React + Next.js |
+| Language | TypeScript      |
+
+### 4️⃣ Firmware Tools
+
+* Arduino IDE / PlatformIO
+* ESP32 SDK
+* Embedded C/C++
+
+---
+
+## 📅 Project Timeline
+
+| Phase       | Work                                  |
+| ----------- | ------------------------------------- |
+| Weeks 1–5   | Planning & setup                      |
+| Weeks 6–10  | Hardware integration & calibration    |
+| Weeks 11–15 | Web & mobile development              |
+| Weeks 16–20 | Alerts, scaling, testing & final demo |
+
+---
+
+## 📊 Feasibility Analysis
+
+### Technical
+
+Uses affordable and widely available ESP32 and sensors.
+
+### Economic
+
+Low cost compared to fish losses.
+
+### Operational
+
+Modular design allows adding tanks without shutdown.
+
+### Schedule
+
+6-month development plan.
+
+### Risk Handling
+
+Possible challenges:
+
+* Sensor drift
+* Ammonia sensor warm-up
+* Water exposure damage
+* Internet failure
+
+System designed to tolerate failures and continue local monitoring.
+
+---
+
+## 💰 Example Sensor Budget
+
+| Parameter        | Sensor     |
+| ---------------- | ---------- |
+| Temperature      | DS18B20    |
+| pH               | SEN0161    |
+| Turbidity        | SEN0189    |
+| Water Level      | P4510      |
+| TDS/EC           | SEN0244    |
+| Salinity         | Calculated |
+| Specific Gravity | Calculated |
+
+---
+
+## 🎯 Expected Outcome
+
+G.U.A.R.D will:
+
+* Reduce fish deaths
+* Reduce manual monitoring
+* Provide reliable data
+* Improve shop reputation
+* Enable scalable smart aquarium management
+
+---
+
+## 🌊 Final Vision
+
+> A fish should never die because the owner didn’t notice a change in water quality.
+
+G.U.A.R.D ensures the system notices first.
+
+---
+
+## 🔮 Future Enhancements
+
+G.U.A.R.D is designed as a scalable platform. The following improvements are planned for future versions.
+* Fish stress prediction using machine learning
+* Automatic disease detection based on behavior patterns
+* Chemical dosing control
