@@ -12,9 +12,10 @@ title: Modular Aquarium Management System
 ---
 
 ## Team
-- eXXXXXX, Thisen Lakdinu, [email](mailto:thisen@email.com)
-- eXXXXXX, Team Member 2, [email](mailto:member2@email.com)
-- eXXXXXX, Team Member 3, [email](mailto:member3@email.com)
+- e21231, Thisen Lakdinu, [email](mailto:thisen@email.com)
+- e21362, Shashika Sathsarani, [email](mailto:member2@email.com)
+- e21039, Ravindu Ashan, [email](mailto:member3@email.com)
+- e21067, Asindu Chandasekara, [email](mailto:member3@email.com)
 
 <!-- Image (photo/drawing of the final hardware) should be here -->
 <!-- ![System Overview](./images/system_overview.png) -->
