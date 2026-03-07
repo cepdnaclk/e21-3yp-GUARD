@@ -1,5 +1,7 @@
 'use strict';
 
+const path    = require('path');
+const fs      = require('fs');
 const express = require('express');
 const helmet  = require('helmet');
 const cors    = require('cors');
@@ -45,6 +47,28 @@ app.use('/alerts',  alertRoutes);
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// ─── Dev-only: Google Auth test page ─────────────────────────────────────────
+// Accessible at http://localhost:3000/test-auth (development only)
+if (config.app.nodeEnv !== 'production') {
+  app.get('/test-auth', (_req, res) => {
+    const htmlPath = path.join(__dirname, '../public/test-auth.html');
+    let html = fs.readFileSync(htmlPath, 'utf8');
+    // Inject the Google Client ID as a meta tag so the page can read it
+    html = html.replace(
+      '<meta charset="UTF-8" />',
+      `<meta charset="UTF-8" />\n  <meta name="google-client-id" content="${config.google.clientId}" />`
+    );
+    // Serve with relaxed CSP so Google's GSI script and accounts.google.com can load
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; style-src 'self' 'unsafe-inline';"
+    );
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  });
+  logger.info('[App] Auth test page available at http://localhost:3000/test-auth');
+}
 
 // ─── 404 handler ─────────────────────────────────────────────────────────────
 app.use((req, res) => {

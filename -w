@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="google-client-id" content="108391237039-0jg9nf8pjn48vi5bqi8bbth2kfe03vtm.apps.googleusercontent.com" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>G.U.A.R.D — Auth Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; color: #38bdf8; }
+    .subtitle { color: #64748b; margin-bottom: 32px; font-size: 0.9rem; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 28px; width: 100%; max-width: 680px; margin-bottom: 20px; }
+    .card h2 { font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+    .step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+    .step-num { background: #38bdf8; color: #0f172a; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; flex-shrink: 0; margin-top: 2px; }
+    .step p { color: #cbd5e1; font-size: 0.9rem; line-height: 1.5; }
+    .step a { color: #38bdf8; }
+    #signin-area { display: flex; justify-content: center; padding: 8px 0 4px; }
+    label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 4px; }
+    pre {
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      padding: 14px; font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap;
+      word-break: break-all; color: #86efac; margin-top: 6px; max-height: 200px;
+    }
+    .token-box pre { color: #fbbf24; }
+    .hidden { display: none; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .badge.ok  { background: #166534; color: #86efac; }
+    .badge.err { background: #7f1d1d; color: #fca5a5; }
+    .row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    button.copy-btn {
+      background: #334155; border: none; border-radius: 6px; padding: 4px 12px;
+      color: #94a3b8; font-size: 0.75rem; cursor: pointer; margin-top: 6px;
+    }
+    button.copy-btn:hover { background: #475569; color: #e2e8f0; }
+    #curl-section pre { color: #c4b5fd; }
+    .divider { border: none; border-top: 1px solid #334155; margin: 16px 0; }
+  </style>
+</head>
+<body>
+
+  <h1>G.U.A.R.D Auth Test</h1>
+  <p class="subtitle">Local development — sign in with Google to test <code>POST /auth/google</code></p>
+
+  <!-- Prerequisites card -->
+  <div class="card">
+    <h2>Before you start</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <p>Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console → Credentials</a>, edit your OAuth 2.0 Client ID, and add <strong>http://localhost:3000</strong> to <em>Authorised JavaScript origins</em>. Save.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <p>Make sure the backend is running (<code>npm run dev</code>) and <code>GOOGLE_CLIENT_ID</code> is set in your <code>.env</code>.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <p>Click the Sign In button below. After sign-in the page will automatically call <code>POST /auth/google</code> and show your JWT.</p>
+    </div>
+  </div>
+
+  <!-- Sign-in card -->
+  <div class="card">
+    <h2>Sign in</h2>
+    <div id="signin-area">
+      <!-- Google Identity Services renders the button here -->
+      <div id="g_id_signin"></div>
+    </div>
+    <p id="signin-hint" style="text-align:center;color:#64748b;font-size:0.85rem;margin-top:10px;">
+      Waiting for Google button to render…
+    </p>
+  </div>
+
+  <!-- Result card (hidden until sign-in) -->
+  <div class="card hidden" id="result-card">
+    <h2>Result</h2>
+    <div class="row">
+      <span id="status-badge" class="badge ok">200 OK</span>
+      <span id="status-text" style="font-size:0.85rem;color:#94a3b8;"></span>
+    </div>
+    <hr class="divider" />
+
+    <div id="success-block">
+      <label>JWT Token (copy this for API testing)</label>
+      <div class="token-box">
+        <pre id="jwt-out"></pre>
+      </div>
+      <button class="copy-btn" onclick="copyJWT()">Copy JWT</button>
+
+      <hr class="divider" />
+      <label>User object</label>
+      <pre id="user-out"></pre>
+
+      <hr class="divider" />
+      <div id="curl-section">
+        <label>Ready-to-use curl commands</label>
+        <pre id="curl-out"></pre>
+        <button class="copy-btn" onclick="copyCurl()">Copy curl commands</button>
+      </div>
+    </div>
+
+    <div id="error-block" class="hidden">
+      <label>Error response</label>
+      <pre id="error-out" style="color:#fca5a5;"></pre>
+    </div>
+  </div>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    // ── Read the client ID from the meta tag injected by Express ──────────────
+    const CLIENT_ID = document.querySelector('meta[name="google-client-id"]')?.content || '';
+
+    // ── Initialise Google Identity Services once the script loads ─────────────
+    window.addEventListener('load', () => {
+      if (!window.google) {
+        document.getElementById('signin-hint').textContent =
+          '⚠ Google script failed to load. Check your internet connection.';
+        return;
+      }
+      if (!CLIENT_ID) {
+        document.getElementById('signin-hint').textContent =
+          '⚠ GOOGLE_CLIENT_ID not found. Make sure it is set in your .env and the backend is running.';
+        return;
+      }
+
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: false,
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById('g_id_signin'),
+        { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' }
+      );
+
+      document.getElementById('signin-hint').textContent =
+        'Click the button above to sign in with your Google account.';
+    });
+
+    // ── Called by GIS after successful sign-in ────────────────────────────────
+    async function handleCredentialResponse(response) {
+      document.getElementById('signin-hint').textContent = 'Calling POST /auth/google…';
+
+      try {
+        const res = await fetch('/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: response.credential }),
+        });
+
+        const data = await res.json();
+        showResult(res.status, data);
+      } catch (err) {
+        showResult(0, { error: 'Network error', message: err.message });
+      }
+    }
+
+    // ── Render the result ─────────────────────────────────────────────────────
+    function showResult(status, data) {
+      const card   = document.getElementById('result-card');
+      const badge  = document.getElementById('status-badge');
+      const stext  = document.getElementById('status-text');
+      const succEl = document.getElementById('success-block');
+      const errEl  = document.getElementById('error-block');
+
+      card.classList.remove('hidden');
+      card.scrollIntoView({ behavior: 'smooth' });
+
+      if (status === 200 && data.token) {
+        badge.className = 'badge ok';
+        badge.textContent = `${status} OK`;
+        stext.textContent = `Logged in as ${data.user?.name} (${data.user?.email})`;
+        succEl.classList.remove('hidden');
+        errEl.classList.add('hidden');
+
+        document.getElementById('jwt-out').textContent = data.token;
+        document.getElementById('user-out').textContent = JSON.stringify(data.user, null, 2);
+
+        const base = 'http://localhost:3000';
+        const curl = [
+          `# ── GET /auth/me ───────────────────────────────────────────`,
+          `curl -H "Authorization: Bearer ${data.token}" ${base}/auth/me`,
+          ``,
+          `# ── GET /devices ───────────────────────────────────────────`,
+          `curl -H "Authorization: Bearer ${data.token}" ${base}/devices`,
+          ``,
+          `# ── POST /devices ──────────────────────────────────────────`,
+          `curl -X POST ${base}/devices \\`,
+          `  -H "Authorization: Bearer ${data.token}" \\`,
+          `  -H "Content-Type: application/json" \\`,
+          `  -d "{\\"tankId\\":\\"<tank-uuid>\\",\\"deviceUid\\":\\"tank_1\\",\\"deviceSecret\\":\\"my_secure_secret_123\\"}"`,
+          ``,
+          `# ── GET /alerts ────────────────────────────────────────────`,
+          `curl -H "Authorization: Bearer ${data.token}" "${base}/alerts?resolved=false"`,
+        ].join('\n');
+
+        document.getElementById('curl-out').textContent = curl;
+        document.getElementById('signin-hint').textContent = '✓ Authenticated successfully!';
+      } else {
+        badge.className = 'badge err';
+        badge.textContent = status ? `${status} Error` : 'Network Error';
+        stext.textContent = '';
+        succEl.classList.add('hidden');
+        errEl.classList.remove('hidden');
+        document.getElementById('error-out').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('signin-hint').textContent = '✗ Authentication failed — see error below.';
+      }
+    }
+
+    function copyJWT() {
+      navigator.clipboard.writeText(document.getElementById('jwt-out').textContent.trim());
+    }
+    function copyCurl() {
+      navigator.clipboard.writeText(document.getElementById('curl-out').textContent);
+    }
+  </script>
+</body>
+</html>

@@ -10,14 +10,14 @@
 2. [Prerequisites](#prerequisites)
 3. [Google OAuth Setup](#google-oauth-setup)
 4. [Environment Setup](#environment-setup)
-5. [Quick Start — Docker](#quick-start--docker)
-6. [Local Development (no Docker)](#local-development-no-docker)
-7. [Database Migrations](#database-migrations)
-8. [API Reference](#api-reference)
-9. [MQTT Integration](#mqtt-integration)
-10. [Alert Rules](#alert-rules)
-11. [WebSocket Events](#websocket-events)
-12. [Project Structure](#project-structure)
+5. [Quick Start — Local Development](#quick-start--local-development)
+6. [Database Migrations](#database-migrations)
+7. [API Reference](#api-reference)
+8. [MQTT Integration](#mqtt-integration)
+9. [Alert Rules](#alert-rules)
+10. [WebSocket Events](#websocket-events)
+11. [Project Structure](#project-structure)
+12. [Docker (optional)](#docker-optional)
 13. [Production Notes](#production-notes)
 
 ---
@@ -55,11 +55,14 @@ React Dashboard ◀─────── │  │  Alert Engine (rule-based)    
 
 ## Prerequisites
 
-| Tool             | Version | Install                                        |
-| ---------------- | ------- | ---------------------------------------------- |
-| Docker Desktop   | latest  | https://www.docker.com/products/docker-desktop |
-| Node.js          | 22 LTS  | https://nodejs.org (local dev only)            |
-| A Google Account | —       | For OAuth credentials                          |
+| Tool             | Version | Install                                     |
+| ---------------- | ------- | ------------------------------------------- |
+| Node.js          | 22 LTS  | https://nodejs.org                          |
+| PostgreSQL       | 16+     | https://www.postgresql.org/download/windows |
+| Mosquitto        | 2.x     | https://mosquitto.org/download              |
+| A Google Account | —       | For OAuth credentials                       |
+
+> **Docker** is supported but optional — see [Docker (optional)](#docker-optional) at the bottom.
 
 ---
 
@@ -95,11 +98,17 @@ The backend verifies Google ID tokens using the **Google Identity Services** lib
 2. Click **+ Create Credentials** → **OAuth 2.0 Client IDs**
 3. Application type: **Web application**
 4. Give it a name (e.g. `guard-web-client`)
-5. Under **Authorised JavaScript origins** add your frontend URL:
-   - `http://localhost:5173` (Vite dev), `http://localhost:3001`, or your production domain
-6. Click **Create**
-7. A dialog shows your **Client ID** and **Client Secret**.  
+5. Under **Authorised JavaScript origins** add:
+   - `http://localhost:3000`
+   - `http://localhost:5173` (Vite dev), or your production domain
+6. Under **Authorised redirect URIs** add:
+   - `http://localhost:3000/test-auth` (for the built-in auth test page)
+   - Your production callback URL when applicable
+7. Click **Create**
+8. A dialog shows your **Client ID** and **Client Secret**.  
    Copy the **Client ID** — it ends with `.apps.googleusercontent.com`
+
+> **Note:** Both JavaScript origins **and** redirect URIs are required. The test page uses the standard OIDC redirect flow which demands a matching redirect URI.
 
 ### Step 4 — Add to Environment
 
@@ -127,7 +136,7 @@ cp .env.example .env
 | `DATABASE_URL`                          | ✅       | PostgreSQL connection string                  |
 | `JWT_SECRET`                            | ✅       | Random string for signing JWTs (min 32 chars) |
 | `GOOGLE_CLIENT_ID`                      | ✅       | From Google Cloud Console (see above)         |
-| `MQTT_BROKER_URL`                       | —        | Default: `mqtt://mosquitto:1883`              |
+| `MQTT_BROKER_URL`                       | —        | Default: `mqtt://localhost:1883`              |
 | `PORT`                                  | —        | Default: `3000`                               |
 | `CORS_ORIGIN`                           | —        | Comma-separated allowed origins               |
 | `TEMP_MAX` / `TEMP_MIN`                 | —        | Temperature thresholds (°C). Default: 32 / 20 |
@@ -145,74 +154,111 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ---
 
-## Quick Start — Docker
+## Quick Start — Local Development
 
-This is the recommended way to run the full stack (Postgres + Mosquitto + backend).
+### Step 1 — Install dependencies
 
-```bash
-# 1. Set up environment variables
-cp .env.example .env
-# Edit .env — at minimum set JWT_SECRET and GOOGLE_CLIENT_ID
-
-# 2. Build and start all services
-docker compose up --build
-
-# Services started:
-#   PostgreSQL  → localhost:5432
-#   Mosquitto   → localhost:1883
-#   Backend     → localhost:3000
+```powershell
+cd code\backend
+npm install
 ```
 
-On first run the backend container automatically runs `prisma migrate deploy` to create all database tables before starting the server.
+### Step 2 — Configure environment
 
-**Check it's working:**
+```powershell
+copy .env.example .env
+```
 
-```bash
+Open `.env` and set at minimum:
+
+```env
+DATABASE_URL="postgresql://guard:guardpass@localhost:5432/guarddb"
+JWT_SECRET=<generate with command below>
+GOOGLE_CLIENT_ID=<from Google Cloud Console — see Google OAuth Setup above>
+MQTT_BROKER_URL=mqtt://localhost:1883
+```
+
+Generate a JWT secret:
+
+```powershell
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+### Step 3 — Create the local PostgreSQL database
+
+Run these once using the `postgres` superuser:
+
+```powershell
+psql -U postgres -c "CREATE USER guard WITH PASSWORD 'guardpass';"
+psql -U postgres -c "CREATE DATABASE guarddb OWNER guard;"
+psql -U postgres -c "ALTER USER guard CREATEDB;"  # needed for Prisma shadow DB
+```
+
+### Step 4 — Run database migrations
+
+```powershell
+npx prisma migrate dev --name init
+```
+
+This creates all 6 tables (`users`, `locations`, `tanks`, `devices`, `sensor_readings`, `alerts`) and generates the Prisma client.
+
+### Step 5 — Start Mosquitto broker
+
+Mosquitto is installed at `C:\Program Files\mosquitto\` on Windows.
+
+```powershell
+& "C:\Program Files\mosquitto\mosquitto.exe" -c "mosquitto\mosquitto.conf" -v
+```
+
+> Run this in a **separate terminal** and leave it open.
+
+### Step 6 — Start the backend
+
+```powershell
+npm run dev
+```
+
+The server starts on `http://localhost:3000`.
+
+**Verify everything is running:**
+
+```powershell
 curl http://localhost:3000/health
 # {"status":"ok","timestamp":"..."}
 ```
 
-**Stop everything:**
+**Test the MQTT pipeline** (publishes a sample reading — temperature 33°C will trigger a `TEMP_HIGH` alert):
 
-```bash
-docker compose down
-
-# To also delete database volumes (full reset):
-docker compose down -v
+```powershell
+& "C:\Program Files\mosquitto\mosquitto_pub.exe" `
+  -h localhost `
+  -t "aquamonitor/devices/<your_device_uid>/data" `
+  -m '{"device_id":"<uid>","device_secret":"<secret>","ph":7.2,"temperature":33,"tds":430,"turbidity":12,"water_level":82}'
 ```
+
+> You must first register a device via `POST /devices` (with a valid JWT) to get a `deviceUid` and `deviceSecret`.
 
 ---
 
-## Local Development (no Docker)
+## Auth Test Page
 
-Use this if you prefer running Node.js natively.
+The backend ships a self-contained dev page at `/test-auth` for verifying the full Google OAuth → JWT flow without a frontend.
 
-### Prerequisites (local)
+> Only available when `NODE_ENV` is not `production`.
 
-- Node.js 22 LTS
-- PostgreSQL 16 running locally
-- Mosquitto broker running locally (`brew install mosquitto` / `apt install mosquitto`)
+### How it works
 
-```bash
-# 1. Install dependencies
-cd code/backend
-npm install
+1. Open `http://localhost:3000/test-auth` in your browser.
+2. Click **Sign in with Google** — you are redirected to Google's consent screen.
+3. After approving, Google redirects back to `http://localhost:3000/test-auth#id_token=...`.
+4. The page extracts the `id_token` from the URL hash and POSTs it to `POST /auth/google`.
+5. On success, the page shows:
+   - Your decoded JWT
+   - Your user object (as stored in the database)
+   - Ready-to-run `curl` commands for testing all protected endpoints
+6. A **Live log** panel at the bottom shows every step in real time.
 
-# 2. Copy and configure environment
-cp .env.example .env
-# Set DATABASE_URL to: postgresql://user:pass@localhost:5432/guarddb
-# Set MQTT_BROKER_URL to: mqtt://localhost:1883
-
-# 3. Create the database and run migrations
-npm run prisma:migrate
-# Enter a migration name when prompted (e.g. "init")
-
-# 4. Generate Prisma client
-npm run prisma:generate
-
-# 5. Start the development server with hot-reload
-npm run dev
-```
+> This page uses the standard OIDC implicit flow — it does **not** load the Google Identity Services (GIS) script, which avoids the FedCM / `gsi/transform` hang in Chromium.
 
 ---
 
@@ -501,6 +547,8 @@ code/backend/
 │   │   └── logger.js           → Winston logger
 │   ├── app.js                  → Express app (routes + middleware)
 │   └── server.js               → HTTP server entry point
+├── public/
+│   └── test-auth.html          → Dev-only Google OAuth test page (/test-auth)
 ├── prisma/
 │   └── schema.prisma           → Database schema & relations
 ├── mosquitto/
@@ -510,6 +558,43 @@ code/backend/
 ├── package.json
 ├── .env.example
 └── README.md
+```
+
+---
+
+## Docker (optional)
+
+Docker Compose bundles PostgreSQL, Mosquitto, and the backend into a single command. Use this when you're ready to deploy or want a clean reproducible environment.
+
+### Switch `.env` back to Docker service names
+
+```env
+DATABASE_URL="postgresql://guard:guardpass@postgres:5432/guarddb"
+MQTT_BROKER_URL=mqtt://mosquitto:1883
+```
+
+### Start the full stack
+
+```powershell
+docker compose up --build
+```
+
+On first start the backend container automatically runs `prisma migrate deploy` before the server starts.
+
+```
+Services:
+  PostgreSQL  → localhost:5432
+  Mosquitto   → localhost:1883
+  Backend     → localhost:3000
+```
+
+### Stop
+
+```powershell
+docker compose down
+
+# Full reset (deletes DB data):
+docker compose down -v
 ```
 
 ---
