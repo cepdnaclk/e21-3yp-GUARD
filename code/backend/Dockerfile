@@ -23,6 +23,7 @@ RUN npx prisma generate
 
 # Copy application source
 COPY src ./src
+COPY public ./public
 
 # Expose the Express server port
 EXPOSE 3000
