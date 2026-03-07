@@ -1,0 +1,131 @@
+// G.U.A.R.D — Prisma Schema
+// General Unit for Aquatic Risk Detection
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────
+// Users — authenticated via Google OAuth
+// ─────────────────────────────────────────────────
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  name      String
+  googleId  String     @unique @map("google_id")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  locations Location[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────
+// Locations — a physical site (e.g. a fish shop)
+// ─────────────────────────────────────────────────
+model Location {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  owner User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tanks Tank[]
+
+  @@map("locations")
+}
+
+// ─────────────────────────────────────────────────
+// Tanks — individual aquarium/pond units
+// ─────────────────────────────────────────────────
+model Tank {
+  id         String @id @default(uuid())
+  locationId String @map("location_id")
+  name       String
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  devices  Device[]
+
+  @@map("tanks")
+}
+
+// ─────────────────────────────────────────────────
+// Device status enum
+// ─────────────────────────────────────────────────
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  UNKNOWN
+}
+
+// ─────────────────────────────────────────────────
+// Devices — ESP32 units in a tank
+// ─────────────────────────────────────────────────
+model Device {
+  id           String       @id @default(uuid())
+  tankId       String       @map("tank_id")
+  deviceUid    String       @unique @map("device_uid")
+  deviceSecret String       @map("device_secret") // bcrypt hash — never expose in API responses
+  status       DeviceStatus @default(UNKNOWN)
+  lastSeen     DateTime?    @map("last_seen")
+
+  tank           Tank            @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  sensorReadings SensorReading[]
+  alerts         Alert[]
+
+  @@map("devices")
+}
+
+// ─────────────────────────────────────────────────
+// SensorReadings — time-series data from ESP32
+// ─────────────────────────────────────────────────
+model SensorReading {
+  id          String   @id @default(uuid())
+  deviceId    String   @map("device_id")
+  timestamp   DateTime @default(now())
+  ph          Float?
+  temperature Float?
+  tds         Float?
+  turbidity   Float?
+  waterLevel  Float?   @map("water_level")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, timestamp])
+  @@map("sensor_readings")
+}
+
+// ─────────────────────────────────────────────────
+// AlertType — categories for triggered alerts
+// ─────────────────────────────────────────────────
+enum AlertType {
+  TEMP_HIGH
+  TEMP_LOW
+  PH_HIGH
+  PH_LOW
+  TURBIDITY_HIGH
+  WATER_LEVEL_LOW
+}
+
+// ─────────────────────────────────────────────────
+// Alerts — abnormal condition records
+// ─────────────────────────────────────────────────
+model Alert {
+  id        String    @id @default(uuid())
+  deviceId  String    @map("device_id")
+  type      AlertType
+  message   String
+  value     Float
+  createdAt DateTime  @default(now()) @map("created_at")
+  resolved  Boolean   @default(false)
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, resolved])
+  @@map("alerts")
+}
