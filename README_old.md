@@ -21,7 +21,7 @@ Third Year Project — Team 08
 
 ---
 
-## ❗Mortivation
+## ❗Motivation
 
 ### Practical Problems
 
