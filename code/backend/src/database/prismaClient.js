@@ -11,7 +11,7 @@ const prisma =
   new PrismaClient({
     log:
       process.env.NODE_ENV === 'development'
-        ? ['warn', 'error']
+        ? ['query', 'info', 'warn', 'error']
         : ['warn', 'error'],
   });
 
