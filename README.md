@@ -553,7 +553,7 @@ copy code\backend\.env.example code\backend\.env
 | `PORT`             | —        | `3000`                  | HTTP server port                       |
 | `NODE_ENV`         | —        | `development`           | `development` / `production`           |
 | `MQTT_BROKER_URL`  | —        | `mqtt://localhost:1883` | MQTT broker URL                        |
-| `CORS_ORIGIN`      | —        | `*`                     | Comma-separated allowed client origins |
+| `CORS_ORIGIN`      | —        | `http://localhost:5173` | Comma-separated allowed client origins |
 | `JWT_EXPIRY`       | —        | `1d`                    | JWT lifetime                           |
 | `TEMP_MAX`         | —        | `32`                    | Temperature upper alert threshold (°C) |
 | `TEMP_MIN`         | —        | `20`                    | Temperature lower alert threshold (°C) |
