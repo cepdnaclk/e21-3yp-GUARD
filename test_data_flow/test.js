@@ -5,7 +5,7 @@ const app = express();
 const port = 3000; // Web dashboard port
 
 // Your PC IP and broker port
-const broker_ip = '192.168.1.173'; // replace with your PC IP
+const broker_ip = '192.168.166.193'; // replace with your PC IP
 const client = mqtt.connect(`mqtt://${broker_ip}:1883`);
 
 let latestTemperature = null;
