@@ -96,10 +96,12 @@ async function processMessage(payload) {
  */
 function connectMQTT() {
   const client = mqtt.connect(config.mqtt.brokerUrl, {
-    clientId: `guard-backend-${Date.now()}`,
-    clean: true,
+    clientId:        `guard-backend-${Date.now()}`,
+    clean:           true,
     reconnectPeriod: 5000,  // Attempt reconnect every 5 seconds
-    connectTimeout: 30000,
+    connectTimeout:  30000,
+    username:        config.mqtt.username,
+    password:        config.mqtt.password,
   });
 
   client.on('connect', () => {
