@@ -5,15 +5,13 @@ const { getDevices, createDevice, getDeviceById } = require('./device.service');
 
 // ─── Validation rules ─────────────────────────────────────────────────────────
 const createDeviceValidation = [
-  body('tankId').notEmpty().withMessage('tankId is required'),
-  body('deviceUid').notEmpty().withMessage('deviceUid is required'),
-  body('deviceSecret')
-    .isLength({ min: 8 })
-    .withMessage('deviceSecret must be at least 8 characters'),
+  body('deviceId').isInt().withMessage('deviceId must be an integer'),
+  body('deviceName').optional().isString(),
+  body('location').optional().isString(),
 ];
 
 const deviceIdParamValidation = [
-  param('id').notEmpty().withMessage('id is required'),
+  param('id').isInt().withMessage('id must be an integer'),
 ];
 
 // ─── GET /devices ─────────────────────────────────────────────────────────────
@@ -37,12 +35,8 @@ async function addDevice(req, res, next) {
     const device = await createDevice(req.body, req.user.id);
     return res.status(201).json(device);
   } catch (err) {
-    if (err.statusCode === 404) {
-      return res.status(404).json({ error: 'Not Found', message: err.message });
-    }
-    // Prisma unique constraint violation (P2002 = duplicate deviceUid)
     if (err.code === 'P2002') {
-      return res.status(409).json({ error: 'Conflict', message: 'A device with that UID already exists.' });
+      return res.status(409).json({ error: 'Conflict', message: 'A device with that ID already exists.' });
     }
     return next(err);
   }
@@ -56,7 +50,7 @@ async function getDevice(req, res, next) {
       return res.status(400).json({ error: 'Validation Error', details: errors.array() });
     }
 
-    const device = await getDeviceById(req.params.id, req.user.id);
+    const device = await getDeviceById(parseInt(req.params.id, 10), req.user.id);
     return res.json(device);
   } catch (err) {
     if (err.statusCode === 404) {

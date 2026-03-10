@@ -1,104 +1,85 @@
 'use strict';
 
 const mqtt = require('mqtt');
-const bcrypt = require('bcryptjs');
 const config = require('../config/config');
 const prisma = require('../database/prismaClient');
 const { detectAlerts } = require('../modules/alerts/alert.service');
 const { notifyAlert } = require('../modules/notifications/notification.service');
 const logger = require('../utils/logger');
 
-// Topic pattern: aquamonitor/devices/<device_uid>/data
-const SUBSCRIBE_TOPIC = 'aquamonitor/devices/+/data';
+// Topic pattern: sensor/<deviceId>/<sensorName>  e.g. sensor/100/temperature
+const SUBSCRIBE_TOPIC = 'sensor/+/+';
 
-// ─── Message processing pipeline ─────────────────────────────────────────────
-/**
- * Processes a single validated MQTT data message from an ESP32 device.
- *
- * Flow:
- *  1. Extract and validate device_id / device_secret from payload
- *  2. Lookup device in DB; verify bcrypt secret hash
- *  3. Update device.lastSeen and set status = ONLINE
- *  4. Persist the sensor reading
- *  5. Run alert detection rules
- *  6. Dispatch notifications for each newly triggered alert
- *
- * @param {object} payload - Parsed JSON from the MQTT message
- */
-async function processMessage(payload) {
-  const {
-    device_id: deviceUid,
-    device_secret: deviceSecret,
-    ph,
-    temperature,
-    tds,
-    turbidity,
-    water_level: waterLevel,
-  } = payload;
-
-  // ── Step 1: Validate required fields ────────────────────────────────────────
-  if (!deviceUid || !deviceSecret) {
-    logger.warn('[MQTT] Message missing device_id or device_secret — ignoring.');
+async function processMessage(topic, payload) {
+  // Parse topic: sensor/<deviceId>/<sensorName>
+  const parts = topic.split('/');
+  if (parts.length !== 3 || parts[0] !== 'sensor') {
+    logger.warn(`[MQTT] Unexpected topic format: "${topic}" — ignoring.`);
     return;
   }
 
-  // ── Step 2: Authenticate device ─────────────────────────────────────────────
-  const device = await prisma.device.findUnique({ where: { deviceUid } });
+  const deviceId = parseInt(parts[1], 10);
+  const sensorName = parts[2]; // e.g. "temperature", "ph", "tds"
 
+  if (isNaN(deviceId)) {
+    logger.warn(`[MQTT] Invalid device ID in topic: "${topic}" — ignoring.`);
+    return;
+  }
+
+  // Validate device exists
+  const device = await prisma.device.findUnique({ where: { deviceId } });
   if (!device) {
-    logger.warn(`[MQTT] Unknown device_uid: "${deviceUid}" — ignoring message.`);
+    logger.warn(`[MQTT] Unknown device_id: ${deviceId} — ignoring message.`);
     return;
   }
 
-  const isValid = await bcrypt.compare(String(deviceSecret), device.deviceSecret);
-  if (!isValid) {
-    logger.warn(`[MQTT] Invalid device_secret for device "${deviceUid}" — ignoring message.`);
-    return;
-  }
-
-  // ── Step 3: Update device presence ──────────────────────────────────────────
-  await prisma.device.update({
-    where: { id: device.id },
-    data: { lastSeen: new Date(), status: 'ONLINE' },
+  // Resolve sensor type by name (case-insensitive)
+  const sensorType = await prisma.sensorType.findFirst({
+    where: { sensorName: { equals: sensorName, mode: 'insensitive' } },
   });
 
-  // ── Step 4: Persist sensor reading ──────────────────────────────────────────
+  if (!sensorType) {
+    logger.warn(`[MQTT] Unknown sensor type: "${sensorName}" — ignoring message.`);
+    return;
+  }
+
+  // Parse the payload: { "value": 27.5, "time": "2026-03-09 14:22:10" }
+  const { value, time } = payload;
+
+  if (value === undefined || value === null) {
+    logger.warn(`[MQTT] Missing "value" in payload for ${topic} — ignoring.`);
+    return;
+  }
+
+  const readingTime = time ? new Date(time) : new Date();
+
+  // Persist sensor reading
   const reading = await prisma.sensorReading.create({
     data: {
-      deviceId: device.id,
-      ph:          ph          !== undefined ? parseFloat(ph)          : null,
-      temperature: temperature !== undefined ? parseFloat(temperature) : null,
-      tds:         tds         !== undefined ? parseFloat(tds)         : null,
-      turbidity:   turbidity   !== undefined ? parseFloat(turbidity)   : null,
-      waterLevel:  waterLevel  !== undefined ? parseFloat(waterLevel)  : null,
+      deviceId: device.deviceId,
+      sensorId: sensorType.id,
+      value:    parseFloat(value),
+      readingTime,
     },
   });
 
   logger.debug(
-    `[MQTT] Reading stored — device: ${deviceUid} | ` +
-    `pH: ${ph}, temp: ${temperature}°C, TDS: ${tds}, ` +
-    `turbidity: ${turbidity}, water_level: ${waterLevel}%`
+    `[MQTT] Reading stored — device: ${deviceId}, sensor: ${sensorName}, ` +
+    `value: ${value}, time: ${readingTime.toISOString()}`
   );
 
-  // ── Step 5 & 6: Detect alerts and notify ────────────────────────────────────
-  const alerts = await detectAlerts(reading, device);
+  // Detect alerts
+  const alerts = await detectAlerts(reading, device, sensorType);
   for (const alert of alerts) {
     await notifyAlert(alert, device);
   }
 }
 
-// ─── MQTT client factory ──────────────────────────────────────────────────────
-/**
- * Creates and returns a connected MQTT client.
- * Subscribes to the device data topic and wires up all event handlers.
- *
- * @returns {import('mqtt').MqttClient}
- */
 function connectMQTT() {
   const client = mqtt.connect(config.mqtt.brokerUrl, {
     clientId:        `guard-backend-${Date.now()}`,
     clean:           true,
-    reconnectPeriod: 5000,  // Attempt reconnect every 5 seconds
+    reconnectPeriod: 5000,
     connectTimeout:  30000,
     username:        config.mqtt.username,
     password:        config.mqtt.password,
@@ -128,7 +109,7 @@ function connectMQTT() {
     }
 
     try {
-      await processMessage(payload);
+      await processMessage(topic, payload);
     } catch (err) {
       logger.error(`[MQTT] Pipeline error on topic "${topic}": ${err.message}`);
     }

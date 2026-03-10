@@ -8,10 +8,10 @@ const router = Router();
 
 router.use(authMiddleware);
 
-// GET /sensor/latest?device_id=<uuid>
+// GET /sensor/latest?device_id=<int>
 router.get('/latest', latestValidation, getLatest);
 
-// GET /sensor/history?device_id=<uuid>&from=<ISO8601>&to=<ISO8601>
+// GET /sensor/history?device_id=<int>&sensor_id=<int>&from=<ISO8601>&to=<ISO8601>
 router.get('/history', historyValidation, getHistoryHandler);
 
 module.exports = router;

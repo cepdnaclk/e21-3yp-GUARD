@@ -10,10 +10,11 @@ const config  = require('./config/config');
 const logger  = require('./utils/logger');
 
 // ─── Route modules ────────────────────────────────────────────────────────────
-const authRoutes   = require('./modules/auth/auth.routes');
-const deviceRoutes = require('./modules/devices/device.routes');
-const sensorRoutes = require('./modules/sensors/sensor.routes');
-const alertRoutes  = require('./modules/alerts/alert.routes');
+const authRoutes       = require('./modules/auth/auth.routes');
+const deviceRoutes     = require('./modules/devices/device.routes');
+const sensorTypeRoutes = require('./modules/sensor-types/sensorType.routes');
+const sensorRoutes     = require('./modules/sensors/sensor.routes');
+const alertRoutes      = require('./modules/alerts/alert.routes');
 
 const app = express();
 
@@ -38,10 +39,11 @@ app.use(morgan(config.app.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/auth',    authRoutes);
-app.use('/devices', deviceRoutes);
-app.use('/sensor',  sensorRoutes);
-app.use('/alerts',  alertRoutes);
+app.use('/auth',         authRoutes);
+app.use('/devices',      deviceRoutes);
+app.use('/sensor-types', sensorTypeRoutes);
+app.use('/sensor',       sensorRoutes);
+app.use('/alerts',       alertRoutes);
 
 // Health check — used by Docker healthcheck and load balancers
 app.get('/health', (_req, res) => {
@@ -52,9 +54,10 @@ app.get('/health', (_req, res) => {
 // Accessible at http://localhost:3000/test-auth (development only)
 if (config.app.nodeEnv !== 'production') {
   const htmlPath = path.join(__dirname, '../public/test-auth.html');
-  const baseAuthTestHtml = fs.readFileSync(htmlPath, 'utf8');
 
   app.get('/test-auth', (_req, res) => {
+    // Read fresh on every request (dev only) so edits to the HTML are reflected without restart
+    const baseAuthTestHtml = fs.readFileSync(htmlPath, 'utf8');
     // Inject the Google Client ID as a meta tag so the page can read it
     const html = baseAuthTestHtml.replace(
       '<meta charset="UTF-8" />',

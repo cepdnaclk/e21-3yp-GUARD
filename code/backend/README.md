@@ -8,17 +8,16 @@
 
 1. [Architecture](#architecture)
 2. [Prerequisites](#prerequisites)
-3. [Google OAuth Setup](#google-oauth-setup)
-4. [Environment Setup](#environment-setup)
-5. [Quick Start — Local Development](#quick-start--local-development)
-6. [Database Migrations](#database-migrations)
-7. [API Reference](#api-reference)
-8. [MQTT Integration](#mqtt-integration)
-9. [Alert Rules](#alert-rules)
-10. [WebSocket Events](#websocket-events)
-11. [Project Structure](#project-structure)
-12. [Docker (optional)](#docker-optional)
-13. [Production Notes](#production-notes)
+3. [Environment Setup](#environment-setup)
+4. [Quick Start — Local Development](#quick-start--local-development)
+5. [Database Migrations](#database-migrations)
+6. [API Reference](#api-reference)
+7. [MQTT Integration](#mqtt-integration)
+8. [Alert Rules](#alert-rules)
+9. [WebSocket Events](#websocket-events)
+10. [Project Structure](#project-structure)
+11. [Docker (optional)](#docker-optional)
+12. [Production Notes](#production-notes)
 
 ---
 
@@ -26,7 +25,7 @@
 
 ```
 ESP32 Devices
-     │  MQTT publish
+     │  MQTT publish  sensor/<deviceId>/<sensorName>
      ▼
 ┌─────────────────┐      ┌──────────────────────────────────────┐
 │ Mosquitto Broker│─────▶│          G.U.A.R.D Backend           │
@@ -46,105 +45,68 @@ React Dashboard ◀─────── │  │  Alert Engine (rule-based)    
 
 **Data flow:**
 
-1. An ESP32 device publishes sensor readings to `aquamonitor/devices/<uid>/data` over MQTT.
-2. The backend MQTT subscriber authenticates the device (bcrypt secret compare), stores the reading, and runs the alert engine.
-3. If any threshold is breached, an `Alert` record is created and broadcast via WebSocket to the React dashboard (and optionally by email).
+1. An ESP32 publishes a single sensor value to `sensor/<deviceId>/<sensorName>` (e.g. `sensor/100/temperature`).
+2. The backend MQTT subscriber resolves the device and sensor type from the topic, stores a normalised `sensor_reading` row, and runs the alert engine.
+3. If a threshold is breached an `Alert` record is created and broadcast via WebSocket (and optionally by email).
 4. The React dashboard consumes the REST API for historical data, device management, and alert resolution.
 
 ---
 
 ## Prerequisites
 
-| Tool             | Version | Install                                     |
-| ---------------- | ------- | ------------------------------------------- |
-| Node.js          | 22 LTS  | https://nodejs.org                          |
-| PostgreSQL       | 16+     | https://www.postgresql.org/download/windows |
-| Mosquitto        | 2.x     | https://mosquitto.org/download              |
-| A Google Account | —       | For OAuth credentials                       |
+| Tool       | Version | Install                                     |
+| ---------- | ------- | ------------------------------------------- |
+| Node.js    | 22 LTS  | https://nodejs.org                          |
+| PostgreSQL | 16+     | https://www.postgresql.org/download/windows |
+| Mosquitto  | 2.x     | https://mosquitto.org/download              |
 
-> **Docker** is supported but optional — see [Docker (optional)](#docker-optional) at the bottom.
+> **Docker** is supported but optional — see [Docker (optional)](#docker-optional).
+
+> **Google OAuth** is optional. Leave `GOOGLE_CLIENT_ID` empty to disable the `/auth/google` endpoint and use username/password only.
 
 ---
 
-## Google OAuth Setup
+## Google OAuth Setup (optional)
 
-The backend verifies Google ID tokens using the **Google Identity Services** library. Your React frontend will render the Google Sign-In button; the resulting `credential` string is the `idToken` you POST to `/auth/google`.
+Skip this section if you only want username/password auth.
 
-### Step 1 — Create a Google Cloud Project
+The backend verifies Google ID tokens. Your frontend renders the Google Sign-In button and POSTs the resulting `credential` string as `idToken` to `/auth/google`.
 
-1. Open [https://console.cloud.google.com](https://console.cloud.google.com)
-2. Click the project dropdown (top-left) → **New Project**
-3. Enter a project name (e.g. `guard-aquamonitor`) → **Create**
-4. Make sure the new project is selected in the dropdown
-
-### Step 2 — Configure the OAuth Consent Screen
-
-1. In the left sidebar go to **APIs & Services** → **OAuth consent screen**
-2. Select **External** → **Create**
-3. Fill in:
-   - **App name:** G.U.A.R.D
-   - **User support email:** your email
-   - **Developer contact:** your email
-4. Click **Save and Continue**
-5. On the **Scopes** screen click **Add or Remove Scopes** and add:
-   - `...auth/userinfo.email`
-   - `...auth/userinfo.profile`
-   - `openid`
-6. Click **Save and Continue** through the remaining steps → **Back to Dashboard**
-
-### Step 3 — Create OAuth 2.0 Credentials
-
-1. In the left sidebar go to **APIs & Services** → **Credentials**
-2. Click **+ Create Credentials** → **OAuth 2.0 Client IDs**
-3. Application type: **Web application**
-4. Give it a name (e.g. `guard-web-client`)
-5. Under **Authorised JavaScript origins** add:
-   - `http://localhost:3000`
-   - `http://localhost:5173` (Vite dev), or your production domain
-6. Under **Authorised redirect URIs** add:
-   - `http://localhost:3000/test-auth` (for the built-in auth test page)
-   - Your production callback URL when applicable
-7. Click **Create**
-8. A dialog shows your **Client ID** and **Client Secret**.  
-   Copy the **Client ID** — it ends with `.apps.googleusercontent.com`
-
-> **Note:** Both JavaScript origins **and** redirect URIs are required. The test page uses the standard OIDC redirect flow which demands a matching redirect URI.
-
-### Step 4 — Add to Environment
-
-Paste the Client ID into your `.env` file:
+1. Open [https://console.cloud.google.com](https://console.cloud.google.com) → create a project.
+2. **APIs & Services → OAuth consent screen** → External → fill in App name, emails, and add scopes: `openid`, `userinfo.email`, `userinfo.profile`.
+3. **APIs & Services → Credentials → + Create Credentials → OAuth 2.0 Client IDs**
+   - Application type: **Web application**
+   - Authorised JavaScript origins: `http://localhost:5173`, your production domain
+4. Copy the **Client ID** (ends in `.apps.googleusercontent.com`) into `.env`:
 
 ```env
 GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
 ```
 
-> **Note:** The backend only needs the **Client ID**. The Client Secret is not required because the backend verifies ID tokens (not authorization codes).
+> The backend needs only the Client ID — the Client Secret is not required.
 
 ---
 
 ## Environment Setup
 
 ```bash
-# 1. Copy the example file
-cp .env.example .env
-
-# 2. Open .env and fill in the required values:
+# edit .env
 ```
 
-| Variable                                | Required | Description                                   |
-| --------------------------------------- | -------- | --------------------------------------------- |
-| `DATABASE_URL`                          | ✅       | PostgreSQL connection string                  |
-| `JWT_SECRET`                            | ✅       | Random string for signing JWTs (min 32 chars) |
-| `GOOGLE_CLIENT_ID`                      | ✅       | From Google Cloud Console (see above)         |
-| `MQTT_BROKER_URL`                       | —        | Default: `mqtt://localhost:1883`              |
-| `PORT`                                  | —        | Default: `3000`                               |
-| `CORS_ORIGIN`                           | —        | Comma-separated allowed origins               |
-| `TEMP_MAX` / `TEMP_MIN`                 | —        | Temperature thresholds (°C). Default: 32 / 20 |
-| `PH_MAX` / `PH_MIN`                     | —        | pH thresholds. Default: 8.5 / 6.5             |
-| `TURBIDITY_MAX`                         | —        | Turbidity threshold (NTU). Default: 50        |
-| `WATER_LEVEL_MIN`                       | —        | Water level threshold (%). Default: 20        |
-| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | —        | Leave blank to disable email alerts           |
-| `ALERT_EMAIL`                           | —        | Recipient for email alerts                    |
+| Variable                                | Required | Description                                            |
+| --------------------------------------- | -------- | ------------------------------------------------------ |
+| `DATABASE_URL`                          | ✅       | PostgreSQL connection string                           |
+| `JWT_SECRET`                            | ✅       | Random string for signing JWTs (min 32 chars)          |
+| `GOOGLE_CLIENT_ID`                      | —        | Google OAuth Client ID. Omit to disable `/auth/google` |
+| `MQTT_BROKER_URL`                       | —        | Default: `mqtt://localhost:1883`                       |
+| `PORT`                                  | —        | Default: `3000`                                        |
+| `CORS_ORIGIN`                           | —        | Comma-separated allowed origins                        |
+| `TEMP_MAX` / `TEMP_MIN`                 | —        | Temperature thresholds (°C). Default: 32 / 20          |
+| `PH_MAX` / `PH_MIN`                     | —        | pH thresholds. Default: 8.5 / 6.5                      |
+| `TURBIDITY_MAX`                         | —        | Turbidity threshold (NTU). Default: 50                 |
+| `WATER_LEVEL_MIN`                       | —        | Water level threshold (%). Default: 20                 |
+| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | —        | Leave blank to disable email alerts                    |
+| `ALERT_EMAIL`                           | —        | Recipient for email alerts                             |
 
 **Generate a strong JWT secret:**
 
@@ -169,29 +131,21 @@ npm install
 copy .env.example .env
 ```
 
-Open `.env` and set at minimum:
+Minimum required values in `.env`:
 
 ```env
 DATABASE_URL="postgresql://guard:guardpass@localhost:5432/guarddb"
-JWT_SECRET=<generate with command below>
-GOOGLE_CLIENT_ID=<from Google Cloud Console — see Google OAuth Setup above>
+JWT_SECRET=<generate with command above>
 MQTT_BROKER_URL=mqtt://localhost:1883
-```
-
-Generate a JWT secret:
-
-```powershell
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+# GOOGLE_CLIENT_ID=<optional>
 ```
 
 ### Step 3 — Create the local PostgreSQL database
 
-Run these once using the `postgres` superuser:
-
 ```powershell
 psql -U postgres -c "CREATE USER guard WITH PASSWORD 'guardpass';"
 psql -U postgres -c "CREATE DATABASE guarddb OWNER guard;"
-psql -U postgres -c "ALTER USER guard CREATEDB;"  # needed for Prisma shadow DB
+psql -U postgres -c "ALTER USER guard CREATEDB;"   # needed for Prisma shadow DB
 ```
 
 ### Step 4 — Run database migrations
@@ -200,19 +154,30 @@ psql -U postgres -c "ALTER USER guard CREATEDB;"  # needed for Prisma shadow DB
 npx prisma migrate dev --name init
 ```
 
-This creates all 6 tables (`users`, `locations`, `tanks`, `devices`, `sensor_readings`, `alerts`) and generates the Prisma client.
+This creates all tables (`users`, `devices`, `sensor_types`, `sensor_readings`, `alerts`) and seeds the Prisma client.
 
-### Step 5 — Start Mosquitto broker
+### Step 5 — Seed sensor types
 
-Mosquitto is installed at `C:\Program Files\mosquitto\` on Windows.
+Before the ESP32 can send readings the `sensor_types` table must have entries. Use the API after registering an account, or insert directly:
+
+```sql
+INSERT INTO sensor_types (sensor_name, frequency) VALUES
+  ('temperature', 'hourly'),
+  ('ph',          'twice_daily'),
+  ('tds',         'weekly'),
+  ('turbidity',   'twice_daily'),
+  ('water_level', 'hourly');
+```
+
+### Step 6 — Start Mosquitto broker
 
 ```powershell
 & "C:\Program Files\mosquitto\mosquitto.exe" -c "mosquitto\mosquitto.conf" -v
 ```
 
-> Run this in a **separate terminal** and leave it open.
+> Run in a separate terminal and leave it open.
 
-### Step 6 — Start the backend
+### Step 7 — Start the backend
 
 ```powershell
 npm run dev
@@ -220,45 +185,21 @@ npm run dev
 
 The server starts on `http://localhost:3000`.
 
-**Verify everything is running:**
-
 ```powershell
 curl http://localhost:3000/health
 # {"status":"ok","timestamp":"..."}
 ```
 
-**Test the MQTT pipeline** (publishes a sample reading — temperature 33°C will trigger a `TEMP_HIGH` alert):
+**Test the MQTT pipeline** (publishes a temperature reading of 33°C — will trigger a `TEMP_HIGH` alert):
 
 ```powershell
 & "C:\Program Files\mosquitto\mosquitto_pub.exe" `
   -h localhost `
-  -t "aquamonitor/devices/<your_device_uid>/data" `
-  -m '{"device_id":"<uid>","device_secret":"<secret>","ph":7.2,"temperature":33,"tds":430,"turbidity":12,"water_level":82}'
+  -t "sensor/100/temperature" `
+  -m '{"value": 33, "time": "2026-03-10 14:22:10"}'
 ```
 
-> You must first register a device via `POST /devices` (with a valid JWT) to get a `deviceUid` and `deviceSecret`.
-
----
-
-## Auth Test Page
-
-The backend ships a self-contained dev page at `/test-auth` for verifying the full Google OAuth → JWT flow without a frontend.
-
-> Only available when `NODE_ENV` is not `production`.
-
-### How it works
-
-1. Open `http://localhost:3000/test-auth` in your browser.
-2. Click **Sign in with Google** — you are redirected to Google's consent screen.
-3. After approving, Google redirects back to `http://localhost:3000/test-auth#id_token=...`.
-4. The page extracts the `id_token` from the URL hash and POSTs it to `POST /auth/google`.
-5. On success, the page shows:
-   - Your decoded JWT
-   - Your user object (as stored in the database)
-   - Ready-to-run `curl` commands for testing all protected endpoints
-6. A **Live log** panel at the bottom shows every step in real time.
-
-> This page uses the standard OIDC implicit flow — it does **not** load the Google Identity Services (GIS) script, which avoids the FedCM / `gsi/transform` hang in Chromium.
+> Device ID `100` must exist in the `devices` table. Register one via `POST /devices` after logging in.
 
 ---
 
@@ -275,17 +216,83 @@ The backend ships a self-contained dev page at `/test-auth` for verifying the fu
 
 ## API Reference
 
-All endpoints (except `/auth/google` and `/health`) require a JWT in the `Authorization` header:
+All endpoints except `/auth/*` and `/health` require a JWT in the `Authorization` header:
 
 ```
 Authorization: Bearer <your_jwt_token>
 ```
 
+---
+
 ### Auth
+
+#### `POST /auth/register`
+
+Create a new account with username and password.
+
+**Request:**
+
+```json
+{
+  "username": "ravindu",
+  "password": "securepass123",
+  "fullName": "Ravindu Ashan",
+  "email": "ravindu@example.com",
+  "phoneNumber": "+94771234567",
+  "address": "Kandy, Sri Lanka"
+}
+```
+
+> `email`, `phoneNumber`, and `address` are optional.
+
+**Response `201`:**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "user": {
+    "id": 1,
+    "username": "ravindu",
+    "fullName": "Ravindu Ashan",
+    "email": "ravindu@example.com"
+  }
+}
+```
+
+---
+
+#### `POST /auth/login`
+
+Login with username or email, plus password.
+
+**Request:**
+
+```json
+{ "login": "ravindu", "password": "securepass123" }
+```
+
+> `login` accepts either a **username** (`"ravindu"`) or an **email address** (`"ravindu@example.com"`).
+
+**Response `200`:**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "user": {
+    "id": 1,
+    "username": "ravindu",
+    "fullName": "Ravindu Ashan",
+    "email": "ravindu@example.com"
+  }
+}
+```
+
+---
 
 #### `POST /auth/google`
 
-Exchange a Google ID token for a G.U.A.R.D JWT.
+Login with a Google ID token. A new account is created automatically on first use.  
+Only available when `GOOGLE_CLIENT_ID` is configured.
 
 **Request:**
 
@@ -298,7 +305,12 @@ Exchange a Google ID token for a G.U.A.R.D JWT.
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "user": { "id": "uuid", "email": "user@example.com", "name": "Ravindu Ashan" }
+  "user": {
+    "id": 2,
+    "username": "ravindu_g",
+    "fullName": "Ravindu Ashan",
+    "email": "ravindu@gmail.com"
+  }
 }
 ```
 
@@ -306,16 +318,19 @@ Exchange a Google ID token for a G.U.A.R.D JWT.
 
 #### `GET /auth/me`
 
-Returns the currently authenticated user's profile.
+Returns the authenticated user's profile.
 
 **Response `200`:**
 
 ```json
 {
-  "id": "uuid",
-  "email": "user@example.com",
-  "name": "Ravindu Ashan",
-  "createdAt": "2026-03-07T..."
+  "id": 1,
+  "username": "ravindu",
+  "fullName": "Ravindu Ashan",
+  "email": "ravindu@example.com",
+  "phoneNumber": "+94771234567",
+  "address": "Colombo, Sri Lanka",
+  "createdAt": "2026-03-10T..."
 }
 ```
 
@@ -325,27 +340,28 @@ Returns the currently authenticated user's profile.
 
 #### `GET /devices`
 
-List all devices owned by the authenticated user.
+List all devices belonging to the authenticated user.
 
-**Response `200`:** Array of device objects (deviceSecret is never returned).
+**Response `200`:** Array of device objects.
 
 ---
 
 #### `POST /devices`
 
-Register a new device.
+Register a new ESP32 device / tank.
 
 **Request:**
 
 ```json
 {
-  "tankId": "uuid-of-target-tank",
-  "deviceUid": "tank_1",
-  "deviceSecret": "my_secure_secret_123"
+  "deviceId": 100,
+  "deviceName": "Main Tank",
+  "location": "Fish Room A"
 }
 ```
 
-> **Important:** Store `deviceUid` and `deviceSecret` in your ESP32 firmware. The backend stores a bcrypt hash — the plaintext secret is only valid at creation time.
+> `deviceId` must be a unique integer matching the ID programmed into the ESP32 firmware (recommended range: 100–200).  
+> `deviceName` and `location` are optional.
 
 **Response `201`:** The created device object.
 
@@ -353,50 +369,100 @@ Register a new device.
 
 #### `GET /devices/:id`
 
-Get a single device by its UUID.
+Get a single device by its integer ID.
+
+---
+
+### Sensor Types
+
+#### `GET /sensor-types`
+
+List all sensor type definitions.
+
+**Response `200`:**
+
+```json
+[
+  { "id": 1, "sensorName": "temperature", "frequency": "hourly" },
+  { "id": 2, "sensorName": "ph", "frequency": "twice_daily" }
+]
+```
+
+---
+
+#### `POST /sensor-types`
+
+Create a sensor type definition.
+
+**Request:**
+
+```json
+{ "sensorName": "temperature", "frequency": "hourly" }
+```
+
+**Response `201`:** The created sensor type object.
+
+---
+
+#### `GET /sensor-types/:id`
+
+Get a sensor type by ID.
 
 ---
 
 ### Sensors
 
-#### `GET /sensor/latest?device_id=<uuid>`
+#### `GET /sensor/latest?device_id=<int>`
 
-Returns the most recent sensor reading for a device.
+Returns the most recent reading for each sensor type on a device.
 
 **Response `200`:**
 
 ```json
-{
-  "id": "uuid",
-  "deviceId": "uuid",
-  "timestamp": "2026-03-07T10:30:00.000Z",
-  "ph": 7.2,
-  "temperature": 28.4,
-  "tds": 430,
-  "turbidity": 12,
-  "waterLevel": 82
-}
+[
+  {
+    "id": 42,
+    "deviceId": 100,
+    "sensorId": 1,
+    "value": 28.4,
+    "readingTime": "2026-03-10T10:30:00.000Z",
+    "sensorType": {
+      "id": 1,
+      "sensorName": "temperature",
+      "frequency": "hourly"
+    }
+  },
+  {
+    "id": 38,
+    "deviceId": 100,
+    "sensorId": 2,
+    "value": 7.2,
+    "readingTime": "2026-03-10T08:00:00.000Z",
+    "sensorType": { "id": 2, "sensorName": "ph", "frequency": "twice_daily" }
+  }
+]
 ```
 
 ---
 
-#### `GET /sensor/history?device_id=<uuid>&from=<ISO8601>&to=<ISO8601>`
+#### `GET /sensor/history?device_id=<int>&sensor_id=<int>&from=<ISO8601>&to=<ISO8601>`
 
-Returns historical readings within a time range (max 1000 rows, sorted ascending).
+Returns historical readings (max 1000 rows, sorted ascending by time).
 
 | Query Param | Required | Example                      |
 | ----------- | -------- | ---------------------------- |
-| `device_id` | ✅       | `?device_id=uuid`            |
+| `device_id` | ✅       | `?device_id=100`             |
+| `sensor_id` | —        | `&sensor_id=1`               |
 | `from`      | —        | `&from=2026-03-01T00:00:00Z` |
-| `to`        | —        | `&to=2026-03-07T23:59:59Z`   |
+| `to`        | —        | `&to=2026-03-10T23:59:59Z`   |
 
 ---
 
 ### Alerts
 
-#### `GET /alerts?device_id=<uuid>&resolved=<bool>`
+#### `GET /alerts?device_id=<int>&resolved=<bool>`
 
-List alerts for the user's devices. Both query params are optional.
+List alerts for the user's devices. All query params are optional.
 
 ---
 
@@ -416,39 +482,50 @@ Mark an alert as resolved.
 
 ## MQTT Integration
 
-### Topic
+### Topic Structure
 
 ```
-aquamonitor/devices/<device_uid>/data
+sensor/<deviceId>/<sensorName>
+```
+
+| Part         | Example       | Description                                                           |
+| ------------ | ------------- | --------------------------------------------------------------------- |
+| `deviceId`   | `100`         | Integer device ID (registered in the DB)                              |
+| `sensorName` | `temperature` | Must match a `sensor_name` in `sensor_types` table (case-insensitive) |
+
+**Examples:**
+
+```
+sensor/100/temperature
+sensor/100/ph
+sensor/100/tds
+sensor/100/turbidity
+sensor/100/water_level
 ```
 
 ### Payload (JSON)
 
-The ESP32 must publish a JSON object to the topic above:
-
 ```json
 {
-  "device_id": "tank_1",
-  "device_secret": "my_secure_secret_123",
-  "ph": 7.2,
-  "temperature": 28.4,
-  "tds": 430,
-  "turbidity": 12,
-  "water_level": 82
+  "value": 27.5,
+  "time": "2026-03-10 14:22:10"
 }
 ```
 
-| Field           | Type   | Unit     | Description                                     |
-| --------------- | ------ | -------- | ----------------------------------------------- |
-| `device_id`     | string | —        | Matches `deviceUid` in the DB                   |
-| `device_secret` | string | —        | Plain-text secret (bcrypt compared server-side) |
-| `ph`            | float  | pH units | Water pH reading                                |
-| `temperature`   | float  | °C       | Water temperature                               |
-| `tds`           | float  | ppm      | Total dissolved solids                          |
-| `turbidity`     | float  | NTU      | Water cloudiness                                |
-| `water_level`   | float  | %        | Tank water level percentage                     |
+| Field   | Type   | Required | Description                                                                             |
+| ------- | ------ | -------- | --------------------------------------------------------------------------------------- |
+| `value` | float  | ✅       | The sensor reading                                                                      |
+| `time`  | string | —        | Timestamp `"YYYY-MM-DD HH:MM:SS"` from NTP. Defaults to server receive time if omitted. |
 
-All sensor fields are optional — send only the sensors your device has.
+### Requesting on-demand readings
+
+To trigger an immediate reading from the ESP32, publish to the command topic:
+
+```
+device/<deviceId>/command
+```
+
+Payload: the sensor name string (e.g. `"temperature"`). The ESP32 will then publish to the corresponding `sensor/` topic.
 
 ### Arduino/ESP32 Example (PubSubClient)
 
@@ -457,36 +534,33 @@ All sensor fields are optional — send only the sensors your device has.
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-const char* mqtt_server = "192.168.1.100"; // your backend/broker IP
-const char* device_id   = "tank_1";
-const char* device_secret = "my_secure_secret_123";
+const int   DEVICE_ID   = 100;
+const char* MQTT_SERVER = "192.168.1.100"; // broker IP
 
-void publishReading(float ph, float temp, float tds, float turbidity, float level) {
-  StaticJsonDocument<256> doc;
-  doc["device_id"]     = device_id;
-  doc["device_secret"] = device_secret;
-  doc["ph"]            = ph;
-  doc["temperature"]   = temp;
-  doc["tds"]           = tds;
-  doc["turbidity"]     = turbidity;
-  doc["water_level"]   = level;
+void publishReading(const char* sensorName, float value) {
+  StaticJsonDocument<128> doc;
+  doc["value"] = value;
+  doc["time"]  = "2026-03-10 14:22:10"; // replace with NTP timestamp
 
-  char payload[256];
+  char payload[128];
   serializeJson(doc, payload);
 
-  String topic = "aquamonitor/devices/";
-  topic += device_id;
-  topic += "/data";
+  char topic[64];
+  snprintf(topic, sizeof(topic), "sensor/%d/%s", DEVICE_ID, sensorName);
 
-  client.publish(topic.c_str(), payload);
+  client.publish(topic, payload);
 }
+
+// Usage:
+// publishReading("temperature", 27.5);
+// publishReading("ph", 7.2);
 ```
 
 ---
 
 ## Alert Rules
 
-All thresholds are configurable via environment variables (see `.env.example`).
+All thresholds are configurable via environment variables.
 
 | Alert Type        | Condition                       | Default Threshold | Env Variable      |
 | ----------------- | ------------------------------- | ----------------- | ----------------- |
@@ -497,13 +571,13 @@ All thresholds are configurable via environment variables (see `.env.example`).
 | `TURBIDITY_HIGH`  | `turbidity > TURBIDITY_MAX`     | 50 NTU            | `TURBIDITY_MAX`   |
 | `WATER_LEVEL_LOW` | `water_level < WATER_LEVEL_MIN` | 20%               | `WATER_LEVEL_MIN` |
 
-**Deduplication:** A new alert is only created if no unresolved alert of the same type already exists for that device. This prevents alert flooding from repeated readings.
+**Deduplication:** A new alert is only created if no unresolved alert of the same type already exists for that device, preventing flooding.
 
 ---
 
 ## WebSocket Events
 
-Connect to the backend with any socket.io v4 client:
+Connect with any socket.io v4 client:
 
 ```js
 import { io } from "socket.io-client";
@@ -516,8 +590,8 @@ socket.on("alert", (data) => {
   //   type: "TEMP_HIGH",
   //   message: "Temperature 34°C exceeds maximum threshold of 32°C",
   //   value: 34,
-  //   deviceUid: "tank_1",
-  //   createdAt: "2026-03-07T10:35:00.000Z"
+  //   deviceId: 100,
+  //   createdAt: "2026-03-10T10:35:00.000Z"
   // }
 });
 ```
@@ -530,11 +604,12 @@ socket.on("alert", (data) => {
 code/backend/
 ├── src/
 │   ├── modules/
-│   │   ├── auth/               → Google OAuth + JWT login
+│   │   ├── auth/               → Username/password + Google OAuth + JWT
 │   │   ├── devices/            → Device registration & management
+│   │   ├── sensor-types/       → Sensor type definitions (CRUD)
 │   │   ├── sensors/            → Sensor reading queries
 │   │   ├── alerts/             → Alert engine & CRUD
-│   │   └── notifications/      → Console + WebSocket + Email
+│   │   └── notifications/      → WebSocket + Email notifications
 │   ├── mqtt/
 │   │   └── mqttClient.js       → MQTT subscriber & ingestion pipeline
 │   ├── middleware/
@@ -547,15 +622,15 @@ code/backend/
 │   │   └── logger.js           → Winston logger
 │   ├── app.js                  → Express app (routes + middleware)
 │   └── server.js               → HTTP server entry point
-├── public/
-│   └── test-auth.html          → Dev-only Google OAuth test page (/test-auth)
 ├── prisma/
-│   └── schema.prisma           → Database schema & relations
+│   ├── schema.prisma           → Database schema & relations
+│   └── migrations/             → SQL migration history
 ├── mosquitto/
 │   └── mosquitto.conf          → MQTT broker configuration
 ├── docker-compose.yml
 ├── Dockerfile
 ├── package.json
+├── CHANGELOG.md
 ├── .env.example
 └── README.md
 ```
@@ -564,9 +639,9 @@ code/backend/
 
 ## Docker (optional)
 
-Docker Compose bundles PostgreSQL, Mosquitto, and the backend into a single command. Use this when you're ready to deploy or want a clean reproducible environment.
+Docker Compose bundles PostgreSQL, Mosquitto, and the backend into a single command.
 
-### Switch `.env` back to Docker service names
+### Switch `.env` to Docker service names
 
 ```env
 DATABASE_URL="postgresql://guard:guardpass@postgres:5432/guarddb"
@@ -579,7 +654,7 @@ MQTT_BROKER_URL=mqtt://mosquitto:1883
 docker compose up --build
 ```
 
-On first start the backend container automatically runs `prisma migrate deploy` before the server starts.
+On first start the backend automatically runs `prisma migrate deploy` before the server starts.
 
 ```
 Services:
@@ -601,16 +676,16 @@ docker compose down -v
 
 ## Production Notes
 
-1. **Mosquitto authentication** — Set `allow_anonymous false` in `mosquitto.conf` and configure a `password_file` with per-device credentials, or use TLS client certificates.
+1. **HTTPS / WSS** — Place the backend behind an Nginx reverse proxy with a TLS certificate. Configure `CORS_ORIGIN` with your production domain only.
 
-2. **HTTPS / WSS** — Place the backend behind an Nginx reverse proxy with a TLS certificate (Let's Encrypt). Configure `CORS_ORIGIN` with your production frontend domain only.
+2. **Database** — Use a managed PostgreSQL service (e.g. AWS RDS, Supabase). Update `DATABASE_URL`.
 
-3. **Database** — Use a managed PostgreSQL service (e.g. AWS RDS, Supabase) instead of the Docker container. Update `DATABASE_URL` accordingly.
+3. **JWT Secret** — Minimum 64-byte random secret: `openssl rand -hex 64`. Rotate periodically.
 
-4. **JWT Secret** — Use a minimum 64-byte random secret generated by `openssl rand -hex 64`. Rotate it periodically.
+4. **Mosquitto authentication** — Set `allow_anonymous false` in `mosquitto.conf` and configure a password file or TLS client certificates.
 
-5. **Environment secrets** — Never commit `.env` to source control. Use Docker secrets, AWS Parameter Store, or a similar secrets manager in production.
+5. **Environment secrets** — Never commit `.env`. Use Docker secrets, AWS Parameter Store, or a similar secrets manager.
 
-6. **Rate limiting** — Consider adding `express-rate-limit` to the `/auth/google` endpoint to prevent brute-force token submission.
+6. **Rate limiting** — Add `express-rate-limit` to `/auth/login` and `/auth/google` to prevent brute-force attacks.
 
-7. **Device secrets** — The device secret is stored as a bcrypt hash. The ESP32 stores the plaintext in firmware. For higher security, rotate device secrets periodically using the device management API.
+7. **Sensor readings partitioning** — For high-volume deployments consider PostgreSQL table partitioning on `sensor_readings` by month to maintain query performance at scale.

@@ -11,70 +11,35 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────────
-// Users — authenticated via Google OAuth
+// Users — supports both username/password and Google OAuth
 // ─────────────────────────────────────────────────
 model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  name      String
-  googleId  String     @unique @map("google_id")
-  createdAt DateTime   @default(now()) @map("created_at")
+  id          Int      @id @default(autoincrement()) @map("user_id")
+  username    String   @unique
+  password    String?  // bcrypt hash — null for Google-only users
+  googleId    String?  @unique @map("google_id") // null for password-only users
+  fullName    String   @map("full_name")
+  email       String?
+  phoneNumber String?  @map("phone_number")
+  address     String?
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  locations Location[]
+  devices Device[]
 
   @@map("users")
 }
 
 // ─────────────────────────────────────────────────
-// Locations — a physical site (e.g. a fish shop)
-// ─────────────────────────────────────────────────
-model Location {
-  id        String   @id @default(uuid())
-  name      String
-  ownerId   String   @map("owner_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  owner User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  tanks Tank[]
-
-  @@map("locations")
-}
-
-// ─────────────────────────────────────────────────
-// Tanks — individual aquarium/pond units
-// ─────────────────────────────────────────────────
-model Tank {
-  id         String @id @default(uuid())
-  locationId String @map("location_id")
-  name       String
-
-  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  devices  Device[]
-
-  @@map("tanks")
-}
-
-// ─────────────────────────────────────────────────
-// Device status enum
-// ─────────────────────────────────────────────────
-enum DeviceStatus {
-  ONLINE
-  OFFLINE
-  UNKNOWN
-}
-
-// ─────────────────────────────────────────────────
-// Devices — ESP32 units in a tank
+// Devices — tanks / IoT devices (ESP32)
 // ─────────────────────────────────────────────────
 model Device {
-  id           String       @id @default(uuid())
-  tankId       String       @map("tank_id")
-  deviceUid    String       @unique @map("device_uid")
-  deviceSecret String       @map("device_secret") // bcrypt hash — never expose in API responses
-  status       DeviceStatus @default(UNKNOWN)
-  lastSeen     DateTime?    @map("last_seen")
+  deviceId   Int      @id @map("device_id")
+  userId     Int      @map("user_id")
+  deviceName String?  @map("device_name")
+  location   String?
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  tank           Tank            @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   sensorReadings SensorReading[]
   alerts         Alert[]
 
@@ -82,21 +47,33 @@ model Device {
 }
 
 // ─────────────────────────────────────────────────
-// SensorReadings — time-series data from ESP32
+// SensorType — definitions for each sensor kind
+// ─────────────────────────────────────────────────
+model SensorType {
+  id         Int    @id @default(autoincrement()) @map("sensor_id")
+  sensorName String @map("sensor_name")
+  frequency  String // e.g. "hourly", "twice_daily", "weekly"
+
+  sensorReadings SensorReading[]
+
+  @@map("sensor_types")
+}
+
+// ─────────────────────────────────────────────────
+// SensorReadings — normalized time-series data
 // ─────────────────────────────────────────────────
 model SensorReading {
-  id          String   @id @default(uuid())
-  deviceId    String   @map("device_id")
-  timestamp   DateTime @default(now())
-  ph          Float?
-  temperature Float?
-  tds         Float?
-  turbidity   Float?
-  waterLevel  Float?   @map("water_level")
+  id          Int      @id @default(autoincrement()) @map("reading_id")
+  deviceId    Int      @map("device_id")
+  sensorId    Int      @map("sensor_id")
+  value       Float
+  readingTime DateTime @map("reading_time")
 
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  device     Device     @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  sensorType SensorType @relation(fields: [sensorId], references: [id], onDelete: Cascade)
 
-  @@index([deviceId, timestamp])
+  @@index([deviceId, readingTime])
+  @@index([sensorId, readingTime])
   @@map("sensor_readings")
 }
 
@@ -117,14 +94,14 @@ enum AlertType {
 // ─────────────────────────────────────────────────
 model Alert {
   id        String    @id @default(uuid())
-  deviceId  String    @map("device_id")
+  deviceId  Int       @map("device_id")
   type      AlertType
   message   String
   value     Float
   createdAt DateTime  @default(now()) @map("created_at")
   resolved  Boolean   @default(false)
 
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
 
   @@index([deviceId, resolved])
   @@map("alerts")

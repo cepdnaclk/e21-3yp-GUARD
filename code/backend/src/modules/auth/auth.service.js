@@ -1,21 +1,60 @@
 'use strict';
 
 const { OAuth2Client } = require('google-auth-library');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../../config/config');
 const prisma = require('../../database/prismaClient');
 const logger = require('../../utils/logger');
 
-const oauthClient = new OAuth2Client(config.google.clientId);
+const BCRYPT_ROUNDS = 10;
 
-/**
- * Verifies a Google ID token against the configured Client ID.
- * Returns the decoded payload on success; throws on invalid token.
- *
- * @param {string} idToken - The Google ID token from the frontend (credential from Google Sign-In)
- * @returns {Promise<import('google-auth-library').TokenPayload>}
- */
+const oauthClient = config.google.clientId
+  ? new OAuth2Client(config.google.clientId)
+  : null;
+
+// ─── Username/Password ───────────────────────────────────────────────────────
+
+async function registerUser({ username, password, fullName, email, phoneNumber, address }) {
+  const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+  const user = await prisma.user.create({
+    data: {
+      username,
+      password: hashedPassword,
+      fullName,
+      email:       email       || null,
+      phoneNumber: phoneNumber || null,
+      address:     address     || null,
+    },
+  });
+
+  logger.info(`[Auth] User ${user.id} (${user.username}) registered.`);
+  return user;
+}
+
+async function loginUser(login, password) {
+  // Accept username OR email — determine which field was supplied
+  const isEmail = login.includes('@');
+  const user = isEmail
+    ? await prisma.user.findFirst({ where: { email: login } })
+    : await prisma.user.findUnique({ where: { username: login } });
+
+  if (!user || !user.password) return null;
+
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return null;
+
+  return user;
+}
+
+// ─── Google OAuth ────────────────────────────────────────────────────────────
+
 async function verifyGoogleToken(idToken) {
+  if (!oauthClient) {
+    throw new Error('Google OAuth is not configured (GOOGLE_CLIENT_ID missing).');
+  }
+
   const ticket = await oauthClient.verifyIdToken({
     idToken,
     audience: config.google.clientId,
@@ -26,51 +65,57 @@ async function verifyGoogleToken(idToken) {
     throw new Error('Invalid Google token: empty payload');
   }
 
-  return payload; // { sub, email, name, picture, email_verified, ... }
+  return payload;
 }
 
-/**
- * Upserts a user record based on the Google OAuth payload.
- * Creates the user on first login; updates name/email on subsequent logins.
- *
- * @param {{ sub: string, email: string, name: string }} payload
- * @returns {Promise<import('@prisma/client').User>}
- */
-async function findOrCreateUser(payload) {
-  const user = await prisma.user.upsert({
-    where: { googleId: payload.sub },
-    update: {
-      name: payload.name,
-      email: payload.email,
-    },
-    create: {
+async function findOrCreateGoogleUser(payload) {
+  // Check if a user with this googleId already exists
+  const existing = await prisma.user.findUnique({ where: { googleId: payload.sub } });
+
+  if (existing) {
+    // Update name/email on each login
+    const user = await prisma.user.update({
+      where: { googleId: payload.sub },
+      data: {
+        fullName: payload.name || existing.fullName,
+        email:    payload.email || existing.email,
+      },
+    });
+    logger.debug(`[Auth] Google user ${user.id} (${user.username}) logged in.`);
+    return user;
+  }
+
+  // Create new user — use email prefix as username, ensure uniqueness
+  let username = payload.email.split('@')[0];
+  const taken = await prisma.user.findUnique({ where: { username } });
+  if (taken) {
+    username = `${username}_${Date.now()}`;
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      username,
       googleId: payload.sub,
-      email: payload.email,
-      name: payload.name || payload.email,
+      fullName: payload.name || payload.email,
+      email:    payload.email,
     },
   });
 
-  logger.debug(`[Auth] User ${user.id} (${user.email}) authenticated via Google.`);
+  logger.info(`[Auth] Google user ${user.id} (${user.username}) created.`);
   return user;
 }
 
-/**
- * Signs and returns a JWT for the given user.
- * The token is valid for the duration configured in JWT_EXPIRY (default: 1d).
- *
- * @param {{ id: string, email: string, name: string }} user
- * @returns {string}
- */
+// ─── JWT ─────────────────────────────────────────────────────────────────────
+
 function generateJWT(user) {
   return jwt.sign(
     {
       sub: user.id,
-      email: user.email,
-      name: user.name,
+      username: user.username,
     },
     config.jwt.secret,
     { expiresIn: config.jwt.expiry }
   );
 }
 
-module.exports = { verifyGoogleToken, findOrCreateUser, generateJWT };
+module.exports = { registerUser, loginUser, verifyGoogleToken, findOrCreateGoogleUser, generateJWT };

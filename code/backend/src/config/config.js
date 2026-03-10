@@ -4,7 +4,7 @@ require('dotenv').config();
 
 // ─── Required environment variable validation ───────────────────────────────
 // The server will exit immediately at startup if any required variable is unset.
-const REQUIRED_VARS = ['DATABASE_URL', 'JWT_SECRET', 'GOOGLE_CLIENT_ID'];
+const REQUIRED_VARS = ['DATABASE_URL', 'JWT_SECRET'];
 
 const missing = REQUIRED_VARS.filter((key) => !process.env[key]);
 if (missing.length > 0) {
@@ -30,7 +30,7 @@ const config = {
   },
 
   google: {
-    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
   },
 
   mqtt: {
