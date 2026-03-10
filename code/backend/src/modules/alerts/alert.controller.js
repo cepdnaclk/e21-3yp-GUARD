@@ -22,7 +22,7 @@ async function listAlerts(req, res, next) {
     }
 
     const filters = {};
-    if (req.query.device_id) filters.deviceId = req.query.device_id;
+    if (req.query.device_id) filters.deviceId = parseInt(req.query.device_id, 10);
     if (req.query.resolved !== undefined) {
       filters.resolved = req.query.resolved === 'true';
     }

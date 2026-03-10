@@ -3,10 +3,12 @@
 ## 👨‍💻 Team
 
 Third Year Project — Team 08
-* E/21/231 - Thisen
-* E/21/362 - Shashika
-* E/21/056 - Ashan
-* E/21/067 - Asindu
+
+- E/21/231 - Thisen
+- E/21/362 - Shashika
+- E/21/039 - Ashan
+- E/21/067 - Asindu
+
 ---
 
 ## 🐠 What is G.U.A.R.D?
@@ -30,10 +32,9 @@ Small invisible changes in water quality can quickly lead to fish stress, diseas
 
 However:
 
-* Manual testing is slow and reactive
-* Measurements are sometimes inaccurate
-* Continuous monitoring is impossible for humans
-
+- Manual testing is slow and reactive
+- Measurements are sometimes inaccurate
+- Continuous monitoring is impossible for humans
 
 ### Real-World Impact
 
@@ -43,7 +44,6 @@ However:
 | Reputation Damage | Customer trust decreases             |
 | Labor Stress      | Staff must constantly check tanks    |
 
-
 ---
 
 ## 🚫 Why Existing Solutions Are Not Enough
@@ -52,15 +52,13 @@ Current aquarium systems are mostly designed for **single home aquariums**.
 
 They suffer from:
 
-* No scalability
-* No modular expansion
-* Expensive to scale
-* Limited alert features
-* No centralized monitoring
-
+- No scalability
+- No modular expansion
+- Expensive to scale
+- Limited alert features
+- No centralized monitoring
 
 ---
-
 
 ## 🔍 Core Features
 
@@ -68,38 +66,37 @@ They suffer from:
 
 The system continuously measures critical water parameters:
 
-* Temperature
-* pH
-* Ammonia
-* Water Level
-* Turbidity
+- Temperature
+- pH
+- Ammonia
+- Water Level
+- Turbidity
 
 ### Alert System
 
-* Mobile notifications
-* Web dashboard alerts
-* Local LED indicators
+- Mobile notifications
+- Web dashboard alerts
+- Local LED indicators
 
 ### Automation
 
-* Automatic filtration
-* Water circulation control
-* Optional water change
-* Automatic fish feeding
-* Lighting control
+- Automatic filtration
+- Water circulation control
+- Optional water change
+- Automatic fish feeding
+- Lighting control
 
 ### Intelligence & Dashboard
 
-* Real-time monitoring
-* Historical data visualization
-* Centralized control panel
+- Real-time monitoring
+- Historical data visualization
+- Centralized control panel
 
 ### Scalability
 
-* Plug-and-play tank modules
-* Multi-tank architecture
-* Easy expansion without shutdown
-
+- Plug-and-play tank modules
+- Multi-tank architecture
+- Easy expansion without shutdown
 
 ---
 
@@ -128,41 +125,39 @@ Sensors → Microcontroller → Cloud → User Interface → Actuators
 | Actuators    | Heater, Pump, Feeder, Lights        |
 | Connectivity | Wi-Fi                               |
 
-
 ---
 
 ## 🔧 Hardware Design
 
 ### 1️⃣ Central Control Unit
 
-* ESP32 microcontroller
-* Relay module
-* Power management unit
-* Voltage regulators
-* Surge & fuse protection
+- ESP32 microcontroller
+- Relay module
+- Power management unit
+- Voltage regulators
+- Surge & fuse protection
 
 ### 2️⃣ Sensor Modules
 
-* DS18B20 Temperature sensor
-* pH sensor
-* Water level sensor
-* Turbidity sensor
-* Leak detection sensor
-* Ammonia sensor
+- DS18B20 Temperature sensor
+- pH sensor
+- Water level sensor
+- Turbidity sensor
+- Leak detection sensor
+- Ammonia sensor
 
 ### 3️⃣ Actuator Modules
 
-* Aquarium heater
-* Water pump
-* Air pump
-* Automatic feeder (servo/stepper)
-* Solenoid valve
-* LED lighting system
+- Aquarium heater
+- Water pump
+- Air pump
+- Automatic feeder (servo/stepper)
+- Solenoid valve
+- LED lighting system
 
 ### 4️⃣ Connectivity
 
-* Built-in Wi-Fi (ESP32)
-
+- Built-in Wi-Fi (ESP32)
 
 ---
 
@@ -172,19 +167,19 @@ Sensors → Microcontroller → Cloud → User Interface → Actuators
 
 Handles real-time operations:
 
-* Sensor reading
-* Decision logic
-* Scheduling
-* Actuator control
-* Alerts
-* Communication
-* Data logging
+- Sensor reading
+- Decision logic
+- Scheduling
+- Actuator control
+- Alerts
+- Communication
+- Data logging
 
 ### 2️⃣ Cloud & Backend
 
-* IoT platform (MQTT / REST API)
-* Cloud database
-* Backend services (Node.js + NestJS)
+- IoT platform (MQTT / REST API)
+- Cloud database
+- Backend services (Node.js + NestJS)
 
 ### 3️⃣ Frontend
 
@@ -195,9 +190,9 @@ Handles real-time operations:
 
 ### 4️⃣ Firmware Tools
 
-* Arduino IDE / PlatformIO
-* ESP32 SDK
-* Embedded C/C++
+- Arduino IDE / PlatformIO
+- ESP32 SDK
+- Embedded C/C++
 
 ---
 
@@ -234,10 +229,10 @@ Modular design allows adding tanks without shutdown.
 
 Possible challenges:
 
-* Sensor drift
-* Ammonia sensor warm-up
-* Water exposure damage
-* Internet failure
+- Sensor drift
+- Ammonia sensor warm-up
+- Water exposure damage
+- Internet failure
 
 System designed to tolerate failures and continue local monitoring.
 
@@ -261,11 +256,11 @@ System designed to tolerate failures and continue local monitoring.
 
 G.U.A.R.D will:
 
-* Reduce fish deaths
-* Reduce manual monitoring
-* Provide reliable data
-* Improve shop reputation
-* Enable scalable smart aquarium management
+- Reduce fish deaths
+- Reduce manual monitoring
+- Provide reliable data
+- Improve shop reputation
+- Enable scalable smart aquarium management
 
 ---
 
@@ -280,6 +275,7 @@ G.U.A.R.D ensures the system notices first.
 ## 🔮 Future Enhancements
 
 G.U.A.R.D is designed as a scalable platform. The following improvements are planned for future versions.
-* Fish stress prediction using machine learning
-* Automatic disease detection based on behavior patterns
-* Chemical dosing control
+
+- Fish stress prediction using machine learning
+- Automatic disease detection based on behavior patterns
+- Chemical dosing control

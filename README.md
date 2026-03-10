@@ -6,7 +6,7 @@
 
 | Index    | Name     |
 | -------- | -------- |
-| E/21/056 | Ashan    |
+| E/21/036 | Ashan    |
 | E/21/067 | Asindu   |
 | E/21/231 | Thisen   |
 | E/21/362 | Shashika |

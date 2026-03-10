@@ -4,6 +4,19 @@ All notable changes to the backend are documented in this file.
 
 ---
 
+## [2.3.0] — 2026-03-10
+
+### Fixed — Alert Query Type Mismatch
+
+- `GET /alerts` — `device_id` query parameter is now parsed with `parseInt()` before passing to Prisma, fixing `PrismaClientValidationError` when filtering alerts by device
+
+### Added — Test Data Seed Script
+
+- `prisma/seed.js` — seeds 4 devices (101, 102, 103, 150), 5 sensor types (temperature, ph, turbidity, water_level, tds), 1000 sensor readings (25 per sensor per device over 24 hours), and 8 alerts (5 active, 3 resolved)
+- Run with `node prisma/seed.js` after creating a user account
+
+---
+
 ## [2.2.0] — 2026-03-10
 
 ### Changed — Login by Username or Email
