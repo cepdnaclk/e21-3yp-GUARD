@@ -23,6 +23,11 @@ All notable changes to the backend are documented in this file.
 - Result card shows registered/logged-in status for both auth paths
 - HTML is read from disk on every request in dev mode — edits are reflected without a server restart
 
+#### Dev Server Stability
+
+- Added `predev` npm script — runs `kill-port 3000` before nodemon starts, preventing `EADDRINUSE` crashes on `npm run dev`
+- `server.js` now handles `EADDRINUSE` with a clean `process.exit(1)` instead of an unhandled exception — nodemon retries properly on file changes rather than getting stuck
+
 ---
 
 ## [2.1.0] — 2026-03-10
