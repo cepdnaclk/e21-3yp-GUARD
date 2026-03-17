@@ -1,8 +1,40 @@
 {
-  "hash": "136ec60c",
-  "configHash": "cd7ed492",
-  "lockfileHash": "333c4802",
-  "browserHash": "f283d7eb",
-  "optimized": {},
-  "chunks": {}
+  "hash": "685d87da",
+  "configHash": "cc0a78d7",
+  "lockfileHash": "097783a9",
+  "browserHash": "fc6e178e",
+  "optimized": {
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "e527a4a5",
+      "needsInterop": false
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "358148ec",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "993dcb5e",
+      "needsInterop": true
+    },
+    "socket.io-client": {
+      "src": "../../node_modules/socket.io-client/build/esm/index.js",
+      "file": "socket__io-client.js",
+      "fileHash": "43fa7cae",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-32E4H3EV": {
+      "file": "chunk-32E4H3EV.js"
+    },
+    "chunk-G3PMV62Z": {
+      "file": "chunk-G3PMV62Z.js"
+    }
+  }
 }
