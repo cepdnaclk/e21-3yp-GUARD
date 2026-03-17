@@ -4,6 +4,30 @@ All notable changes to the backend are documented in this file.
 
 ---
 
+## [2.2.1] — 2026-03-17
+
+### Changed — Sensor Query Validation
+
+#### API
+
+- Added strict integer validation for `device_id` in:
+  - `GET /sensor/latest`
+  - `GET /sensor/history`
+- Added validation for optional history filters:
+  - `sensor_id` must be an integer
+  - `from` and `to` must be valid ISO 8601 date strings
+- Invalid query values now return `400` with `{ error: "Validation Error", details: [...] }`
+
+### Added — Local Data-Flow Test Utilities
+
+- Added `test_data_flow/` scripts for quick local MQTT integration checks:
+  - `test.js` (Node.js MQTT + simple Express view)
+  - `test.py` (Python `paho-mqtt` subscriber)
+  - `package.json` for test utility dependencies
+- These scripts are developer utilities and not part of backend runtime.
+
+---
+
 ## [2.2.0] — 2026-03-10
 
 ### Changed — Login by Username or Email
