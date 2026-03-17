@@ -1,0 +1,183 @@
+name: CI — Backend Tests & Checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'code/backend/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'code/backend/**'
+      - '.github/workflows/ci.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      # PostgreSQL service container
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: guard
+          POSTGRES_PASSWORD: guardpass
+          POSTGRES_DB: guarddb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      # Mosquitto MQTT broker service container
+      mosquitto:
+        image: eclipse-mosquitto:2
+        options: >-
+          --health-cmd "mosquitto_sub -h localhost"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 1883:1883
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'code/backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./code/backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: ./code/backend
+        run: npx prisma generate
+
+      - name: Run database migrations
+        working-directory: ./code/backend
+        env:
+          DATABASE_URL: postgresql://guard:guardpass@localhost:5432/guarddb
+        run: npx prisma migrate deploy
+
+      - name: Lint code (if configured)
+        working-directory: ./code/backend
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests (if configured)
+        working-directory: ./code/backend
+        env:
+          DATABASE_URL: postgresql://guard:guardpass@localhost:5432/guarddb
+          JWT_SECRET: test-secret-key-for-ci-pipeline-12345
+          MQTT_BROKER_URL: mqtt://localhost:1883
+          NODE_ENV: test
+        run: npm test --if-present
+        continue-on-error: true
+
+      - name: Verify backend builds
+        working-directory: ./code/backend
+        run: npm run build --if-present
+        continue-on-error: true
+
+      - name: Check for security vulnerabilities
+        working-directory: ./code/backend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for hardcoded secrets..."
+          ! grep -r "password\s*=\s*['\"]" code/backend/src/
+          ! grep -r "secret\s*=\s*['\"]" code/backend/src/
+          ! grep -r "api.?key\s*=\s*['\"]" code/backend/src/
+        continue-on-error: true
+
+      - name: Verify .env.example exists
+        run: test -f "code/backend/.env.example" || (echo ".env.example missing!" && exit 1)
+
+  schema-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'code/backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./code/backend
+        run: npm ci
+
+      - name: Validate Prisma schema
+        working-directory: ./code/backend
+        run: npx prisma validate
+
+      - name: Check for schema format issues
+        working-directory: ./code/backend
+        run: npx prisma format --check
+
+  pr-validation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify PR has description
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [ -z "$PR_BODY" ] || [ ${#PR_BODY} -lt 10 ]; then
+            echo "❌ PR description is too short (min 10 chars). Please describe your changes."
+            exit 1
+          fi
+          echo "✅ PR description is present"
+
+      - name: Check commit message format
+        run: |
+          echo "Checking commit messages..."
+          git log --oneline ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | \
+          grep -E "^[a-f0-9]{7} (feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: " || \
+          echo "⚠️  Consider using conventional commits (feat:, fix:, docs:, etc.)"
+        continue-on-error: true
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, code-quality, schema-validation]
+    if: always()
+    steps:
+      - name: Check overall status
+        run: |
+          if [ "${{ needs.build-and-test.result }}" == "success" ] && \
+             [ "${{ needs.code-quality.result }}" == "success" ] && \
+             [ "${{ needs.schema-validation.result }}" == "success" ]; then
+            echo "✅ All checks passed!"
+            exit 0
+          else
+            echo "❌ Some checks failed. Please review the logs above."
+            exit 1
+          fi

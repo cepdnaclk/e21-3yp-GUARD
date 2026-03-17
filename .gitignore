@@ -1,1 +1,67 @@
-node_modules
+# ===== Node.js =====
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Environment Variables (NEVER commit .env) =====
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# ===== IDE & Editor =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.classpath
+.c9/
+*.sublime-workspace
+*.sublime-project
+
+# ===== Database =====
+*.db
+*.sqlite
+*.sqlite3
+dump.sql
+
+# ===== Logs =====
+logs/
+*.log
+lerna-debug.log*
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== Build & Distribution =====
+dist/
+build/
+.next/
+out/
+coverage/
+.tsc/
+
+# ===== Temporary Files =====
+tmp/
+temp/
+*.tmp
+*.bak
+
+# ===== Prisma =====
+prisma/.env
+prisma/dev.db
+
+# ===== Project-Specific =====
+# MQTT test files
+mosquitto/data/
+mosquitto/log/
+
+# Local test outputs
+test_data_flow/output/
