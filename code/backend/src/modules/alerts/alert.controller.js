@@ -5,7 +5,7 @@ const { getAlerts, resolveAlert } = require('./alert.service');
 
 // ─── Validation rules ─────────────────────────────────────────────────────────
 const listAlertsValidation = [
-  query('device_id').optional().notEmpty().withMessage('device_id must not be empty if provided'),
+  query('device_id').optional().isInt().withMessage('device_id must be an integer'),
   query('resolved').optional().isBoolean().withMessage('resolved must be true or false'),
 ];
 
@@ -22,7 +22,7 @@ async function listAlerts(req, res, next) {
     }
 
     const filters = {};
-    if (req.query.device_id) filters.deviceId = req.query.device_id;
+    if (req.query.device_id) filters.deviceId = parseInt(req.query.device_id, 10);
     if (req.query.resolved !== undefined) {
       filters.resolved = req.query.resolved === 'true';
     }

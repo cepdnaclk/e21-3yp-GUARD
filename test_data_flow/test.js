@@ -1,38 +1,34 @@
 const mqtt = require('mqtt');
-const express = require('express');
 
-const app = express();
-const port = 3000; // Web dashboard port
+const brokerHost = process.env.BROKER_HOST || 'localhost';
+const brokerPort = process.env.BROKER_PORT || '1883';
+const deviceId = process.env.DEVICE_ID || '100';
+const sensorName = process.env.SENSOR_NAME || 'temperature';
 
-// Your PC IP and broker port
-const broker_ip = '192.168.166.193'; // replace with your PC IP
-const client = mqtt.connect(`mqtt://${broker_ip}:1883`);
+const topic = `sensor/${deviceId}/${sensorName}`;
+const client = mqtt.connect(`mqtt://${brokerHost}:${brokerPort}`);
 
-let latestTemperature = null;
-
-// MQTT connection
 client.on('connect', () => {
-  console.log('Connected to MQTT broker!');
-  client.subscribe('sensor/temperature', (err) => {
-    if (!err) console.log('Subscribed to topic: sensor/temperature');
+  console.log(`[MQTT] Connected to mqtt://${brokerHost}:${brokerPort}`);
+  client.subscribe(topic, { qos: 1 }, (err) => {
+    if (err) {
+      console.error(`[MQTT] Subscribe failed: ${err.message}`);
+      return;
+    }
+    console.log(`[MQTT] Subscribed to ${topic}`);
   });
 });
 
-// MQTT message handler
-client.on('message', (topic, message) => {
-  const msg = message.toString();
-  console.log(`Received on ${topic}: ${msg}`);
-  latestTemperature = msg; // store latest temperature
+client.on('message', (_topic, message) => {
+  const raw = message.toString();
+  try {
+    const payload = JSON.parse(raw);
+    console.log(`[DATA] topic=${_topic} value=${payload.value} time=${payload.time || 'N/A'}`);
+  } catch {
+    console.log(`[DATA] topic=${_topic} raw=${raw}`);
+  }
 });
 
-// Simple web dashboard
-app.get('/', (req, res) => {
-  res.send(`
-    <h1>ESP32 Temperature Dashboard</h1>
-    <p>Latest Temperature: ${latestTemperature ? latestTemperature : 'No data yet'}</p>
-  `);
-});
-
-app.listen(port, () => {
-  console.log(`Dashboard running at http://localhost:${port}`);
+client.on('error', (err) => {
+  console.error(`[MQTT] Error: ${err.message}`);
 });
