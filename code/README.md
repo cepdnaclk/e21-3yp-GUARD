@@ -224,7 +224,7 @@ The frontend dev server proxies API requests to the backend:
 | Dashboard      | `/`                | Stats cards, device table (top 5), active alerts (top 5), sensor types panel    |
 | Devices        | `/devices`         | Device list with inline add form                                                |
 | Device Detail  | `/devices/:id`     | Device info, latest sensor reading cards, active alerts                         |
-| Sensor History | `/sensors/history` | Filterable readings table — device, sensor type, date range                     |
+| Sensor History | `/sensors/history` | Filterable history with line charts (time vs value) for all parameters + readings table |
 | Alerts         | `/alerts`          | Filterable alert list with resolve button                                       |
 | Profile        | `/profile`         | Read-only user profile                                                          |
 

@@ -191,6 +191,65 @@ tbody tr:hover { background: #f8fafc; }
 .sensor-card .sensor-value { font-size: 2rem; font-weight: 700; margin: 0.5rem 0; }
 .sensor-card .sensor-time { font-size: 0.75rem; color: var(--text-muted); }
 
+/* ========== History Charts ========== */
+.history-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.history-chart-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 0.75rem;
+}
+
+.history-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.history-chart-header h4 {
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.history-chart-header span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.history-chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.history-chart-wrap svg {
+  width: 100%;
+  min-width: 620px;
+  display: block;
+}
+
+.history-grid-line {
+  stroke: #e2e8f0;
+  stroke-width: 1;
+}
+
+.history-axis-line {
+  stroke: #cbd5e1;
+  stroke-width: 1;
+}
+
+.history-axis-text {
+  fill: #64748b;
+  font-size: 11px;
+}
+
 /* ========== Responsive ========== */
 @media (max-width: 768px) {
   .sidebar { display: none; }

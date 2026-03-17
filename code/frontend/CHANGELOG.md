@@ -4,6 +4,23 @@ All notable changes to the frontend are documented in this file.
 
 ---
 
+## [1.3.0] — 2026-03-17
+
+### Added — Historical Line Charts for Sensor Parameters
+
+- Added a new reusable chart component at `src/components/HistoricalLineChart.jsx`
+- Enhanced **Sensor History** page to render **line-chart variations with time** for each parameter in fetched results
+- Charts are automatically grouped by sensor type (temperature, pH, TDS, turbidity, water level, etc.)
+- Added per-chart value range summary and axis labels for faster trend interpretation
+- Preserved existing history table below charts for precise row-level inspection
+
+### Changed
+
+- Sensor History now shows both a visual trend view (charts) and tabular view in one workflow
+- Added responsive chart styling (`history-chart-*` classes) in global stylesheet
+
+---
+
 ## [1.2.0] — 2026-03-10
 
 ### Changed — UI Cleanup

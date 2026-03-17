@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { deviceApi, sensorTypeApi, sensorApi } from '../services/api';
+import HistoricalLineChart from '../components/HistoricalLineChart';
+
+const CHART_COLORS = ['#0ea5e9', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#14b8a6'];
 
 export default function SensorHistory() {
   const [searchParams] = useSearchParams();
@@ -17,6 +20,23 @@ export default function SensorHistory() {
     from: '',
     to: '',
   });
+
+  const groupedReadings = readings.reduce((acc, reading) => {
+    const key = reading.sensorType?.sensorName || `sensor_${reading.sensorId}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(reading);
+    return acc;
+  }, {});
+
+  const chartData = Object.entries(groupedReadings)
+    .map(([sensorName, items]) => ({
+      sensorName,
+      points: items
+        .slice()
+        .sort((a, b) => new Date(a.readingTime) - new Date(b.readingTime))
+        .map((r) => ({ value: Number(r.value), readingTime: r.readingTime })),
+    }))
+    .sort((a, b) => a.sensorName.localeCompare(b.sensorName));
 
   useEffect(() => {
     Promise.all([deviceApi.list(), sensorTypeApi.list()])
@@ -92,6 +112,18 @@ export default function SensorHistory() {
             <p style={{ marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               Showing {readings.length} reading{readings.length !== 1 ? 's' : ''}
             </p>
+
+            <div className="history-chart-grid">
+              {chartData.map((series, idx) => (
+                <HistoricalLineChart
+                  key={series.sensorName}
+                  title={`${series.sensorName} variation over time`}
+                  points={series.points}
+                  color={CHART_COLORS[idx % CHART_COLORS.length]}
+                />
+              ))}
+            </div>
+
             <div className="table-wrap">
               <table>
                 <thead>
