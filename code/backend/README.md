@@ -190,6 +190,30 @@ curl http://localhost:3000/health
 # {"status":"ok","timestamp":"..."}
 ```
 
+### Optional — Run local MQTT data-flow test scripts
+
+Use the lightweight scripts in `test_data_flow/` if you want to verify broker message flow independently of the main frontend.
+
+```powershell
+cd ..\..\test_data_flow
+npm install
+node test.js
+```
+
+Environment variables used by `test.js`:
+
+- `BROKER_HOST` (default: `localhost`)
+- `BROKER_PORT` (default: `1883`)
+- `MQTT_TOPIC` (optional override)
+- `DEVICE_ID` and `SENSOR_NAME` (used when `MQTT_TOPIC` is not set)
+
+Python subscriber option:
+
+```powershell
+pip install paho-mqtt
+python test.py
+```
+
 **Test the MQTT pipeline** (publishes a temperature reading of 33°C — will trigger a `TEMP_HIGH` alert):
 
 ```powershell
@@ -416,6 +440,11 @@ Get a sensor type by ID.
 
 Returns the most recent reading for each sensor type on a device.
 
+Validation notes:
+
+- `device_id` is required and must be an integer.
+- Invalid query values return `400` with `error: "Validation Error"` and field-level `details`.
+
 **Response `200`:**
 
 ```json
@@ -448,6 +477,13 @@ Returns the most recent reading for each sensor type on a device.
 #### `GET /sensor/history?device_id=<int>&sensor_id=<int>&from=<ISO8601>&to=<ISO8601>`
 
 Returns historical readings (max 1000 rows, sorted ascending by time).
+
+Validation notes:
+
+- `device_id` is required and must be an integer.
+- `sensor_id` is optional; if provided, it must be an integer.
+- `from` and `to` are optional; if provided, they must be valid ISO 8601 date strings.
+- Invalid query values return `400` with `error: "Validation Error"` and field-level `details`.
 
 | Query Param | Required | Example                      |
 | ----------- | -------- | ---------------------------- |
