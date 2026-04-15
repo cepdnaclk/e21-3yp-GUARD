@@ -131,3 +131,31 @@
 1776281720: Client mqtt-explorer-564904d0 [172.18.0.1:59044] disconnected: not authorised.
 1776281752: New connection from 172.18.0.1:56800 on port 1883.
 1776281752: New client connected from 172.18.0.1:56800 as mqtt-explorer-564904d0 (p4, c1, k60, u'Admin').
+1776282336: Client ESP32_100 [172.18.0.1:56928] disconnected: connection closed by client.
+1776282338: New connection from 172.18.0.1:49344 on port 1883.
+1776282338: New client connected from 172.18.0.1:49344 as ESP32_100 (p4, c1, k15, u'Admin').
+1776282363: Client ESP32_100 [172.18.0.1:49344] disconnected: exceeded timeout.
+1776282363: New connection from 172.18.0.1:40594 on port 1883.
+1776282363: New client connected from 172.18.0.1:40594 as ESP32_100 (p4, c1, k15, u'Admin').
+1776282391: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1776282437: New connection from 172.18.0.1:57340 on port 1883.
+1776282437: Client ESP32_100 [172.18.0.1:40594] disconnected: session taken over.
+1776282437: New client connected from 172.18.0.1:57340 as ESP32_100 (p4, c1, k15, u'Admin').
+1776282575: Client ESP32_100 [172.18.0.1:57340] disconnected: exceeded timeout.
+1776282611: New connection from 172.18.0.1:41962 on port 1883.
+1776282611: New client connected from 172.18.0.1:41962 as ESP32_100 (p4, c1, k15, u'Admin').
+1776282849: Client ESP32_100 [172.18.0.1:41962] disconnected: exceeded timeout.
+1776282865: New connection from 172.18.0.1:53122 on port 1883.
+1776282865: New client connected from 172.18.0.1:53122 as ESP32_100 (p4, c1, k15, u'Admin').
+1776283191: Client mqtt-explorer-99b32e2c [172.18.0.1:49226] disconnected.
+1776283192: New connection from 172.18.0.1:50972 on port 1883.
+1776283192: New client connected from 172.18.0.1:50972 as mqtt-explorer-99b32e2c (p4, c1, k60, u'Admin').
+1776283593: Client ESP32_100 [172.18.0.1:53122] disconnected: exceeded timeout.
+1776283595: New connection from 172.18.0.1:42798 on port 1883.
+1776283595: New client connected from 172.18.0.1:42798 as ESP32_100 (p4, c1, k15, u'Admin').
+1776283937: New connection from 172.18.0.1:43912 on port 1883.
+1776283937: Client ESP32_100 [172.18.0.1:42798] disconnected: session taken over.
+1776283937: New client connected from 172.18.0.1:43912 as ESP32_100 (p4, c1, k15, u'Admin').
+1776283961: New connection from 172.18.0.1:45814 on port 1883.
+1776283961: Client ESP32_100 [172.18.0.1:43912] disconnected: session taken over.
+1776283961: New client connected from 172.18.0.1:45814 as ESP32_100 (p4, c1, k15, u'Admin').
