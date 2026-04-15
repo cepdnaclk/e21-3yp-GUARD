@@ -1,0 +1,133 @@
+1776256220: mosquitto version 2.1.2 starting
+1776256220: Config loaded from /mosquitto/config/mosquitto.conf.
+1776256220: Bridge support available.
+1776256220: Persistence support available.
+1776256220: TLS support available.
+1776256220: TLS-PSK support available.
+1776256220: Websockets support available.
+1776256220: Plugin builtin-security has registered to receive 'basic-auth' events.
+1776256220: Opening ipv4 listen socket on port 1883.
+1776256220: Opening ipv6 listen socket on port 1883.
+1776256220: mosquitto version 2.1.2 running
+1776257114: New connection from ::1:39734 on port 1883.
+1776257114: New client connected from ::1:39734 as auto-08D2625C-D0F4-548F-C8A5-F241556D0B3F (p4, c1, k60, u'Admin').
+1776257123: Client auto-08D2625C-D0F4-548F-C8A5-F241556D0B3F [::1:39734] disconnected.
+1776257540: mosquitto version 2.1.2 terminating
+1776257540: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1776257543: mosquitto version 2.1.2 starting
+1776257543: Config loaded from /mosquitto/config/mosquitto.conf.
+1776257543: Bridge support available.
+1776257543: Persistence support available.
+1776257543: TLS support available.
+1776257543: TLS-PSK support available.
+1776257543: Websockets support available.
+1776257543: Plugin builtin-security has registered to receive 'basic-auth' events.
+1776257543: Opening ipv4 listen socket on port 1883.
+1776257543: Opening ipv6 listen socket on port 1883.
+1776257543: mosquitto version 2.1.2 running
+1776257547: mosquitto version 2.1.2 terminating
+1776257547: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1776257966: mosquitto version 2.1.2 starting
+1776257966: Config loaded from /mosquitto/config/mosquitto.conf.
+1776257966: Bridge support available.
+1776257966: Persistence support available.
+1776257966: TLS support available.
+1776257966: TLS-PSK support available.
+1776257966: Websockets support available.
+1776257966: Plugin builtin-security has registered to receive 'basic-auth' events.
+1776257966: Opening ipv4 listen socket on port 1883.
+1776257966: Opening ipv6 listen socket on port 1883.
+1776257966: mosquitto version 2.1.2 running
+1776258075: New connection from 172.18.0.1:55272 on port 1883.
+1776258075: New client connected from 172.18.0.1:55272 as auto-78D0E43C-D1E3-9461-32B9-DC36ECD3B040 (p4, c1, k60, u'Admin').
+1776258077: Client auto-78D0E43C-D1E3-9461-32B9-DC36ECD3B040 [172.18.0.1:55272] disconnected.
+1776258222: New connection from 172.18.0.1:48500 on port 1883.
+1776258222: New client connected from 172.18.0.1:48500 as auto-0C317A56-CB57-3978-17BC-47682F0F4E85 (p4, c1, k60, u'Admin').
+1776280347: mosquitto version 2.1.2 starting
+1776280347: Config loaded from /mosquitto/config/mosquitto.conf.
+1776280347: Bridge support available.
+1776280347: Persistence support available.
+1776280347: TLS support available.
+1776280347: TLS-PSK support available.
+1776280347: Websockets support available.
+1776280347: Plugin builtin-security has registered to receive 'basic-auth' events.
+1776280347: Opening ipv4 listen socket on port 1883.
+1776280347: Opening ipv6 listen socket on port 1883.
+1776280347: mosquitto version 2.1.2 running
+1776280354: mosquitto version 2.1.2 terminating
+1776280354: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1776280358: mosquitto version 2.1.2 starting
+1776280358: Config loaded from /mosquitto/config/mosquitto.conf.
+1776280358: Bridge support available.
+1776280358: Persistence support available.
+1776280358: TLS support available.
+1776280358: TLS-PSK support available.
+1776280358: Websockets support available.
+1776280358: Plugin builtin-security has registered to receive 'basic-auth' events.
+1776280358: Opening ipv4 listen socket on port 1883.
+1776280358: Opening ipv6 listen socket on port 1883.
+1776280358: mosquitto version 2.1.2 running
+1776280546: mosquitto version 2.1.2 terminating
+1776280546: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1776280590: mosquitto version 2.1.2 starting
+1776280590: Config loaded from /mosquitto/config/mosquitto.conf.
+1776280590: Bridge support available.
+1776280590: Persistence support available.
+1776280590: TLS support available.
+1776280590: TLS-PSK support available.
+1776280590: Websockets support available.
+1776280590: Plugin builtin-security has registered to receive 'basic-auth' events.
+1776280590: Opening ipv4 listen socket on port 1883.
+1776280590: Opening ipv6 listen socket on port 1883.
+1776280590: mosquitto version 2.1.2 running
+1776280596: New connection from 172.18.0.1:54410 on port 1883.
+1776280596: New client connected from 172.18.0.1:54410 as auto-699BBD8D-8897-C8EB-D9DC-BBAA98FA7AE7 (p4, c1, k60, u'User').
+1776280596: Client auto-699BBD8D-8897-C8EB-D9DC-BBAA98FA7AE7 [172.18.0.1:54410] disconnected.
+1776280682: New connection from 172.18.0.1:38970 on port 1883.
+1776280682: New client connected from 172.18.0.1:38970 as auto-31AF4455-A47F-43FD-94F0-7ED2D9A9C4C5 (p4, c1, k60, u'Admin').
+1776280687: Client auto-31AF4455-A47F-43FD-94F0-7ED2D9A9C4C5 [172.18.0.1:38970] disconnected.
+1776280702: New connection from 172.18.0.1:36328 on port 1883.
+1776280702: New client connected from 172.18.0.1:36328 as ESP32_100 (p4, c1, k15, u'Admin').
+1776280782: New connection from 172.18.0.1:57476 on port 1883.
+1776280782: New client connected from 172.18.0.1:57476 as auto-B15EE2BE-2555-92A1-0179-33EBA93525B5 (p4, c1, k60, u'Admin').
+1776280806: Client auto-B15EE2BE-2555-92A1-0179-33EBA93525B5 [172.18.0.1:57476] disconnected.
+1776280828: New connection from 172.18.0.1:56348 on port 1883.
+1776280828: Client ESP32_100 [172.18.0.1:36328] disconnected: session taken over.
+1776280828: New client connected from 172.18.0.1:56348 as ESP32_100 (p4, c1, k15, u'Admin').
+1776280953: New connection from 172.18.0.1:46404 on port 1883.
+1776280953: Client ESP32_100 [172.18.0.1:56348] disconnected: session taken over.
+1776280953: New client connected from 172.18.0.1:46404 as ESP32_100 (p4, c1, k15, u'Admin').
+1776280968: New connection from 172.18.0.1:57610 on port 1883.
+1776280968: Client ESP32_100 [172.18.0.1:46404] disconnected: session taken over.
+1776280968: New client connected from 172.18.0.1:57610 as ESP32_100 (p4, c1, k15, u'Admin').
+1776281002: New connection from 172.18.0.1:48674 on port 1883.
+1776281002: Client ESP32_100 [172.18.0.1:57610] disconnected: session taken over.
+1776281002: New client connected from 172.18.0.1:48674 as ESP32_100 (p4, c1, k15, u'Admin').
+1776281015: New connection from 172.18.0.1:45834 on port 1883.
+1776281015: Client ESP32_100 [172.18.0.1:45834] disconnected: not authorised.
+1776281017: Client ESP32_100 [172.18.0.1:48674] disconnected: connection closed by client.
+1776281020: New connection from 172.18.0.1:60010 on port 1883.
+1776281020: Client ESP32_100 [172.18.0.1:60010] disconnected: not authorised.
+1776281025: New connection from 172.18.0.1:60026 on port 1883.
+1776281025: Client ESP32_100 [172.18.0.1:60026] disconnected: not authorised.
+1776281030: New connection from 172.18.0.1:40344 on port 1883.
+1776281030: Client ESP32_100 [172.18.0.1:40344] disconnected: not authorised.
+1776281035: New connection from 172.18.0.1:40348 on port 1883.
+1776281035: Client ESP32_100 [172.18.0.1:40348] disconnected: not authorised.
+1776281040: New connection from 172.18.0.1:59478 on port 1883.
+1776281040: Client ESP32_100 [172.18.0.1:59478] disconnected: not authorised.
+1776281045: New connection from 172.18.0.1:59484 on port 1883.
+1776281045: Client ESP32_100 [172.18.0.1:59484] disconnected: not authorised.
+1776281051: New connection from 172.18.0.1:57778 on port 1883.
+1776281051: Client ESP32_100 [172.18.0.1:57778] disconnected: not authorised.
+1776281067: New connection from 172.18.0.1:36478 on port 1883.
+1776281067: New client connected from 172.18.0.1:36478 as ESP32_100 (p4, c1, k15, u'Admin').
+1776281095: Client ESP32_100 [172.18.0.1:36478] disconnected: exceeded timeout.
+1776281096: New connection from 172.18.0.1:56928 on port 1883.
+1776281096: New client connected from 172.18.0.1:56928 as ESP32_100 (p4, c1, k15, u'Admin').
+1776281392: New connection from 172.18.0.1:49226 on port 1883.
+1776281392: New client connected from 172.18.0.1:49226 as mqtt-explorer-99b32e2c (p4, c1, k60, u'Admin').
+1776281720: New connection from 172.18.0.1:59044 on port 1883.
+1776281720: Client mqtt-explorer-564904d0 [172.18.0.1:59044] disconnected: not authorised.
+1776281752: New connection from 172.18.0.1:56800 on port 1883.
+1776281752: New client connected from 172.18.0.1:56800 as mqtt-explorer-564904d0 (p4, c1, k60, u'Admin').

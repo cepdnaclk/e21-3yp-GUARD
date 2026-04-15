@@ -5,31 +5,44 @@
 #include <DallasTemperature.h>
 #include <WiFiUdp.h>
 #include "time.h"
+#include <ESP32Servo.h> 
 
 // ---------------- WiFi Reset -----------------------
 #define RESET_BUTTON 0
 #define RESET_DURATION 3000
-//---------------------------------------------------
+unsigned long pressStart = 0;
 
-// ---------------- Sensor Timing -------------------
+// ---------------- Servo Setup ---------------------
+Servo myServo;
+const int servoPin = 13; 
+bool servoActive = false;
+unsigned long servoStartTime = 0;
+const unsigned long SERVO_RUN_TIME = 3000; // 3 seconds rotation
+
+// ---------------- Sensor & Timing -----------------
 unsigned long lastTempTime = 0;
-const unsigned long TEMP_INTERVAL = 10000; // 10 seconds for testing
-//---------------------------------------------------
+unsigned long lastReconnectAttempt = 0;
+const unsigned long TEMP_INTERVAL = 10000; 
 
 // ---------------- Device Data ---------------------
 unsigned long DeviceID = 100;
-unsigned long pressStart = 0;
-const char* mqtt_server = "192.168.1.173";
 String clientID = "ESP32_" + String(DeviceID);
-//---------------------------------------------------
+
+const char* mqtt_server = "192.168.1.5";
+const char* mqtt_user = "Admin";         
+const char* mqtt_password = "B88vf9kp:}Xj"; 
 
 // ---------------- DS18B20 Setup -------------------
-#define ONE_WIRE_BUS 4 // GPIO4 connected to DQ
+#define ONE_WIRE_BUS 4 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-//---------------------------------------------------
 
-// ---------------- MQTT Topics ---------------------
+void publishSensor(String parameter, float value);
+
+// ---------------- MQTT Setup ----------------------
+WiFiClient espClient;
+PubSubClient client(espClient);
+
 String buildTopic(String parameter) {
   return "sensor/" + String(DeviceID) + "/" + parameter;
 }
@@ -37,141 +50,137 @@ String buildTopic(String parameter) {
 String commandTopic() {
   return "device/" + String(DeviceID) + "/command";
 }
-//---------------------------------------------------
 
-// ---------------- MQTT ---------------------------
-WiFiClient espClient;
-PubSubClient client(espClient);
-
-void reconnect() {
-  Serial.print("Connecting to MQTT broker at ");
-  Serial.print(mqtt_server);
-  Serial.println(" ...");
-
-  if (client.connect(clientID.c_str())) {
-    Serial.println("MQTT connected");
-    // Re-subscribe after reconnect
+boolean reconnect() {
+  Serial.print("[INFO] Attempting MQTT connection... ");
+  if (client.connect(clientID.c_str(), mqtt_user, mqtt_password)) {
+    Serial.println("CONNECTED!");
     client.subscribe(commandTopic().c_str());
+    return true;
   } else {
-    Serial.print("Failed, rc=");
-    Serial.print(client.state());
-    Serial.println(" retrying later");
+    Serial.print("FAILED, rc=");
+    Serial.println(client.state());
+    return false;
   }
 }
-//---------------------------------------------------
-
-// ---------------- NTP Time ------------------------
-const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 19800; // Sri Lanka GMT+5:30
-const int daylightOffset_sec = 0;
-
-String getTimeStamp() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    return "00-00-0000 00:00:00";
-  }
-  char buf[20];
-  strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
-  return String(buf);
-}
-//---------------------------------------------------
-
-// ---------------- Publish Sensor ------------------
-void publishSensor(String parameter, float value) {
-  String topic = buildTopic(parameter);
-
-  String payload = "{";
-  payload += "\"value\":" + String(value);
-  payload += ",\"time\":\"" + getTimeStamp() + "\"";
-  payload += "}";
-
-  client.publish(topic.c_str(), payload.c_str());
-
-  Serial.print("Published -> ");
-  Serial.print(topic);
-  Serial.print(" : ");
-  Serial.println(payload);
-}
-//---------------------------------------------------
 
 // ---------------- MQTT Callback ------------------
 void callback(char* topic, byte* payload, unsigned int length) {
-  String message;
-  for (int i = 0; i < length; i++) {
+  String message = "";
+  for (unsigned int i = 0; i < length; i++) {
     message += (char)payload[i];
   }
 
-  Serial.print("Command received: ");
-  Serial.println(message);
+  Serial.println("[INFO] Message: " + message);
 
-  if (message == "temperature") {
+  // TRIGGER: If message is "feed", rotate motor
+  if (message == "feed") {
+    Serial.println("[ACTION] Rotating motor for 3 seconds...");
+    
+    if (!myServo.attached()) {
+      myServo.attach(servoPin, 500, 2400);
+    }
+    
+    // For Continuous Rotation: 180 is full speed forward, 0 is full speed reverse
+    myServo.write(180); 
+    
+    servoActive = true;
+    servoStartTime = millis();
+  } 
+  
+  // TRIGGER: If message is "temperature", send reading
+  else if (message == "temperature") {
     sensors.requestTemperatures();
     float tempC = sensors.getTempCByIndex(0);
-    publishSensor("temperature", tempC);
+    if(tempC != DEVICE_DISCONNECTED_C) {
+      publishSensor("temperature", tempC);
+    }
   }
 }
-//---------------------------------------------------
 
+// ---------------- NTP & Time ----------------------
+void initTime() {
+  configTime(19800, 0, "pool.ntp.org"); // Sri Lanka GMT+5:30
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) Serial.println("[INFO] Time Synchronized.");
+}
+
+String getTimeStamp() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) return "00-00-0000 00:00:00";
+  char buf[25];
+  strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  return String(buf);
+}
+
+void publishSensor(String parameter, float value) {
+  String topic = buildTopic(parameter);
+  String payload = "{\"value\":" + String(value) + ",\"time\":\"" + getTimeStamp() + "\"}";
+  client.publish(topic.c_str(), payload.c_str(), true);
+}
+
+// ---------------- Setup ---------------------------
 void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("\nWiFiManager AutoConnect");
-
+  Serial.begin(9600); // Set to 115200 in PlatformIO if 9600 is too slow
   pinMode(RESET_BUTTON, INPUT_PULLUP);
 
-  // ---------------- WiFi Setup -------------------
+  // S3 Specific Servo Setup
+  ESP32PWM::allocateTimer(0);
+  myServo.setPeriodHertz(50);
+
   WiFiManager wm;
-  if (wm.autoConnect("ESP32_Setup_100")) {
-    Serial.println("Connected!");
-  } else {
-    Serial.println("Failed to connect");
-  }
+  wm.autoConnect("ESP32_Setup_100");
 
-  // ---------------- NTP Setup --------------------
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-
-  // ---------------- DS18B20 ----------------------
+  initTime();
   sensors.begin();
-
-  // ---------------- MQTT Setup -------------------
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
-  if (!client.connected()) {
-    reconnect();
-  }
-  client.subscribe(commandTopic().c_str());
 }
 
-//---------------------------------------------------
+// ---------------- Main Loop -----------------------
 void loop() {
-  // ---------------- MQTT Connection ----------------
+  // 1. MQTT Connection Management
   if (!client.connected()) {
-    reconnect();
+    unsigned long now = millis();
+    if (now - lastReconnectAttempt > 5000) {
+      lastReconnectAttempt = now;
+      if (reconnect()) lastReconnectAttempt = 0;
+    }
+  } else {
+    client.loop();
   }
-  client.loop();
 
+  // 2. Continuous Rotation Timer Logic
+  if (servoActive) {
+    if (millis() - servoStartTime >= SERVO_RUN_TIME) {
+      // Stop the motor
+      myServo.write(90); // Signal stop
+      delay(100);       
+      myServo.detach();  // Kill signal to prevent creeping/humming
+      
+      servoActive = false;
+      Serial.println("[SERVO] 3 seconds elapsed. Motor stopped and detached.");
+    }
+  }
+
+  // 3. Periodic Temperature Update
   unsigned long now = millis();
-
-  // ---------------- Sensor Auto-Publish -----------
   if (now - lastTempTime > TEMP_INTERVAL) {
-    sensors.requestTemperatures();
-    float tempC = sensors.getTempCByIndex(0);
-    publishSensor("temperature", tempC);
     lastTempTime = now;
+    if (client.connected()) {
+      sensors.requestTemperatures();
+      float tempC = sensors.getTempCByIndex(0);
+      if(tempC != DEVICE_DISCONNECTED_C) publishSensor("temperature", tempC);
+    }
   }
 
-  // ---------------- WiFi Reset Button -------------
+  // 4. WiFi Reset
   if (digitalRead(RESET_BUTTON) == LOW) {
     if (pressStart == 0) pressStart = millis();
     if (millis() - pressStart >= RESET_DURATION) {
-      Serial.println("Resetting WiFi...");
       WiFiManager wm;
       wm.resetSettings();
       ESP.restart();
     }
-  } else {
-    pressStart = 0;
-  }
-
-  delay(1000); // minimal blocking
+  } else { pressStart = 0; }
 }
