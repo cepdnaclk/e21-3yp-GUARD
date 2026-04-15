@@ -159,3 +159,5 @@
 1776283961: New connection from 172.18.0.1:45814 on port 1883.
 1776283961: Client ESP32_100 [172.18.0.1:43912] disconnected: session taken over.
 1776283961: New client connected from 172.18.0.1:45814 as ESP32_100 (p4, c1, k15, u'Admin').
+1776284193: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1776284410: Client ESP32_100 [172.18.0.1:45814] disconnected: exceeded timeout.
