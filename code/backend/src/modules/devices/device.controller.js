@@ -8,6 +8,10 @@ const createDeviceValidation = [
   body('deviceId').isInt().withMessage('deviceId must be an integer'),
   body('deviceName').optional().isString(),
   body('location').optional().isString(),
+  body('temperature').optional().isFloat().withMessage('temperature must be a number'),
+  body('ph').optional().isFloat().withMessage('ph must be a number'),
+  body('turbidity').optional().isFloat().withMessage('turbidity must be a number'),
+  body('waterLevel').optional().isFloat().withMessage('waterLevel must be a number'),
 ];
 
 const deviceIdParamValidation = [

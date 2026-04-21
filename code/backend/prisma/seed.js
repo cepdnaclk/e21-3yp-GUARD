@@ -3,11 +3,26 @@ const prisma = new PrismaClient();
 
 async function seed() {
   const deviceIds = [101, 102, 103, 150];
-  const sensorTypes = await prisma.sensorType.findMany();
+  
+  // Create sensor types if they don't exist
+  let sensorTypes = await prisma.sensorType.findMany();
   
   if (sensorTypes.length === 0) {
-    console.log('No sensor types found. Add them via API first.');
-    return;
+    console.log('Creating sensor types...');
+    const sensorTypesData = [
+      { sensorName: 'temperature', frequency: 'hourly' },
+      { sensorName: 'ph', frequency: 'hourly' },
+      { sensorName: 'turbidity', frequency: 'hourly' },
+      { sensorName: 'water_level', frequency: 'hourly' },
+      { sensorName: 'tds', frequency: 'hourly' },
+    ];
+    
+    for (const st of sensorTypesData) {
+      await prisma.sensorType.create({ data: st });
+    }
+    
+    sensorTypes = await prisma.sensorType.findMany();
+    console.log(`Created ${sensorTypes.length} sensor types.`);
   }
 
   console.log(`Seeding readings for ${deviceIds.length} devices, ${sensorTypes.length} sensor types...`);

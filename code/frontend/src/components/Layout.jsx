@@ -1,29 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getSocket } from '../services/socket';
+import guardLogo from '../assets/guard-logo.png';
+import '../styles/layout.css';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: '📊' },
-  { to: '/devices', label: 'Devices', icon: '📡' },
-  { to: '/sensors/history', label: 'Sensor History', icon: '📈' },
-  { to: '/alerts', label: 'Alerts', icon: '🚨' },
-  { to: '/profile', label: 'Profile', icon: '👤' },
+  { to: '/', label: 'Dashboard' },
+  { to: '/alerts', label: 'Notifications' },
+  { to: '/sensors/history', label: 'Analytics' },
+  { to: '/devices', label: 'Devices' },
 ];
 
 export default function Layout() {
   const { user, logout } = useAuth();
-  const location = useLocation();
+  const navigate = useNavigate();
   const [toasts, setToasts] = useState([]);
 
-  // Page title from current route
-  const currentPage = NAV_ITEMS.find((n) => n.to === location.pathname)?.label || 'G.U.A.R.D';
-
-  // WebSocket alert listener
   const handleAlert = useCallback((alert) => {
     const toast = { ...alert, _id: Date.now() + Math.random() };
     setToasts((prev) => [toast, ...prev].slice(0, 5));
-    // Auto-dismiss after 8 seconds
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t._id !== toast._id));
     }, 8000);
@@ -41,36 +37,42 @@ export default function Layout() {
     setToasts((prev) => prev.filter((t) => t._id !== id));
   };
 
+  const initials = user?.fullName
+    ? user.fullName.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+    : (user?.username?.[0] ?? 'U').toUpperCase();
+
   return (
     <div className="app-layout">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-brand">
+      {/* Top Navigation */}
+      <nav className="topnav">
+        <div className="topnav-brand">
+          <img src={guardLogo} alt="G.U.A.R.D" className="topnav-logo" />
           <span>G.U.A.R.D</span>
         </div>
-        <nav className="sidebar-nav">
+        <div className="topnav-links">
           {NAV_ITEMS.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === '/'} className={({ isActive }) => isActive ? 'active' : ''}>
-              <span>{item.icon}</span> {item.label}
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              className={({ isActive }) => isActive ? 'active' : ''}
+            >
+              {item.label}
             </NavLink>
           ))}
-        </nav>
-        <div className="sidebar-footer">
-          <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem' }}>
-            {user?.fullName || user?.username}
-          </div>
-          <button onClick={logout}>Sign Out</button>
         </div>
-      </aside>
+        <div className="topnav-user">
+          <button className="topnav-notif" title="Profile" onClick={() => navigate('/profile')}>
+            👤
+          </button>
+          <button className="topnav-logout" onClick={logout} title="Sign out">
+            ⏻
+          </button>
+        </div>
+      </nav>
 
-      {/* Main */}
+      {/* Page Content */}
       <div className="main-content">
-        <header className="topbar">
-          <h2>{currentPage}</h2>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {user?.username}
-          </span>
-        </header>
         <div className="page-content">
           <Outlet />
         </div>
@@ -82,9 +84,7 @@ export default function Layout() {
           {toasts.map((t) => (
             <div key={t._id} className="toast" onClick={() => dismissToast(t._id)} style={{ cursor: 'pointer' }}>
               <div className="toast-title">🚨 {t.type}</div>
-              <div className="toast-body">
-                {t.message} — Device {t.deviceUid}
-              </div>
+              <div className="toast-body">{t.message} — Device {t.deviceUid}</div>
             </div>
           ))}
         </div>

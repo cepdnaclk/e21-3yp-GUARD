@@ -1,0 +1,84 @@
+/* ========== Devices ========== */
+.devices-header {
+  font-size: 1.3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.btn-primary {
+  background-color: #1e293b;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.devices-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  margin-bottom: 1rem;
+}
+
+.devices-actions .btn-primary {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.devices-add-btn {
+  background: #1e293b;
+  display: inline-flex;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: 0 6px 14px rgba(14, 165, 165, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.devices-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(14, 165, 165, 0.34);
+  filter: brightness(1.03);
+}
+
+.devices-add-btn:active {
+  transform: translateY(0);
+}
+
+.devices-form-card {
+  margin-bottom: 1.25rem;
+}
+
+.devices-form-title {
+  margin-bottom: 1rem;
+}
+
+.devices-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.devices-form-device-id {
+  flex: 1 1 120px;
+}
+
+.devices-form-device-name {
+  flex: 1 1 160px;
+}
+
+.devices-form-submit {
+  height: fit-content;
+}

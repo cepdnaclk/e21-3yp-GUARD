@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import guardLogo from '../assets/guard-logo.png';
+import '../styles/auth.css';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export default function Login() {
+  const navigate = useNavigate();
   const { login, googleLogin } = useAuth();
   const [form, setForm] = useState({ login: '', password: '' });
   const [error, setError] = useState('');
@@ -57,8 +60,14 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
+    <div className="auth-page login-page">
+      <div className="auth-brand">
+        <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
+        <span>G.U.A.R.D</span>
+      </div>
+
+      <div className="auth-card login-card">
+        <button className="card-close-btn" onClick={() => navigate(-1)} aria-label="Go back">&times;</button>
         <h1>Welcome Back</h1>
         <p className="subtitle">Sign in to G.U.A.R.D Dashboard</p>
 
@@ -92,16 +101,16 @@ export default function Login() {
 
         {GOOGLE_CLIENT_ID && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '1rem 0' }}>
-              <hr style={{ flex: 1, borderColor: 'var(--border)' }} />
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>or</span>
-              <hr style={{ flex: 1, borderColor: 'var(--border)' }} />
+            <div className="auth-divider">
+              <hr />
+              <span>or</span>
+              <hr />
             </div>
             <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center' }} />
           </>
         )}
 
-        <p style={{ marginTop: '1.25rem', textAlign: 'center', fontSize: '0.9rem' }}>
+        <p className="auth-footer">
           Don't have an account? <Link to="/register">Register</Link>
         </p>
       </div>

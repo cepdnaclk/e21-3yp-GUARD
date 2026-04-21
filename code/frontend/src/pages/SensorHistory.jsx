@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { deviceApi, sensorTypeApi, sensorApi } from '../services/api';
+import '../styles/sensor-history.css';
 
 export default function SensorHistory() {
   const [searchParams] = useSearchParams();
@@ -46,7 +47,7 @@ export default function SensorHistory() {
 
   return (
     <>
-      <h3 style={{ marginBottom: '1rem' }}>Sensor History</h3>
+      <h3 className="sensor-history-title">Sensor History</h3>
 
       <div className="card">
         <div className="filters">
@@ -89,7 +90,7 @@ export default function SensorHistory() {
           <div className="empty-state"><p>No readings found. Select a device and click Fetch.</p></div>
         ) : (
           <>
-            <p style={{ marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            <p className="sensor-history-summary">
               Showing {readings.length} reading{readings.length !== 1 ? 's' : ''}
             </p>
             <div className="table-wrap">

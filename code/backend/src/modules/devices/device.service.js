@@ -20,6 +20,37 @@ async function createDevice(data, userId) {
     },
   });
 
+  const valueBySensorName = {
+    temperature: data.temperature,
+    ph: data.ph,
+    turbidity: data.turbidity,
+    water_level: data.waterLevel,
+  };
+
+  const hasInitialValues = Object.values(valueBySensorName).some((v) => v !== undefined && v !== null);
+  if (hasInitialValues) {
+    const sensorTypes = await prisma.sensorType.findMany({
+      where: {
+        sensorName: { in: Object.keys(valueBySensorName) },
+      },
+      select: { id: true, sensorName: true },
+    });
+
+    const readingTime = new Date();
+    const readings = sensorTypes
+      .filter((st) => valueBySensorName[st.sensorName] !== undefined && valueBySensorName[st.sensorName] !== null)
+      .map((st) => ({
+        deviceId: device.deviceId,
+        sensorId: st.id,
+        value: Number(valueBySensorName[st.sensorName]),
+        readingTime,
+      }));
+
+    if (readings.length > 0) {
+      await prisma.sensorReading.createMany({ data: readings });
+    }
+  }
+
   logger.info(`[Devices] Created device ${device.deviceId} for user ${userId}`);
   return device;
 }

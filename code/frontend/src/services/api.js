@@ -21,6 +21,7 @@ export const authApi = {
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   googleLogin: (idToken) => request('/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
   getMe: () => request('/auth/me'),
+  updateProfile: (body) => request('/auth/profile', { method: 'POST', body: JSON.stringify(body) }),
 };
 
 // Devices

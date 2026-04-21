@@ -1,7 +1,14 @@
 'use strict';
 
 const { body, validationResult } = require('express-validator');
-const { registerUser, loginUser, verifyGoogleToken, findOrCreateGoogleUser, generateJWT } = require('./auth.service');
+const {
+  registerUser,
+  loginUser,
+  updateUserProfile,
+  verifyGoogleToken,
+  findOrCreateGoogleUser,
+  generateJWT,
+} = require('./auth.service');
 const logger = require('../../utils/logger');
 
 // ─── Validation rules ────────────────────────────────────────────────────────
@@ -21,6 +28,14 @@ const loginValidation = [
 
 const googleLoginValidation = [
   body('idToken').notEmpty().withMessage('idToken is required'),
+];
+
+const updateProfileValidation = [
+  body('username').isLength({ min: 3 }).withMessage('username must be at least 3 characters'),
+  body('fullName').notEmpty().withMessage('fullName is required'),
+  body('email').optional({ values: 'falsy' }).isEmail().withMessage('email must be a valid email'),
+  body('phoneNumber').optional().isString(),
+  body('address').optional().isString(),
 ];
 
 // ─── POST /auth/register ─────────────────────────────────────────────────────
@@ -134,9 +149,45 @@ async function getMe(req, res) {
   });
 }
 
+// ─── POST /auth/profile ──────────────────────────────────────────────────────
+async function updateProfile(req, res, next) {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Validation Error', details: errors.array() });
+    }
+
+    const user = await updateUserProfile(req.user.id, {
+      username: req.body.username,
+      fullName: req.body.fullName,
+      email: req.body.email,
+      phoneNumber: req.body.phoneNumber,
+      address: req.body.address,
+    });
+
+    return res.json({
+      id: user.id,
+      username: user.username,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      address: user.address,
+      createdAt: user.createdAt,
+    });
+  } catch (err) {
+    if (err.code === 'P2002') {
+      return res.status(409).json({ error: 'Conflict', message: 'Username already exists.' });
+    }
+    logger.error(`[Auth] Profile update error: ${err.message}`);
+    return next(err);
+  }
+}
+
 module.exports = {
   register, registerValidation,
   login, loginValidation,
   googleLogin, googleLoginValidation,
   getMe,
+  updateProfile,
+  updateProfileValidation,
 };

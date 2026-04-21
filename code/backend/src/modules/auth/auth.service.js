@@ -48,6 +48,22 @@ async function loginUser(login, password) {
   return user;
 }
 
+async function updateUserProfile(userId, { username, fullName, email, phoneNumber, address }) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      username,
+      fullName,
+      email: email || null,
+      phoneNumber: phoneNumber || null,
+      address: address || null,
+    },
+  });
+
+  logger.info(`[Auth] User ${user.id} (${user.username}) updated profile.`);
+  return user;
+}
+
 // ─── Google OAuth ────────────────────────────────────────────────────────────
 
 async function verifyGoogleToken(idToken) {
@@ -118,4 +134,11 @@ function generateJWT(user) {
   );
 }
 
-module.exports = { registerUser, loginUser, verifyGoogleToken, findOrCreateGoogleUser, generateJWT };
+module.exports = {
+  registerUser,
+  loginUser,
+  updateUserProfile,
+  verifyGoogleToken,
+  findOrCreateGoogleUser,
+  generateJWT,
+};

@@ -48,6 +48,12 @@ export function AuthProvider({ children }) {
     connectSocket();
   };
 
+  const updateProfile = async (profileData) => {
+    const updatedUser = await authApi.updateProfile(profileData);
+    setUser(updatedUser);
+    return updatedUser;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
@@ -55,7 +61,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, updateProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

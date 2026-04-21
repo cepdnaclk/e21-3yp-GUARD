@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { deviceApi, alertApi } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
+import '../styles/alerts.css';
 
 export default function Alerts() {
   const [searchParams] = useSearchParams();
@@ -48,10 +49,10 @@ export default function Alerts() {
   };
 
   return (
-    <>
-      <h3 style={{ marginBottom: '1rem' }}>Alerts</h3>
+    <div className="alerts-page">
+      <h3 className="alerts-title">Notifications</h3>
 
-      <div className="card" style={{ marginBottom: '1rem' }}>
+      <div className="card alerts-filter-card">
         <div className="filters">
           <div className="form-group">
             <label>Device</label>
@@ -75,14 +76,14 @@ export default function Alerts() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card alerts-table-card">
         {loading ? (
           <div className="empty-state"><p>Loading alerts...</p></div>
         ) : alerts.length === 0 ? (
           <div className="empty-state"><p>No alerts match filters.</p></div>
         ) : (
-          <div className="table-wrap">
-            <table>
+          <div className="table-wrap alerts-table-wrap">
+            <table className="alerts-table">
               <thead>
                 <tr>
                   <th>Type</th>
@@ -97,20 +98,24 @@ export default function Alerts() {
               <tbody>
                 {alerts.map((a) => (
                   <tr key={a.id}>
-                    <td><span className={`badge ${a.resolved ? 'badge-success' : 'badge-danger'}`}>{a.type}</span></td>
+                    <td>
+                      <span className={`alert-type-chip ${a.resolved ? 'resolved' : 'unresolved'}`}>
+                        {a.type}
+                      </span>
+                    </td>
                     <td>{a.message}</td>
                     <td>{a.value}</td>
                     <td>{a.deviceId}</td>
                     <td>{new Date(a.createdAt).toLocaleString()}</td>
                     <td>
                       {a.resolved
-                        ? <span className="badge badge-success">Resolved</span>
-                        : <span className="badge badge-danger">Active</span>}
+                        ? <span className="alert-status-chip resolved">Resolved</span>
+                        : <span className="alert-status-chip active">Active</span>}
                     </td>
                     <td>
                       {!a.resolved && (
                         <button
-                          className="btn btn-success btn-sm"
+                          className="alerts-resolve-btn"
                           onClick={() => handleResolve(a.id)}
                           disabled={resolving === a.id}
                         >
@@ -125,6 +130,6 @@ export default function Alerts() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

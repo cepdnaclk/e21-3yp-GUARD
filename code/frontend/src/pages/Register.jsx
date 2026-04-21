@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import guardLogo from '../assets/guard-logo.png';
+import '../styles/auth.css';
 
 export default function Register() {
+  const navigate = useNavigate();
   const { register } = useAuth();
   const [form, setForm] = useState({
     username: '', password: '', fullName: '', email: '', phoneNumber: '', address: '',
@@ -30,8 +33,14 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
+    <div className="auth-page login-page">
+      <div className="auth-brand">
+        <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
+        <span>G.U.A.R.D</span>
+      </div>
+
+      <div className="auth-card login-card register-card">
+        <button className="card-close-btn" onClick={() => navigate(-1)} aria-label="Go back">&times;</button>
         <h1>Create Account</h1>
         <p className="subtitle">Register for G.U.A.R.D Dashboard</p>
 
@@ -67,7 +76,7 @@ export default function Register() {
           </button>
         </form>
 
-        <p style={{ marginTop: '1.25rem', textAlign: 'center', fontSize: '0.9rem' }}>
+        <p className="auth-footer">
           Already have an account? <Link to="/login">Sign In</Link>
         </p>
       </div>

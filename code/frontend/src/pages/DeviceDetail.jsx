@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { deviceApi, sensorApi, alertApi } from '../services/api';
+import '../styles/device-detail.css';
 
 const SENSOR_UNITS = {
   temperature: '°C',
@@ -42,10 +43,10 @@ export default function DeviceDetail() {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div className="device-detail-header">
         <div>
           <h3>Device #{device.deviceId}</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          <p className="device-detail-name">
             {device.deviceName || 'Unnamed'}
           </p>
         </div>

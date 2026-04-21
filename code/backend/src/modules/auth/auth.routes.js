@@ -7,6 +7,7 @@ const {
   login, loginValidation,
   googleLogin, googleLoginValidation,
   getMe,
+  updateProfile, updateProfileValidation,
 } = require('./auth.controller');
 
 const router = Router();
@@ -22,5 +23,8 @@ router.post('/google', googleLoginValidation, googleLogin);
 
 // GET /auth/me — protected
 router.get('/me', authMiddleware, getMe);
+
+// POST /auth/profile — protected
+router.post('/profile', authMiddleware, updateProfileValidation, updateProfile);
 
 module.exports = router;
