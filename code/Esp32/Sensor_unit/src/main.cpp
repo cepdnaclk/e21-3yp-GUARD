@@ -6,144 +6,123 @@
 #include <WiFiUdp.h>
 #include "time.h"
 #include <ESP32Servo.h> 
+#include <Preferences.h>
+#include <Adafruit_NeoPixel.h> // Required for ESP32-S3 Onboard LED
 
-// ---------------- WiFi Reset -----------------------
+// ---------------- Pins & Constants ----------------
 #define RESET_BUTTON 0
 #define RESET_DURATION 3000
-unsigned long pressStart = 0;
-
-// ---------------- Servo Setup ---------------------
-Servo myServo;
-const int servoPin = 13; // Updated to 13
-bool servoActive = false;
-unsigned long servoStartTime = 0;
-const unsigned long SERVO_RUN_TIME = 3000; 
-
-// ---------------- Pump Setup ---------------------
-const int pumpPin = 18; // Updated to 18
-
-// ---------------- Sensor & Timing -----------------
-unsigned long lastTempTime = 0;
-unsigned long lastReconnectAttempt = 0;
-const unsigned long TEMP_INTERVAL = 10000; 
-
-// ---------------- Device Data ---------------------
-unsigned long DeviceID = 300;
-String clientID = "ESP32_" + String(DeviceID);
-
-const char* mqtt_server = "192.168.1.5";
-const char* mqtt_user = "Admin";         
-const char* mqtt_password = "B88vf9kp:}Xj"; 
-
-// ---------------- DS18B20 Setup -------------------
 #define ONE_WIRE_BUS 4 
+#define RGB_LED_PIN 48   // Standard NeoPixel pin for ESP32-S3 DevKits
+#define NUMPIXELS 1      // Most S3 boards have 1 onboard LED
+const int servoPin = 13;
+const int pumpPin = 18;
+
+// ---------------- Objects -------------------------
+Adafruit_NeoPixel pixels(NUMPIXELS, RGB_LED_PIN, NEO_GRB + NEO_KHZ800);
+Preferences preferences;
+Servo myServo;
+WiFiClient espClient;
+PubSubClient client(espClient);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
-void publishSensor(String parameter, float value);
+// ---------------- State Variables -----------------
+float tempThreshold = 30.0; 
+bool servoActive = false;
+unsigned long servoStartTime = 0;
+const unsigned long SERVO_RUN_TIME = 3000; 
+unsigned long lastTempTime = 0;
+unsigned long lastReconnectAttempt = 0;
+const unsigned long TEMP_INTERVAL = 10000; 
+unsigned long pressStart = 0;
 
-// ---------------- MQTT Setup ----------------------
-WiFiClient espClient;
-PubSubClient client(espClient);
+unsigned long DeviceID = 100;
+String clientID = "ESP32_" + String(DeviceID);
 
-String buildTopic(String parameter) {
-  return "sensor/" + String(DeviceID) + "/" + parameter;
-}
+// ---------------- Network Config ------------------
+const char* mqtt_server = "172.20.10.6";
+const char* mqtt_user = "Admin";         
+const char* mqtt_password = "B88vf9kp:}Xj"; 
 
-String commandTopic() {
-  return "device/" + String(DeviceID) + "/command";
-}
+// ---------------- Helper Functions ----------------
+String buildTopic(String parameter) { return "sensor/" + String(DeviceID) + "/" + parameter; }
+String commandTopic() { return "device/" + String(DeviceID) + "/command"; }
+String setThresholdTopic() { return "device/" + String(DeviceID) + "/set/temperature/value"; }
 
-boolean reconnect() {
-  Serial.print("[MQTT] Attempting connection... ");
-  if (client.connect(clientID.c_str(), mqtt_user, mqtt_password)) {
-    Serial.println("CONNECTED");
-    client.subscribe(commandTopic().c_str());
-    return true;
-  } else {
-    Serial.print("FAILED, rc=");
-    Serial.println(client.state());
-    return false;
-  }
+void publishSensor(String parameter, float value) {
+  String topic = buildTopic(parameter);
+  struct tm timeinfo;
+  char buf[25];
+  if (!getLocalTime(&timeinfo)) strcpy(buf, "0000-00-00 00:00:00");
+  else strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  
+  String payload = "{\"value\":" + String(value) + ",\"time\":\"" + String(buf) + "\"}";
+  client.publish(topic.c_str(), payload.c_str(), true);
+  Serial.println("[MQTT] Sent: " + payload);
 }
 
 // ---------------- MQTT Callback ------------------
 void callback(char* topic, byte* payload, unsigned int length) {
   String message = "";
-  for (unsigned int i = 0; i < length; i++) {
-    message += (char)payload[i];
+  for (unsigned int i = 0; i < length; i++) message += (char)payload[i];
+  String topicStr = String(topic);
+
+  // 1. SET THRESHOLD
+  if (topicStr == setThresholdTopic()) {
+    tempThreshold = message.toFloat();
+    preferences.begin("settings", false);
+    preferences.putFloat("threshold", tempThreshold);
+    preferences.end();
+    Serial.printf("[CONFIG] New threshold saved: %.2f\n", tempThreshold);
   }
-
-  Serial.println("[MQTT] Received: " + message);
-
-  // ACTION: Feeding Motor
-  if (message == "feed") {
-    if (!servoActive) {
-      Serial.println("[ACTION] Rotating servo...");
-      myServo.attach(servoPin, 500, 2400);
-      myServo.write(180); 
-      servoActive = true;
-      servoStartTime = millis();
-    }
+  // 2. SERVO/FEED
+  else if (message == "feed" && !servoActive) {
+    myServo.attach(servoPin, 500, 2400);
+    myServo.write(180); 
+    servoActive = true;
+    servoStartTime = millis();
   } 
-  // ACTION: Manual Temp Request
-  else if (message == "temperature") {
-    sensors.requestTemperatures();
-    float tempC = sensors.getTempCByIndex(0);
-    if(tempC != DEVICE_DISCONNECTED_C) {
-      publishSensor("temperature", tempC);
-    }
-  }
-  // ACTION: Pump Control
-  else if (message == "pump_on") {
-    digitalWrite(pumpPin, HIGH);
-    Serial.println("[ACTION] Pump ON");
-  }
-  else if (message == "pump_off") {
-    digitalWrite(pumpPin, LOW);
-    Serial.println("[ACTION] Pump OFF");
-  }
+  // 3. PUMP CONTROL
+  else if (message == "pump_on") digitalWrite(pumpPin, LOW);
+  else if (message == "pump_off") digitalWrite(pumpPin, HIGH);
 }
 
-// ---------------- NTP & Time ----------------------
-void initTime() {
-  configTime(19800, 0, "pool.ntp.org"); // GMT+5:30
-  struct tm timeinfo;
-  if (getLocalTime(&timeinfo)) Serial.println("[INFO] Time Synchronized.");
-}
-
-String getTimeStamp() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) return "0000-00-00 00:00:00";
-  char buf[25];
-  strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
-  return String(buf);
-}
-
-void publishSensor(String parameter, float value) {
-  String topic = buildTopic(parameter);
-  String payload = "{\"value\":" + String(value) + ",\"time\":\"" + getTimeStamp() + "\"}";
-  client.publish(topic.c_str(), payload.c_str(), true);
-  Serial.println("[MQTT] Data Sent: " + payload);
+boolean reconnect() {
+  if (client.connect(clientID.c_str(), mqtt_user, mqtt_password)) {
+    client.subscribe(commandTopic().c_str());
+    client.subscribe(setThresholdTopic().c_str());
+    return true;
+  }
+  return false;
 }
 
 // ---------------- Setup ---------------------------
 void setup() {
   Serial.begin(115200); 
   
+  // Initialize Hardware
+  pixels.begin();
+  pixels.setBrightness(50); // Set to 50/255 so it's not blinding
+  pixels.clear();
+  pixels.show();
+
   pinMode(RESET_BUTTON, INPUT_PULLUP);
   pinMode(pumpPin, OUTPUT);
-  digitalWrite(pumpPin, LOW); // Start with pump off
+  digitalWrite(pumpPin, LOW);
 
-  // ESP32 Specific Servo Timer Allocation
+  // Load saved threshold
+  preferences.begin("settings", true);
+  tempThreshold = preferences.getFloat("threshold", 30.0);
+  preferences.end();
+
   ESP32PWM::allocateTimer(0);
   myServo.setPeriodHertz(50);
 
   WiFiManager wm;
-  Serial.println("[SYSTEM] Starting WiFiManager...");
   wm.autoConnect(("ESP32_Setup" + String(DeviceID)).c_str());
 
-  initTime();
+  configTime(19800, 0, "pool.ntp.org");
   sensors.begin();
   
   client.setServer(mqtt_server, 1883);
@@ -152,7 +131,6 @@ void setup() {
 
 // ---------------- Main Loop -----------------------
 void loop() {
-  // 1. Keep MQTT Alive
   if (!client.connected()) {
     unsigned long now = millis();
     if (now - lastReconnectAttempt > 5000) {
@@ -163,33 +141,40 @@ void loop() {
     client.loop();
   }
 
-  // 2. Non-blocking Servo Logic
-  if (servoActive) {
-    if (millis() - servoStartTime >= SERVO_RUN_TIME) {
-      myServo.write(90); // Stop signal
-      delay(100);       
-      myServo.detach();  // Detach to stop any buzzing/drifting
-      servoActive = false;
-      Serial.println("[SERVO] Cycle complete. Detached.");
-    }
+  // Servo Logic
+  if (servoActive && (millis() - servoStartTime >= SERVO_RUN_TIME)) {
+    myServo.write(90); 
+    delay(100);       
+    myServo.detach();  
+    servoActive = false;
   }
 
-  // 3. Periodic Sensor Readings
+  // Sensor & LED Logic
   unsigned long now = millis();
   if (now - lastTempTime > TEMP_INTERVAL) {
     lastTempTime = now;
-    if (client.connected()) {
-      sensors.requestTemperatures();
-      float tempC = sensors.getTempCByIndex(0);
-      if(tempC != DEVICE_DISCONNECTED_C) publishSensor("temperature", tempC);
+    sensors.requestTemperatures();
+    float tempC = sensors.getTempCByIndex(0);
+    
+    if(tempC != DEVICE_DISCONNECTED_C) {
+      if (client.connected()) publishSensor("temperature", tempC);
+
+      // RGB LED Threshold Check
+      if (tempC >= tempThreshold) {
+        pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // RED for Alert
+        Serial.println("[ALERT] High Temp - LED RED");
+      } else {
+        pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // GREEN for OK
+        Serial.println("[OK] Temp Safe - LED GREEN");
+      }
+      pixels.show();
     }
   }
 
-  // 4. WiFi Settings Reset
+  // WiFi Reset
   if (digitalRead(RESET_BUTTON) == LOW) {
     if (pressStart == 0) pressStart = millis();
     if (millis() - pressStart >= RESET_DURATION) {
-      Serial.println("[SYSTEM] Resetting WiFi settings...");
       WiFiManager wm;
       wm.resetSettings();
       ESP.restart();
