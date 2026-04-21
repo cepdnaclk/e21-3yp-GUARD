@@ -4,6 +4,47 @@ All notable changes to the frontend are documented in this file.
 
 ---
 
+## [1.3.0] — 2026-04-21
+
+### Changed — Navigation & Layout Refresh
+
+- Replaced the previous sidebar-style shell with a **top navigation bar** layout (`Layout.jsx` + `layout.css`)
+- Updated nav labels/order to focus on: **Dashboard, Notifications, Analytics, Devices**
+- Preserved in-app real-time alert toasts with click-to-dismiss behavior
+
+### Changed — Dashboard Redesign
+
+- Reworked Dashboard into a **search-first tank overview**
+- Added tank-style cards with live/latest sensor tiles and per-card active status dots
+- Added a right-side **Recent Alerts** panel with quick link to full alerts page
+- Simplified bottom summary cards for total devices and active alerts
+- Removed the earlier Sensor Types panel from the dashboard flow
+
+### Changed — Alerts Experience
+
+- Alerts page now uses a dedicated **Notifications** presentation with refined filters/table styling
+- Maintains URL-based device pre-filtering (`device_id`) and active/resolved filtering
+- Keeps inline resolve action for unresolved alerts
+
+### Changed — Profile Page
+
+- Upgraded Profile from read-only to **editable profile form**
+- Added edit/save/cancel workflow, basic required-field validation, and success/error messaging
+- Added member-since display and avatar initials placeholder
+
+### Changed — Auth Screens
+
+- Login/Register UI updated with shared branded auth styling (`auth.css`)
+- Added branded header logo treatment and card-level back button affordance
+- Google Sign-In support remains environment-driven via `VITE_GOOGLE_CLIENT_ID`
+
+### Changed — Styling Organization
+
+- Frontend styles are now maintained as **modular page/component CSS files** under `src/styles/`
+- Continued use of shared design tokens and base utility styles from `base.css`
+
+---
+
 ## [1.2.0] — 2026-03-10
 
 ### Changed — UI Cleanup
@@ -117,6 +158,14 @@ code/frontend/
 │   │   ├── api.js          → REST API helpers with Bearer token
 │   │   └── socket.js       → Socket.io singleton (connect/disconnect/get)
 │   └── styles/
-│       └── global.css      → Full application stylesheet
+│       ├── base.css        → Shared tokens, base components, and utilities
+│       ├── layout.css      → Top navigation and shell layout
+│       ├── auth.css        → Login/Register screens
+│       ├── dashboard.css   → Dashboard page styling
+│       ├── devices.css     → Devices page styling
+│       ├── device-detail.css → Device detail page styling
+│       ├── sensor-history.css → Sensor history page styling
+│       ├── alerts.css      → Alerts/Notifications page styling
+│       └── profile.css     → Profile page styling
 └── package.json
 ```
