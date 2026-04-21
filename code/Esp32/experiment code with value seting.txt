@@ -1,0 +1,234 @@
+#include <WiFi.h>
+#include <WiFiManager.h>
+#include <PubSubClient.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <WiFiUdp.h>
+#include "time.h"
+#include <ESP32Servo.h> 
+#include <Preferences.h> // For saving threshold to permanent memory
+
+// ---------------- Pins & Constants ----------------
+#define RESET_BUTTON 0
+#define RESET_DURATION 3000
+#define ONE_WIRE_BUS 4 
+#define LED_PIN 48       // Standard for ESP32-S3. Change to 21 if 48 doesn't work.
+const int servoPin = 13;
+const int pumpPin = 18;
+
+// ---------------- Threshold & Memory --------------
+Preferences preferences;
+float tempThreshold = 30.0; // Default if nothing is saved
+unsigned long pressStart = 0;
+
+// ---------------- Objects & State -----------------
+Servo myServo;
+bool servoActive = false;
+unsigned long servoStartTime = 0;
+const unsigned long SERVO_RUN_TIME = 3000; 
+
+unsigned long lastTempTime = 0;
+unsigned long lastReconnectAttempt = 0;
+const unsigned long TEMP_INTERVAL = 10000; 
+
+unsigned long DeviceID = 300;
+String clientID = "ESP32_" + String(DeviceID);
+
+// ---------------- Network Config ------------------
+const char* mqtt_server = "192.168.1.5";
+const char* mqtt_user = "Admin";         
+const char* mqtt_password = "B88vf9kp:}Xj"; 
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
+// ---------------- Topic Helpers -------------------
+String buildTopic(String parameter) {
+  return "sensor/" + String(DeviceID) + "/" + parameter;
+}
+
+String commandTopic() {
+  return "device/" + String(DeviceID) + "/command";
+}
+
+String setThresholdTopic() {
+  return "device/set/temperature/value";
+}
+
+// ---------------- MQTT Callback ------------------
+void callback(char* topic, byte* payload, unsigned int length) {
+  String message = "";
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+
+  String topicStr = String(topic);
+  Serial.println("[MQTT] Received on " + topicStr + ": " + message);
+
+  // 1. SET TEMPERATURE THRESHOLD
+  if (topicStr == setThresholdTopic()) {
+    tempThreshold = message.toFloat();
+    // Save to permanent memory
+    preferences.begin("settings", false);
+    preferences.putFloat("threshold", tempThreshold);
+    preferences.end();
+    Serial.printf("[CONFIG] New threshold saved: %.2f\n", tempThreshold);
+  }
+  
+  // 2. FEEDING MOTOR
+  else if (message == "feed") {
+    if (!servoActive) {
+      Serial.println("[ACTION] Rotating servo...");
+      myServo.attach(servoPin, 500, 2400);
+      myServo.write(180); 
+      servoActive = true;
+      servoStartTime = millis();
+    }
+  } 
+
+  // 3. MANUAL TEMP REQUEST
+  else if (message == "temperature") {
+    sensors.requestTemperatures();
+    float tempC = sensors.getTempCByIndex(0);
+    if(tempC != DEVICE_DISCONNECTED_C) {
+      void publishSensor(String parameter, float value); // Proto
+      publishSensor("temperature", tempC);
+    }
+  }
+
+  // 4. PUMP CONTROL
+  else if (message == "pump_on") {
+    digitalWrite(pumpPin, HIGH);
+    Serial.println("[ACTION] Pump ON");
+  }
+  else if (message == "pump_off") {
+    digitalWrite(pumpPin, LOW);
+    Serial.println("[ACTION] Pump OFF");
+  }
+}
+
+// ---------------- MQTT Reconnect ------------------
+boolean reconnect() {
+  Serial.print("[MQTT] Attempting connection... ");
+  if (client.connect(clientID.c_str(), mqtt_user, mqtt_password)) {
+    Serial.println("CONNECTED");
+    client.subscribe(commandTopic().c_str());
+    client.subscribe(setThresholdTopic().c_str()); // Subscribe to threshold topic
+    return true;
+  } else {
+    Serial.print("FAILED, rc=");
+    Serial.println(client.state());
+    return false;
+  }
+}
+
+// ---------------- NTP & Data Logic ----------------
+void initTime() {
+  configTime(19800, 0, "pool.ntp.org"); // GMT+5:30
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) Serial.println("[INFO] Time Synchronized.");
+}
+
+String getTimeStamp() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) return "0000-00-00 00:00:00";
+  char buf[25];
+  strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  return String(buf);
+}
+
+void publishSensor(String parameter, float value) {
+  String topic = buildTopic(parameter);
+  String payload = "{\"value\":" + String(value) + ",\"time\":\"" + getTimeStamp() + "\"}";
+  client.publish(topic.c_str(), payload.c_str(), true);
+  Serial.println("[MQTT] Data Sent: " + payload);
+}
+
+// ---------------- Setup ---------------------------
+void setup() {
+  Serial.begin(115200); 
+  
+  pinMode(RESET_BUTTON, INPUT_PULLUP);
+  pinMode(pumpPin, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
+  
+  digitalWrite(pumpPin, LOW);
+  digitalWrite(LED_PIN, LOW);
+
+  // Load saved threshold from memory
+  preferences.begin("settings", true);
+  tempThreshold = preferences.getFloat("threshold", 30.0);
+  preferences.end();
+  Serial.printf("[SYSTEM] Loaded Threshold: %.2f\n", tempThreshold);
+
+  ESP32PWM::allocateTimer(0);
+  myServo.setPeriodHertz(50);
+
+  WiFiManager wm;
+  Serial.println("[SYSTEM] Starting WiFiManager...");
+  wm.autoConnect(("ESP32_Setup" + String(DeviceID)).c_str());
+
+  initTime();
+  sensors.begin();
+  
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
+}
+
+// ---------------- Main Loop -----------------------
+void loop() {
+  // 1. MQTT Connection
+  if (!client.connected()) {
+    unsigned long now = millis();
+    if (now - lastReconnectAttempt > 5000) {
+      lastReconnectAttempt = now;
+      if (reconnect()) lastReconnectAttempt = 0;
+    }
+  } else {
+    client.loop();
+  }
+
+  // 2. Servo Logic
+  if (servoActive) {
+    if (millis() - servoStartTime >= SERVO_RUN_TIME) {
+      myServo.write(90); 
+      delay(100);       
+      myServo.detach();  
+      servoActive = false;
+      Serial.println("[SERVO] Cycle complete.");
+    }
+  }
+
+  // 3. Sensor Reading & Threshold Check
+  unsigned long now = millis();
+  if (now - lastTempTime > TEMP_INTERVAL) {
+    lastTempTime = now;
+    sensors.requestTemperatures();
+    float tempC = sensors.getTempCByIndex(0);
+    
+    if(tempC != DEVICE_DISCONNECTED_C) {
+      // Publish to MQTT
+      if (client.connected()) publishSensor("temperature", tempC);
+
+      // Check Threshold
+      if (tempC >= tempThreshold) {
+        digitalWrite(LED_PIN, HIGH);
+        Serial.printf("[ALERT] Temp (%.2f) >= Threshold (%.2f). LED ON\n", tempC, tempThreshold);
+      } else {
+        digitalWrite(LED_PIN, LOW);
+      }
+    }
+  }
+
+  // 4. WiFi Settings Reset
+  if (digitalRead(RESET_BUTTON) == LOW) {
+    if (pressStart == 0) pressStart = millis();
+    if (millis() - pressStart >= RESET_DURATION) {
+      WiFiManager wm;
+      wm.resetSettings();
+      ESP.restart();
+    }
+  } else { pressStart = 0; }
+}
