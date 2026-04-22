@@ -1,0 +1,12 @@
+/* ========== Device Detail ========== */
+.device-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.device-detail-name {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

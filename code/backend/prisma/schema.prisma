@@ -1,0 +1,108 @@
+// G.U.A.R.D — Prisma Schema
+// General Unit for Aquatic Risk Detection
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────
+// Users — supports both username/password and Google OAuth
+// ─────────────────────────────────────────────────
+model User {
+  id          Int      @id @default(autoincrement()) @map("user_id")
+  username    String   @unique
+  password    String?  // bcrypt hash — null for Google-only users
+  googleId    String?  @unique @map("google_id") // null for password-only users
+  fullName    String   @map("full_name")
+  email       String?
+  phoneNumber String?  @map("phone_number")
+  address     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  devices Device[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────
+// Devices — tanks / IoT devices (ESP32)
+// ─────────────────────────────────────────────────
+model Device {
+  deviceId   Int      @id @map("device_id")
+  userId     Int      @map("user_id")
+  deviceName String?  @map("device_name")
+  location   String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sensorReadings SensorReading[]
+  alerts         Alert[]
+
+  @@map("devices")
+}
+
+// ─────────────────────────────────────────────────
+// SensorType — definitions for each sensor kind
+// ─────────────────────────────────────────────────
+model SensorType {
+  id         Int    @id @default(autoincrement()) @map("sensor_id")
+  sensorName String @map("sensor_name")
+  frequency  String // e.g. "hourly", "twice_daily", "weekly"
+
+  sensorReadings SensorReading[]
+
+  @@map("sensor_types")
+}
+
+// ─────────────────────────────────────────────────
+// SensorReadings — normalized time-series data
+// ─────────────────────────────────────────────────
+model SensorReading {
+  id          Int      @id @default(autoincrement()) @map("reading_id")
+  deviceId    Int      @map("device_id")
+  sensorId    Int      @map("sensor_id")
+  value       Float
+  readingTime DateTime @map("reading_time")
+
+  device     Device     @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  sensorType SensorType @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, readingTime])
+  @@index([sensorId, readingTime])
+  @@map("sensor_readings")
+}
+
+// ─────────────────────────────────────────────────
+// AlertType — categories for triggered alerts
+// ─────────────────────────────────────────────────
+enum AlertType {
+  TEMP_HIGH
+  TEMP_LOW
+  PH_HIGH
+  PH_LOW
+  TURBIDITY_HIGH
+  WATER_LEVEL_LOW
+}
+
+// ─────────────────────────────────────────────────
+// Alerts — abnormal condition records
+// ─────────────────────────────────────────────────
+model Alert {
+  id        String    @id @default(uuid())
+  deviceId  Int       @map("device_id")
+  type      AlertType
+  message   String
+  value     Float
+  createdAt DateTime  @default(now()) @map("created_at")
+  resolved  Boolean   @default(false)
+
+  device Device @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+
+  @@index([deviceId, resolved])
+  @@map("alerts")
+}
