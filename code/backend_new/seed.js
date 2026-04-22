@@ -1,50 +1,48 @@
-import prisma from './src/lib/prisma.js'; 
+import bcrypt from "bcryptjs";
+import prisma from "./src/lib/prisma.js";
 
 async function seedDatabase() {
-    console.log("🌱 Booting up Database Seeder...");
+    console.log("🌱 Booting up database seeder...");
 
-    const NUM_TANKS = 10;
-    const STARTING_ID = 200; 
-    
-    // THE FIX: Your exact User ID from the database
-    const TARGET_USER_ID = "69e8d3cfd9a4e082f4d04efa"; 
+    const username = process.env.SUPER_ADMIN_USERNAME || "superadmin";
+    const email = process.env.SUPER_ADMIN_EMAIL || "superadmin@example.com";
+    const password = process.env.SUPER_ADMIN_PASSWORD || "ChangeMe123!";
+    const fullName = process.env.SUPER_ADMIN_FULLNAME || "Super Admin";
 
-    for (let i = 0; i < NUM_TANKS; i++) {
-        const currentTankId = (STARTING_ID + i).toString(); 
+    try {
+        const existing = await prisma.user.findFirst({
+            where: {
+                role: "SUPER_ADMIN",
+                OR: [{ username }, { email }],
+            },
+        });
 
-        try {
-            await prisma.tank.upsert({
-                where: { tankId: currentTankId },
-                update: {}, 
-                create: {
-                    tankId: currentTankId,
-                    name: `Virtual Tank ${currentTankId}`,
-                    status: "offline",
-                    
-                    // Link the tank to your user account
-                    userId: TARGET_USER_ID,
-
-                    // Seed the default threshold limits so your UI doesn't break
-                    tempMin: 24,
-                    tempMax: 28,
-                    phMin: 6.5,
-                    phMax: 8.5,
-                    tdsMin: 200,
-                    tdsMax: 600,
-                    turbidityMax: 20
-                }
-            });
-            console.log(`✅ Successfully initialized Tank [${currentTankId}]`);
-        } catch (error) {
-            console.error(`❌ Error seeding Tank [${currentTankId}]:`, error.message);
+        if (existing) {
+            console.log(`ℹ️ SUPER_ADMIN already exists: ${existing.username}`);
+            return;
         }
-    }
 
-    console.log("\n🎉 Seeding complete! Your database is ready for the data flood.");
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const superAdmin = await prisma.user.create({
+            data: {
+                username,
+                email,
+                password: hashedPassword,
+                role: "SUPER_ADMIN",
+                fullName,
+            },
+        });
+
+        console.log(`✅ Created SUPER_ADMIN: ${superAdmin.username}`);
+        console.log(`   Username: ${username}`);
+        console.log(`   Email: ${email}`);
+        console.log(`   Password: ${password}`);
+    } catch (error) {
+        console.error("❌ Seeder error:", error.message);
+    } finally {
+        await prisma.$disconnect();
+    }
 }
 
-seedDatabase()
-    .catch((e) => console.error(e))
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+seedDatabase();

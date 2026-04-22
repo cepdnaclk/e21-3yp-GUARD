@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
@@ -9,9 +7,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// 1. We added SUPER_ADMIN for you (The Creators)
 enum Role {
-  USER
+  SUPER_ADMIN
   ADMIN
+  USER
 }
 
 model User {
@@ -25,40 +25,63 @@ model User {
   fullName    String
   address     String?
   phoneNumber String?
-  
   createdAt   DateTime @default(now())
 
-  // ADD THIS LINE: Prisma requires the reverse relationship
-  tanks       Tank[]
+  // ==========================================
+  // 🏢 HIERARCHY: ADMIN -> USERS
+  // ==========================================
+  // If this user is a worker, who is their boss?
+  adminId     String?  @db.ObjectId
+  admin       User?    @relation("AdminToWorkers", fields: [adminId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  // If this user IS an Admin, here is the list of workers under them
+  workers     User[]   @relation("AdminToWorkers")
+
+  // ==========================================
+  // 🐠 TANK RELATIONS
+  // ==========================================
+  // Tanks this Admin OWNS and CREATED (1-to-Many)
+  ownedTanks      Tank[]   @relation("AdminOwnedTanks")
+
+  // Tanks this User is ASSIGNED to work on (MongoDB Many-to-Many)
+  assignedTankIds String[] @db.ObjectId
+  assignedTanks   Tank[]   @relation("WorkerAssignedTanks", fields: [assignedTankIds], references: [id])
 }
 
 model Tank {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  tankId       String    @unique // e.g., "GUARD-001"
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  tankId       String   @unique // e.g., "GUARD-001"
   name         String
   
-  // Ownership
-  userId       String    @db.ObjectId
-  user         User      @relation(fields: [userId], references: [id])
+  // ==========================================
+  // 👑 OWNERSHIP & ACCESS CONTROL
+  // ==========================================
+  // 1. The Admin who owns/created this tank
+  adminId      String   @db.ObjectId
+  admin        User     @relation("AdminOwnedTanks", fields: [adminId], references: [id])
+
+  // 2. The Workers who have permission to view/manage this tank
+  workerIds    String[] @db.ObjectId
+  workers      User[]   @relation("WorkerAssignedTanks", fields: [workerIds], references: [id])
 
   // Safe Ranges (Admin Controlled)
-  tempMin      Float     @default(24.0)
-  tempMax      Float     @default(28.0)
-  phMin        Float     @default(6.5)
-  phMax        Float     @default(8.5)
-  tdsMin       Float     @default(200.0)
-  tdsMax       Float     @default(600.0)
-  turbidityMax Float     @default(20.0)
+  tempMin      Float    @default(24.0)
+  tempMax      Float    @default(28.0)
+  phMin        Float    @default(6.5)
+  phMax        Float    @default(8.5)
+  tdsMin       Float    @default(200.0)
+  tdsMax       Float    @default(600.0)
+  turbidityMax Float    @default(20.0)
   
   // Latest State
-  lastTemp     Float?
-  lastPh       Float?
-  lastTds      Float?
-  lastTurb     Float?
-  lastWaterLevel Float?  // <-- ADD THIS LINE
-  status       String    @default("offline")
+  lastTemp       Float?
+  lastPh         Float?
+  lastTds        Float?
+  lastTurb       Float?
+  lastWaterLevel Float?  
+  status         String   @default("offline")
   
   // Relations & Metadata
-  updatedAt    DateTime  @updatedAt
-  createdAt    DateTime  @default(now())
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
 }

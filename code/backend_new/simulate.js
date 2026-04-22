@@ -4,8 +4,12 @@ import 'dotenv/config';
 // ==========================================
 // ⚙️ SIMULATOR CONFIGURATION
 // ==========================================
-const NUM_DEVICES = 10; // Exactly 10 tanks
-const STARTING_ID = 200; // Tank IDs will be 200 to 209
+// Use existing tank IDs from env: SIM_TANK_IDS=GUARD-001,GUARD-002
+// Fallback to one common ID if env is not set.
+const TANK_IDS = (process.env.SIM_TANK_IDS || 'GUARD-001')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
 
 const client = mqtt.connect('mqtt://localhost:1883', {
     username: process.env.MQTT_USER,
@@ -20,11 +24,10 @@ const getRandom = (min, max) => parseFloat((Math.random() * (max - min) + min).t
 
 client.on('connect', () => {
     console.log(`\n🚀 Simulator connected to MQTT Broker!`);
-    console.log(`🤖 Spawning ${NUM_DEVICES} virtual ESP32 devices (IDs: ${STARTING_ID} to ${STARTING_ID + NUM_DEVICES - 1})...\n`);
+    console.log(`🤖 Using existing tanks: ${TANK_IDS.join(', ')}\n`);
 
     // Boot up the virtual devices!
-    for (let i = 0; i < NUM_DEVICES; i++) {
-        const tankId = STARTING_ID + i;
+    for (const tankId of TANK_IDS) {
         startVirtualDevice(tankId);
     }
 });

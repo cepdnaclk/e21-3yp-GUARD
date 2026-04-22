@@ -1,79 +1,172 @@
-// Tank controller logic
-import prisma from '../lib/prisma.js';
+import prisma from "../lib/prisma.js";
 
-// 1. Register a new ESP32 hardware device (Admin Only)
+const uniqueIds = (arr) => [...new Set(arr || [])];
+
+const findAccessibleTank = async (tankId, user) => {
+  if (user.role === "ADMIN") {
+    return prisma.tank.findFirst({
+      where: { tankId, adminId: user.userId },
+    });
+  }
+
+  if (user.role === "USER") {
+    return prisma.tank.findFirst({
+      where: { tankId, workerIds: { has: user.userId } },
+    });
+  }
+
+  return null;
+};
+
 export const registerTank = async (req, res) => {
-    const { name, tankId } = req.body;
-    const userId = req.user.userId; // Securely grabbed from your JWT Token
+  const { name, tankId, workerIds = [] } = req.body;
+  const adminId = req.user.userId;
 
-    try {
-        const tank = await prisma.tank.create({
-            data: {
-                name,
-                tankId,
-                userId
-            }
+  if (!name || !tankId) {
+    return res.status(400).json({ error: "name and tankId are required." });
+  }
+
+  try {
+    const cleanWorkerIds = uniqueIds(workerIds);
+
+    if (cleanWorkerIds.length > 0) {
+      const validWorkers = await prisma.user.count({
+        where: {
+          id: { in: cleanWorkerIds },
+          role: "USER",
+          adminId,
+        },
+      });
+
+      if (validWorkers !== cleanWorkerIds.length) {
+        return res.status(400).json({
+          error: "One or more users are invalid or not under this admin.",
         });
-        res.status(201).json({ message: "G.U.A.R.D. Tank registered successfully!", tank });
-    } catch (error) {
-        console.error("Tank Registration Error:", error);
-        res.status(400).json({ error: "Registration failed. Tank ID might already exist." });
+      }
     }
+
+    const tank = await prisma.tank.create({
+      data: {
+        name,
+        tankId,
+        adminId,
+        workerIds: cleanWorkerIds,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Tank registered successfully.",
+      tank,
+    });
+  } catch (error) {
+    console.error("Tank registration error:", error);
+    return res.status(400).json({ error: "Registration failed. Tank ID might already exist." });
+  }
 };
 
-// 2. Get the real-time status of a specific tank
-export const getTankStatus = async (req, res) => {
-    const { tankId } = req.params;
+export const assignUserToTank = async (req, res) => {
+  const { tankId } = req.params;
+  const { userId } = req.body;
+  const adminId = req.user.userId;
 
-    try {
-        const tank = await prisma.tank.findUnique({
-            where: { tankId },
-            include: {
-                readings: {
-                    orderBy: { timestamp: 'desc' },
-                    take: 1 // Only fetch the single newest reading for speed
-                }
-            }
-        });
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required." });
+  }
 
-        if (!tank) return res.status(404).json({ error: "Tank not found" });
+  try {
+    const tank = await prisma.tank.findFirst({
+      where: { tankId, adminId },
+    });
 
-        res.json({
-            name: tank.name,
-            status: tank.status,
-            currentStats: {
-                temp: tank.lastTemp,
-                pH: tank.lastPh,
-                tds: tank.lastTds,
-                turbidity: tank.lastTurb
-            },
-            history: tank.readings[0] || null
-        });
-    } catch (error) {
-        res.status(500).json({ error: "Error fetching status" });
+    if (!tank) {
+      return res.status(404).json({ error: "Tank not found for this admin." });
     }
+
+    const worker = await prisma.user.findFirst({
+      where: { id: userId, role: "USER", adminId },
+    });
+
+    if (!worker) {
+      return res.status(404).json({ error: "User not found under this admin." });
+    }
+
+    const nextWorkerIds = uniqueIds([...(tank.workerIds || []), userId]);
+    const nextAssignedTankIds = uniqueIds([...(worker.assignedTankIds || []), tank.id]);
+
+    await prisma.tank.update({
+      where: { id: tank.id },
+      data: { workerIds: nextWorkerIds },
+    });
+
+    await prisma.user.update({
+      where: { id: worker.id },
+      data: { assignedTankIds: nextAssignedTankIds },
+    });
+
+    return res.status(200).json({ message: "User assigned to tank." });
+  } catch (error) {
+    console.error("Assign user error:", error);
+    return res.status(500).json({ error: "Failed to assign user to tank." });
+  }
 };
 
-// 3. Admin Dashboard Overview (Gets all tanks and checks health)
 export const getAllTanks = async (req, res) => {
-    try {
-        const tanks = await prisma.tank.findMany();
-        
-        // Dynamically calculate if each tank is "Healthy" based on Admin ranges
-        const processedTanks = tanks.map(tank => {
-            const isHealthy = (
-                tank.lastTemp >= tank.tempMin && tank.lastTemp <= tank.tempMax &&
-                tank.lastPh >= tank.phMin && tank.lastPh <= tank.phMax
-            );
+  try {
+    let where = {};
 
-            return {
-                ...tank,
-                isHealthy
-            };
-        });
-
-        res.json(processedTanks);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch dashboard data" });
+    if (req.user.role === "ADMIN") {
+      where = { adminId: req.user.userId };
+    } else if (req.user.role === "USER") {
+      where = { workerIds: { has: req.user.userId } };
+    } else {
+      return res.status(403).json({ error: "SUPER_ADMIN has no tank access." });
     }
+
+    const tanks = await prisma.tank.findMany({ where });
+
+    const processed = tanks.map((tank) => {
+      const hasValues = tank.lastTemp !== null && tank.lastPh !== null;
+      const isHealthy =
+        hasValues &&
+        tank.lastTemp >= tank.tempMin &&
+        tank.lastTemp <= tank.tempMax &&
+        tank.lastPh >= tank.phMin &&
+        tank.lastPh <= tank.phMax;
+
+      return { ...tank, isHealthy };
+    });
+
+    return res.json(processed);
+  } catch (error) {
+    console.error("Get tanks error:", error);
+    return res.status(500).json({ error: "Failed to fetch tanks." });
+  }
+};
+
+export const getTankStatus = async (req, res) => {
+  const { tankId } = req.params;
+
+  try {
+    const tank = await findAccessibleTank(tankId, req.user);
+
+    if (!tank) {
+      return res.status(404).json({ error: "Tank not found or no access." });
+    }
+
+    return res.json({
+      name: tank.name,
+      tankId: tank.tankId,
+      status: tank.status,
+      currentStats: {
+        temp: tank.lastTemp,
+        pH: tank.lastPh,
+        tds: tank.lastTds,
+        turbidity: tank.lastTurb,
+        waterLevel: tank.lastWaterLevel,
+      },
+    });
+  } catch (error) {
+    console.error("Get tank status error:", error);
+    return res.status(500).json({ error: "Error fetching tank status." });
+  }
 };
