@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "db:init": "docker exec backend3ypproject-mongodb-1 mongosh --eval \"try { rs.initiate(); } catch(e) { print('Already initialized'); } cfg = rs.conf(); cfg.members[0].host = 'localhost:27017'; rs.reconfig(cfg, {force: true}); print('✅ Replica Set Ready!');\"",
+    "db:init": "docker exec dockercomposeformongodbandinf-mongodb-1 mongosh --eval \"try { rs.initiate(); } catch(e) { print('Already initialized'); } cfg = rs.conf(); cfg.members[0].host = 'localhost:27017'; rs.reconfig(cfg, {force: true}); print('✅ Replica Set Ready!');\"",
     "db:prep": "net stop MongoDB && npm run db:init"
   },
   "keywords": [],
