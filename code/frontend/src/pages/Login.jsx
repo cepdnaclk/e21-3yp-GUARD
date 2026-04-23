@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import guardLogo from '../assets/guard-logo.png';
 import '../styles/auth.css';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '108391237039-0jg9nf8pjn48vi5bqi8bbth2kfe03vtm.apps.googleusercontent.com';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,35 +15,56 @@ export default function Login() {
   const googleBtnRef = useRef(null);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
+    if (!GOOGLE_CLIENT_ID || !googleBtnRef.current) return;
 
-    const init = () => {
-      if (!window.google || !googleBtnRef.current) return;
+    const scriptId = 'google-identity-services';
+
+    const renderGoogleButton = () => {
+      if (!window.google?.accounts?.id || !googleBtnRef.current) return;
+
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
-        callback: async ({ credential }) => {
+        callback: async (response) => {
+          if (!response?.credential) {
+            setError('Google sign in failed. Please try again.');
+            return;
+          }
+
           setError('');
+          setBusy(true);
           try {
-            await googleLogin(credential);
+            await googleLogin(response.credential);
           } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Google sign in failed.');
+          } finally {
+            setBusy(false);
           }
         },
       });
+
+      googleBtnRef.current.innerHTML = '';
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: 'outline',
         size: 'large',
-        width: '100%',
         text: 'signin_with',
+        shape: 'pill',
+        width: 320,
       });
     };
 
-    if (window.google) {
-      init();
-    } else {
-      window.onGoogleLibraryLoad = init;
+    const existingScript = document.getElementById(scriptId);
+    if (existingScript) {
+      renderGoogleButton();
+      return;
     }
-    return () => { window.onGoogleLibraryLoad = null; };
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = renderGoogleButton;
+    document.head.appendChild(script);
   }, [googleLogin]);
 
   const handleSubmit = async (e) => {
@@ -99,16 +120,8 @@ export default function Login() {
           </button>
         </form>
 
-        {GOOGLE_CLIENT_ID && (
-          <>
-            <div className="auth-divider">
-              <hr />
-              <span>or</span>
-              <hr />
-            </div>
-            <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center' }} />
-          </>
-        )}
+        <div style={{ margin: '1rem 0', textAlign: 'center', color: '#888' }}>or</div>
+        <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }} />
 
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Register</Link>

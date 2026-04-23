@@ -1,0 +1,8 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "/^node -e \"const \\{PrismaClient\\}=require\\('@prisma/client'\\);const p=new PrismaClient\\(\\);\\(async\\(\\)=>\\{const u=await p\\.user\\.findFirst\\(\\{where:\\{username:'Ash999'\\}\\}\\);const devices=await p\\.device\\.count\\(\\{where:\\{userId:u\\.id\\}\\}\\);const readings=await p\\.sensorReading\\.count\\(\\{where:\\{device:\\{userId:u\\.id\\}\\}\\}\\);const alerts=await p\\.alert\\.count\\(\\{where:\\{device:\\{userId:u\\.id\\}\\}\\}\\);console\\.log\\(JSON\\.stringify\\(\\{username:u\\.username,userId:u\\.id,devices,readings,alerts\\},null,2\\)\\);await p\\.`\\$disconnect\\(\\);\\}\\)\\(\\)\\.catch\\(async e=>\\{console\\.error\\(e\\);await p\\.`\\$disconnect\\(\\);process\\.exit\\(1\\);\\}\\);\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
+}

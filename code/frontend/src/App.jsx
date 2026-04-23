@@ -37,10 +37,10 @@ export default function App() {
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/devices" element={<RoleRoute allowedRoles={['ADMIN']}><Devices /></RoleRoute>} />
-        <Route path="/devices/:id" element={<RoleRoute allowedRoles={['ADMIN']}><DeviceDetail /></RoleRoute>} />
-        <Route path="/sensors/history" element={<RoleRoute allowedRoles={['ADMIN']}><SensorHistory /></RoleRoute>} />
-        <Route path="/alerts" element={<RoleRoute allowedRoles={['ADMIN']}><Alerts /></RoleRoute>} />
+        <Route path="/devices" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><Devices /></RoleRoute>} />
+        <Route path="/devices/:id" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><DeviceDetail /></RoleRoute>} />
+        <Route path="/sensors/history" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><SensorHistory /></RoleRoute>} />
+        <Route path="/alerts" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><Alerts /></RoleRoute>} />
         <Route path="/profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
