@@ -24,8 +24,8 @@ const int pumpPin = 18;
 // ---------------- Network Config ------------------
 const char* mqtt_server = "71d3962284c44824be0bfe8cfedfedb7.s1.eu.hivemq.cloud";
 const int mqtt_port = 8883; 
-const char* mqtt_user = "Admin_Pub";          
-const char* mqtt_password = "B88vf9kp:}Xj"; 
+const char* mqtt_user = "thisen";          
+const char* mqtt_password = "Thisen123thi"; 
 
 // ISRG Root X1 — Let's Encrypt Root CA
 static const char* root_ca = R"EOF(
