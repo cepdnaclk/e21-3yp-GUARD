@@ -1,7 +1,7 @@
 # G.U.A.R.D Backend API Documentation V2
 
 Last updated: 2026-04-23  
-Backend root: code/backend_new  
+Backend root: code/backend  
 Server entry: src/index.js
 
 ## 1. Base Information
@@ -13,6 +13,8 @@ Auth type: Bearer JWT
 Public routes:
 - GET /
 - POST /api/auth/login
+- POST /api/auth/register
+- POST /api/auth/google
 - POST /api/sensors/log
 
 Protected routes:
@@ -37,10 +39,10 @@ Roles:
 - USER
 
 Rules:
-- SUPER_ADMIN creates ADMIN accounts.
-- ADMIN creates USER accounts under that ADMIN.
-- ADMIN creates tanks under that ADMIN.
-- ADMIN assigns USER accounts to tanks owned by that ADMIN.
+- SUPER_ADMIN can create ADMIN accounts.
+- ADMIN can create USER accounts under that ADMIN.
+- ADMIN can create tanks under that ADMIN.
+- ADMIN can assign USER accounts to tanks owned by that ADMIN.
 - USER can view only assigned tanks.
 - SUPER_ADMIN has no tank and history access in current controllers.
 
@@ -86,8 +88,8 @@ Request body example:
 
 ```json
 {
-	"username": "superadmin",
-	"password": "ChangeMe123!"
+  "username": "superadmin",
+  "password": "ChangeMe123!"
 }
 ```
 
@@ -95,10 +97,10 @@ Success response example:
 
 ```json
 {
-	"token": "<JWT_TOKEN>",
-	"role": "SUPER_ADMIN",
-	"fullName": "Super Admin",
-	"adminId": null
+  "token": "<JWT_TOKEN>",
+  "role": "SUPER_ADMIN",
+  "fullName": "Super Admin",
+  "adminId": null
 }
 ```
 
@@ -106,7 +108,87 @@ Error responses:
 - 401 Invalid credentials
 - 500 Login error
 
-### 5.2 Create Admin (SUPER_ADMIN only)
+### 5.2 Register (Public USER signup)
+
+Endpoint:
+- POST /api/auth/register
+
+Request body example:
+
+```json
+{
+  "username": "new_user",
+  "password": "User123!",
+  "fullName": "New User",
+  "email": "new_user@example.com",
+  "phoneNumber": "Optional",
+  "address": "Optional"
+}
+```
+
+Success response example:
+
+```json
+{
+  "token": "<JWT_TOKEN>",
+  "role": "USER",
+  "fullName": "New User",
+  "username": "new_user",
+  "user": {
+    "id": "<USER_ID>",
+    "username": "new_user",
+    "role": "USER",
+    "fullName": "New User",
+    "email": "new_user@example.com",
+    "phoneNumber": null,
+    "address": null
+  }
+}
+```
+
+Notes:
+- username, password, fullName are required.
+- If email is omitted, backend assigns username@local.guard.
+
+### 5.3 Google Login / Signup (Public)
+
+Endpoint:
+- POST /api/auth/google
+
+Request body example:
+
+```json
+{
+  "idToken": "<GOOGLE_ID_TOKEN>"
+}
+```
+
+Success response example:
+
+```json
+{
+  "token": "<JWT_TOKEN>",
+  "role": "USER",
+  "fullName": "Google User Name",
+  "username": "google_derived_username",
+  "user": {
+    "id": "<USER_ID>",
+    "username": "google_derived_username",
+    "role": "USER",
+    "fullName": "Google User Name",
+    "email": "googleuser@example.com",
+    "phoneNumber": null,
+    "address": null
+  }
+}
+```
+
+Notes:
+- Verifies idToken using google-auth-library.
+- Audience uses GOOGLE_CLIENT_ID env if set; otherwise falls back to built-in default client ID.
+- If user does not exist by email, backend creates a USER account automatically.
+
+### 5.4 Create Admin (SUPER_ADMIN only)
 
 Endpoint:
 - POST /api/auth/create-admin
@@ -119,12 +201,12 @@ Request body example:
 
 ```json
 {
-	"username": "admin1",
-	"email": "admin1@example.com",
-	"password": "Admin123!",
-	"fullName": "Admin One",
-	"address": "Optional",
-	"phoneNumber": "Optional"
+  "username": "admin1",
+  "email": "admin1@example.com",
+  "password": "Admin123!",
+  "fullName": "Admin One",
+  "address": "Optional",
+  "phoneNumber": "Optional"
 }
 ```
 
@@ -132,8 +214,8 @@ Success response example:
 
 ```json
 {
-	"message": "Admin account created.",
-	"userId": "<ADMIN_ID>"
+  "message": "Admin account created.",
+  "userId": "<ADMIN_ID>"
 }
 ```
 
@@ -143,7 +225,7 @@ Common errors:
 - 409 username or email already exists
 - 500 failed to create admin account
 
-### 5.3 Create User (ADMIN only)
+### 5.5 Create User (ADMIN only)
 
 Endpoint:
 - POST /api/auth/create-user
@@ -156,12 +238,12 @@ Request body example:
 
 ```json
 {
-	"username": "user1",
-	"email": "user1@example.com",
-	"password": "User123!",
-	"fullName": "Worker One",
-	"address": "Optional",
-	"phoneNumber": "Optional"
+  "username": "user1",
+  "email": "user1@example.com",
+  "password": "User123!",
+  "fullName": "Worker One",
+  "address": "Optional",
+  "phoneNumber": "Optional"
 }
 ```
 
@@ -169,8 +251,8 @@ Success response example:
 
 ```json
 {
-	"message": "User account created under admin.",
-	"userId": "<USER_ID>"
+  "message": "User account created under admin.",
+  "userId": "<USER_ID>"
 }
 ```
 
@@ -195,9 +277,9 @@ Request body example:
 
 ```json
 {
-	"name": "Main Tank",
-	"tankId": "GUARD-001",
-	"workerIds": []
+  "name": "Main Tank",
+  "tankId": "GUARD-001",
+  "workerIds": []
 }
 ```
 
@@ -205,29 +287,29 @@ Success response example:
 
 ```json
 {
-	"message": "Tank registered successfully.",
-	"tank": {
-		"id": "<TANK_OBJECT_ID>",
-		"tankId": "GUARD-001",
-		"name": "Main Tank",
-		"adminId": "<ADMIN_ID>",
-		"workerIds": [],
-		"tempMin": 24,
-		"tempMax": 28,
-		"phMin": 6.5,
-		"phMax": 8.5,
-		"tdsMin": 200,
-		"tdsMax": 600,
-		"turbidityMax": 20,
-		"lastTemp": null,
-		"lastPh": null,
-		"lastTds": null,
-		"lastTurb": null,
-		"lastWaterLevel": null,
-		"status": "offline",
-		"createdAt": "ISO_DATE",
-		"updatedAt": "ISO_DATE"
-	}
+  "message": "Tank registered successfully.",
+  "tank": {
+    "id": "<TANK_OBJECT_ID>",
+    "tankId": "GUARD-001",
+    "name": "Main Tank",
+    "adminId": "<ADMIN_ID>",
+    "workerIds": [],
+    "tempMin": 24,
+    "tempMax": 28,
+    "phMin": 6.5,
+    "phMax": 8.5,
+    "tdsMin": 200,
+    "tdsMax": 600,
+    "turbidityMax": 20,
+    "lastTemp": null,
+    "lastPh": null,
+    "lastTds": null,
+    "lastTurb": null,
+    "lastWaterLevel": null,
+    "status": "offline",
+    "createdAt": "ISO_DATE",
+    "updatedAt": "ISO_DATE"
+  }
 }
 ```
 
@@ -248,7 +330,7 @@ Request body example:
 
 ```json
 {
-	"userId": "<USER_ID>"
+  "userId": "<USER_ID>"
 }
 ```
 
@@ -256,7 +338,7 @@ Success response example:
 
 ```json
 {
-	"message": "User assigned to tank."
+  "message": "User assigned to tank."
 }
 ```
 
@@ -280,7 +362,7 @@ Behavior:
 
 Response:
 - array of tanks with computed isHealthy field
-- isHealthy currently checks only temperature and pH ranges
+- isHealthy currently checks temperature and pH ranges
 
 ### 6.4 Get Tank Status (ADMIN or USER)
 
@@ -295,16 +377,16 @@ Success response example:
 
 ```json
 {
-	"name": "Main Tank",
-	"tankId": "GUARD-001",
-	"status": "online",
-	"currentStats": {
-		"temp": 26.4,
-		"pH": 7.2,
-		"tds": 330,
-		"turbidity": 5.5,
-		"waterLevel": 75
-	}
+  "name": "Main Tank",
+  "tankId": "GUARD-001",
+  "status": "online",
+  "currentStats": {
+    "temp": 26.4,
+    "pH": 7.2,
+    "tds": 330,
+    "turbidity": 5.5,
+    "waterLevel": 75
+  }
 }
 ```
 
@@ -317,7 +399,7 @@ Access:
 Controller:
 - src/controllers/sensorController.js
 
-### 7.1 Log Sensor Data (Public for now)
+### 7.1 Log Sensor Data (Public)
 
 Endpoint:
 - POST /api/sensors/log
@@ -329,12 +411,12 @@ Request body example:
 
 ```json
 {
-	"tankId": "GUARD-001",
-	"temp": 26.4,
-	"pH": 7.2,
-	"tds": 330,
-	"turbidity": 5.5,
-	"waterLevel": 75
+  "tankId": "GUARD-001",
+  "temp": 26.4,
+  "pH": 7.2,
+  "tds": 330,
+  "turbidity": 5.5,
+  "waterLevel": 75
 }
 ```
 
@@ -342,8 +424,8 @@ Success response example:
 
 ```json
 {
-	"message": "Hybrid sync complete: State in Mongo, History in Influx!",
-	"currentStatus": "online"
+  "message": "Hybrid sync complete: State in Mongo, History in Influx!",
+  "currentStatus": "online"
 }
 ```
 
@@ -351,7 +433,7 @@ Failure example:
 
 ```json
 {
-	"error": "Failed to log sensor data to databases."
+  "error": "Failed to log sensor data to databases."
 }
 ```
 
@@ -373,14 +455,14 @@ Success response example:
 
 ```json
 [
-	{
-		"time": "2026-04-23T10:00:00Z",
-		"temp": 26.1,
-		"pH": 7.2,
-		"tds": 330,
-		"turbidity": 4.3,
-		"waterLevel": 80
-	}
+  {
+    "time": "2026-04-23T10:00:00Z",
+    "temp": 26.1,
+    "pH": 7.2,
+    "tds": 330,
+    "turbidity": 4.3,
+    "waterLevel": 80
+  }
 ]
 ```
 
@@ -389,9 +471,9 @@ Success response example:
 Service:
 - src/services/mqttService.js
 
-Broker:
+Current connection:
 - mqtt://localhost:1883
-- MQTT_USER and MQTT_PASSWORD from environment
+- credentials from MQTT_USER and MQTT_PASSWORD environment variables
 
 Subscribed topic pattern:
 - sensor/+/+
@@ -410,24 +492,28 @@ Expected payload format:
 
 ```json
 {
-	"value": 28.31,
-	"time": "2026-04-20 16:36:54"
+  "value": 28.31,
+  "time": "2026-04-20 16:36:54"
 }
 ```
 
 Current behavior:
 - value is parsed and stored
-- time is currently ignored
+- payload time is ignored
 - Mongo latest tank state is updated
 - Influx measurement water_quality is updated
 
 ## 9. Seed and Run
 
-Seeder:
+Seeder files:
 - seed.js
+- seed-analytics.js
 
 Create initial SUPER_ADMIN:
 - npm run seed
+
+Create analytics test users/tanks/history:
+- npm run seed:analytics
 
 Run backend:
 - npm run dev
