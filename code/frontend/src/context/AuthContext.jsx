@@ -124,7 +124,15 @@ export function AuthProvider({ children }) {
 
   const register = async (data) => {
     const authData = await authApi.register(data);
-    if (!authData?.token) throw new Error('Registration succeeded but token is missing.');
+
+    // Email verification required — backend returns no token yet.
+    // Return the response so the UI can show the "check your inbox" screen.
+    if (authData?.emailVerified === false) {
+      return authData; // { message, emailVerified: false, user }
+    }
+
+    // No real email / @local.guard fallback — backend returns a token immediately.
+    if (!authData?.token) throw new Error('Registration failed: unexpected response from server.');
     localStorage.setItem(TOKEN_KEY, authData.token);
 
     const nextUser = normalizeUserFromAuthResponse(authData, {
@@ -137,6 +145,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     setUser(nextUser);
     connectSocket();
+    return authData;
   };
 
   const googleLogin = async (idToken) => {

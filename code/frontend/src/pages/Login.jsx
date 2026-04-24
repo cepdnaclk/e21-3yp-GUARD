@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authApi } from '../services/api';
 import guardLogo from '../assets/guard-logo.png';
 import '../styles/auth.css';
 
@@ -12,6 +13,9 @@ export default function Login() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null); // set when login blocked
+  const [resendMsg, setResendMsg] = useState('');
+  const [resendBusy, setResendBusy] = useState(false);
   const googleBtnRef = useRef(null);
 
   useEffect(() => {
@@ -70,13 +74,39 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setUnverifiedEmail(null);
+    setResendMsg('');
     setBusy(true);
     try {
       await login(form);
     } catch (err) {
-      setError(err.message);
+      // Backend returns this exact message when email is not verified
+      if (err.message && err.message.toLowerCase().includes('email not verified')) {
+        setUnverifiedEmail(form.username); // store username; resend uses email field
+        setError('');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendMsg('');
+    setResendBusy(true);
+    try {
+      // We only have the username here — ask user for email OR use the stored one
+      // We pass username as a hint; backend resend endpoint needs email though.
+      // Show a prompt to enter the email if we only have the username.
+      const email = window.prompt('Enter the email address you registered with:');
+      if (!email) { setResendBusy(false); return; }
+      const res = await authApi.resendVerification(email);
+      setResendMsg(res?.message || 'Verification email sent!');
+    } catch (err) {
+      setResendMsg(err.message || 'Failed to resend. Try again.');
+    } finally {
+      setResendBusy(false);
     }
   };
 
@@ -93,6 +123,30 @@ export default function Login() {
         <p className="subtitle">Sign in to G.U.A.R.D Dashboard</p>
 
         {error && <p className="error-msg">{error}</p>}
+
+        {unverifiedEmail && (
+          <div style={{
+            background: '#fff7ed',
+            border: '1px solid #fed7aa',
+            borderRadius: '10px',
+            padding: '0.85rem 1rem',
+            marginBottom: '1rem',
+            fontSize: '0.88rem',
+            color: '#9a3412',
+          }}>
+            <strong>📧 Email not verified.</strong> Please check your inbox and click the verification link before signing in.
+            <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleResend}
+                disabled={resendBusy}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0e567f', fontWeight: 600, fontSize: '0.88rem', padding: 0 }}
+              >
+                {resendBusy ? 'Sending…' : '↻ Resend verification email'}
+              </button>
+              {resendMsg && <span style={{ color: '#166534' }}>{resendMsg}</span>}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authApi } from '../services/api';
 import guardLogo from '../assets/guard-logo.png';
 import '../styles/auth.css';
 
@@ -13,6 +14,11 @@ export default function Register() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // After successful registration with email verification required
+  const [pendingEmail, setPendingEmail] = useState(null);
+  const [resendMsg, setResendMsg] = useState('');
+  const [resendBusy, setResendBusy] = useState(false);
+
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
   const handleSubmit = async (e) => {
@@ -24,7 +30,17 @@ export default function Register() {
       if (form.email) body.email = form.email;
       if (form.phoneNumber) body.phoneNumber = form.phoneNumber;
       if (form.address) body.address = form.address;
-      await register(body);
+
+      const result = await register(body);
+
+      // Backend requires email verification — show the check-inbox screen
+      if (result?.emailVerified === false) {
+        setPendingEmail(form.email);
+        return;
+      }
+
+      // No email provided / auto-verified — already logged in, go to dashboard
+      navigate('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -32,6 +48,71 @@ export default function Register() {
     }
   };
 
+  const handleResend = async () => {
+    setResendMsg('');
+    setResendBusy(true);
+    try {
+      const res = await authApi.resendVerification(pendingEmail);
+      setResendMsg(res?.message || 'Verification email sent!');
+    } catch (err) {
+      setResendMsg(err.message || 'Failed to resend. Please try again.');
+    } finally {
+      setResendBusy(false);
+    }
+  };
+
+  /* ─── Check-inbox screen ─── */
+  if (pendingEmail) {
+    return (
+      <div className="auth-page login-page">
+        <div className="auth-brand">
+          <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
+          <span>G.U.A.R.D</span>
+        </div>
+
+        <div className="auth-card login-card" style={{ textAlign: 'center' }}>
+          {/* Email icon */}
+          <div style={{ fontSize: '3.5rem', marginBottom: '0.75rem' }}>✉️</div>
+
+          <h1 style={{ color: '#0e3454', marginBottom: '0.4rem' }}>Check your inbox</h1>
+          <p style={{ color: '#3b6586', marginBottom: '1.5rem', fontSize: '0.92rem' }}>
+            We sent a verification link to <strong>{pendingEmail}</strong>.
+            Click the link in that email to activate your account.
+          </p>
+
+          {resendMsg && (
+            <p style={{
+              background: resendMsg.toLowerCase().includes('fail') || resendMsg.toLowerCase().includes('error')
+                ? '#fee2e2' : '#dcfce7',
+              color: resendMsg.toLowerCase().includes('fail') || resendMsg.toLowerCase().includes('error')
+                ? '#991b1b' : '#166534',
+              padding: '0.6rem 1rem',
+              borderRadius: '8px',
+              fontSize: '0.86rem',
+              marginBottom: '1rem',
+            }}>
+              {resendMsg}
+            </p>
+          )}
+
+          <button
+            className="btn btn-primary"
+            onClick={handleResend}
+            disabled={resendBusy}
+            style={{ width: '100%', marginBottom: '0.75rem', background: '#0b3658', borderRadius: '10px' }}
+          >
+            {resendBusy ? 'Sending…' : 'Resend verification email'}
+          </button>
+
+          <p className="auth-footer">
+            Already verified? <Link to="/login">Sign In</Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Registration form ─── */
   return (
     <div className="auth-page login-page">
       <div className="auth-brand">
