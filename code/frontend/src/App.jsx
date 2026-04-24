@@ -22,6 +22,14 @@ function PublicRoute({ children }) {
   return user ? <Navigate to="/" /> : children;
 }
 
+function RoleRoute({ children, allowedRoles }) {
+  const { user, role, loading } = useAuth();
+  if (loading) return <div className="loading-screen">Loading...</div>;
+  if (!user) return <Navigate to="/login" />;
+  if (!role || !allowedRoles.includes(role)) return <Navigate to="/" />;
+  return children;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -29,10 +37,10 @@ export default function App() {
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/devices" element={<Devices />} />
-        <Route path="/devices/:id" element={<DeviceDetail />} />
-        <Route path="/sensors/history" element={<SensorHistory />} />
-        <Route path="/alerts" element={<Alerts />} />
+        <Route path="/devices" element={<RoleRoute allowedRoles={['ADMIN']}><Devices /></RoleRoute>} />
+        <Route path="/devices/:id" element={<RoleRoute allowedRoles={['ADMIN']}><DeviceDetail /></RoleRoute>} />
+        <Route path="/sensors/history" element={<RoleRoute allowedRoles={['ADMIN']}><SensorHistory /></RoleRoute>} />
+        <Route path="/alerts" element={<RoleRoute allowedRoles={['ADMIN']}><Alerts /></RoleRoute>} />
         <Route path="/profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
