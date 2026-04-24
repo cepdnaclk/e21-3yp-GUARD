@@ -7,17 +7,19 @@ const writeApi = influx.getWriteApi(process.env.INFLUX_ORG, process.env.INFLUX_B
 let mqttClient = null;
 
 export const initMqtt = () => {
-    // THE FIX: Secure TLS connection to HiveMQ Cloud
-    const client = mqtt.connect('mqtts://71d3962284c44824be0bfe8cfedfedb7.s1.eu.hivemq.cloud:8883', {
-        username: process.env.MQTT_USER,     // Make sure this is "thisen" in your .env
-        password: process.env.MQTT_PASSWORD, // Make sure this is "Thisen123thi" in your .env
-        clientId: `GUARD_Backend_${Math.random().toString(16).slice(3)}`, // Prevents cloud boot-loops
-        rejectUnauthorized: true // Enforces strict SSL/TLS verification
+    // Read the broker URL from .env, fallback to localhost if not found
+    const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+    
+    const client = mqtt.connect(brokerUrl, {
+        username: process.env.MQTT_USERNAME || process.env.MQTT_USER,
+        password: process.env.MQTT_PASSWORD,
+        clientId: `GUARD_Backend_${Math.random().toString(16).slice(3)}`,
+        rejectUnauthorized: true // Enforces strict SSL/TLS verification for HiveMQ Cloud
     });
     mqttClient = client;
 
     client.on('connect', () => {
-        console.log('☁️  MQTT Broker (HiveMQ Cloud) connected successfully!');
+        console.log(`☁️  MQTT Broker connected successfully to ${brokerUrl}!`);
         client.subscribe('sensor/+/+', (err) => {
             if (!err) console.log('✅ Listening for individual sensor topics (sensor/+/+) via HiveMQ...');
         });
@@ -62,7 +64,16 @@ export const initMqtt = () => {
                     return; 
             }
 
-            // TASK A: Update MongoDB 
+            // TASK A: Update MongoDB (only if tank is registered)
+            const tankExists = await prisma.tank.findUnique({
+                where: { tankId }
+            });
+
+            if (!tankExists) {
+                console.log(`⚠️ Ignored MQTT message for unregistered Tank: ${tankId}`);
+                return; // Stop processing if tank isn't in MongoDB
+            }
+
             await prisma.tank.update({
                 where: { tankId },
                 data: mongoData

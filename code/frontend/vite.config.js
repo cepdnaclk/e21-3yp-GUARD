@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: true, // TEMP: expose to LAN for mobile testing — revert when done
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

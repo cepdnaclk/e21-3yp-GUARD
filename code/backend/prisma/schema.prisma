@@ -28,6 +28,13 @@ model User {
   createdAt   DateTime @default(now())
 
   // ==========================================
+  // ✉️ EMAIL VERIFICATION
+  // ==========================================
+  emailVerified           Boolean  @default(false)
+  verificationToken       String?  @unique
+  verificationTokenExpiry DateTime?
+
+  // ==========================================
   // 🏢 HIERARCHY: ADMIN -> USERS
   // ==========================================
   // If this user is a worker, who is their boss?
