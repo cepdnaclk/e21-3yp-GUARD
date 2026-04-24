@@ -4,6 +4,7 @@ import { InfluxDB, Point } from '@influxdata/influxdb-client';
 
 const influx = new InfluxDB({ url: process.env.INFLUX_URL, token: process.env.INFLUX_TOKEN });
 const writeApi = influx.getWriteApi(process.env.INFLUX_ORG, process.env.INFLUX_BUCKET, 'ns');
+let mqttClient = null;
 
 export const initMqtt = () => {
     // THE FIX: Secure TLS connection to HiveMQ Cloud
@@ -12,7 +13,8 @@ export const initMqtt = () => {
         password: process.env.MQTT_PASSWORD, // Make sure this is "Thisen123thi" in your .env
         clientId: `GUARD_Backend_${Math.random().toString(16).slice(3)}`, // Prevents cloud boot-loops
         rejectUnauthorized: true // Enforces strict SSL/TLS verification
-    }); 
+    });
+    mqttClient = client;
 
     client.on('connect', () => {
         console.log('☁️  MQTT Broker (HiveMQ Cloud) connected successfully!');
@@ -84,5 +86,24 @@ export const initMqtt = () => {
     // Helpful error logging if HiveMQ rejects the connection
     client.on('error', (err) => {
         console.error('❌ MQTT Connection Error:', err.message);
+    });
+};
+
+export const publishActuatorCommand = (topic, payload) => {
+    if (!mqttClient || !mqttClient.connected) {
+        throw new Error('MQTT broker is not connected.');
+    }
+
+    const message = typeof payload === 'string' ? payload : JSON.stringify(payload);
+
+    return new Promise((resolve, reject) => {
+        mqttClient.publish(topic, message, { qos: 1 }, (error) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+
+            resolve();
+        });
     });
 };

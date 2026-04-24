@@ -37,6 +37,7 @@ Response:
 ### Tanks
 - POST /api/tanks/register (ADMIN only)
 - POST /api/tanks/:tankId/assign-user (ADMIN only)
+- POST /api/tanks/:tankId/actuators (ADMIN or USER)
 - GET /api/tanks (ADMIN or USER)
 - GET /api/tanks/:tankId/status (ADMIN or USER)
 
@@ -228,7 +229,37 @@ Success:
 }
 ```
 
-### 4.8 Log Sensor Data (Public)
+### 4.8 Control Tank Actuators (ADMIN or USER)
+
+POST /api/tanks/GUARD-001/actuators
+
+Headers:
+
+Authorization: Bearer ADMIN_OR_USER_TOKEN
+
+Body:
+
+```json
+{
+	"command": "feed"
+}
+```
+
+Supported commands: feed, pump_on, pump_off
+
+Success:
+
+```json
+{
+	"message": "feed command queued.",
+	"tankId": "GUARD-001",
+	"command": "feed",
+	"topic": "device/GUARD-001/command",
+	"payl10ad": "feed"
+}
+```
+
+### 4.9 Log Sensor Data (Public)
 
 POST /api/sensors/log
 
