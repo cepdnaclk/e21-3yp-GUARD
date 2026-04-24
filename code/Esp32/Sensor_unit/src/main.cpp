@@ -17,7 +17,8 @@
 #define RGB_LED_PIN 48   
 #define NUMPIXELS 1      
 const int servoPin = 13;
-const int pumpPin = 18;
+const int pumpInPin = 18;
+const int pumpOutPin = 17;
 #define TRIGGER_PIN 5
 #define ECHO_PIN 15
 
@@ -82,6 +83,7 @@ float tempMax = 28.0;
 float tdsMin = 70.0;
 float tdsMax = 500.0;
 float waterLevelThreshold = 5.0;
+float waterLevelStopThreshold = 4.0;
 
 bool servoActive = false;
 unsigned long servoStartTime = 0;
@@ -100,6 +102,13 @@ bool tempAlert = false;
 bool waterAlert = false;
 bool tdsAlert = false;
 
+bool tempPumpDemand = false;
+bool tdsPumpDemand = false;
+bool fillPumpOn = false;
+bool drainPumpOn = false;
+float lastWaterDistanceCm = -1.0f;
+bool hasValidWaterDistance = false;
+
 unsigned long DeviceID = 100;
 String clientID = "ESP32_" + String(DeviceID);
 
@@ -107,6 +116,60 @@ String clientID = "ESP32_" + String(DeviceID);
 String buildTopic(String parameter) { return "sensor/" + String(DeviceID) + "/" + parameter; }
 String commandTopic() { return "device/" + String(DeviceID) + "/command"; }
 String setThresholdTopic(String parameter) { return "device/" + String(DeviceID) + "/set/" + parameter; }
+
+void validateWaterThresholds() {
+  if (waterLevelStopThreshold >= waterLevelThreshold) {
+    waterLevelStopThreshold = waterLevelThreshold - 0.5f;
+  }
+
+  if (waterLevelStopThreshold < 0.1f) {
+    waterLevelStopThreshold = 0.1f;
+  }
+}
+
+void setPumpStates(bool fillOn, bool drainOn, const String& source) {
+  if (fillPumpOn == fillOn && drainPumpOn == drainOn) {
+    return;
+  }
+
+  digitalWrite(pumpInPin, fillOn ? LOW : HIGH);
+  digitalWrite(pumpOutPin, drainOn ? LOW : HIGH);
+  fillPumpOn = fillOn;
+  drainPumpOn = drainOn;
+  Serial.println("[PUMPS] " + source + " -> IN:" + String(fillOn ? "ON" : "OFF") + " OUT:" + String(drainOn ? "ON" : "OFF"));
+}
+
+void applyPumpControl() {
+  bool desiredFillOn = false;
+  bool desiredDrainOn = false;
+  bool qualityDemand = tempPumpDemand || tdsPumpDemand;
+
+  if (hasValidWaterDistance) {
+    if (lastWaterDistanceCm <= waterLevelStopThreshold) {
+      desiredFillOn = false;
+      desiredDrainOn = true;
+    } else if (lastWaterDistanceCm >= waterLevelThreshold) {
+      desiredFillOn = true;
+      desiredDrainOn = false;
+    } else if (qualityDemand) {
+      desiredFillOn = true;
+      desiredDrainOn = true;
+    }
+  } else if (qualityDemand) {
+    desiredFillOn = true;
+    desiredDrainOn = true;
+  }
+
+  setPumpStates(desiredFillOn, desiredDrainOn, "AUTO");
+}
+
+void setManualPumpState(bool turnOn) {
+  if (turnOn) {
+    setPumpStates(true, true, "MANUAL");
+  } else {
+    setPumpStates(false, false, "MANUAL");
+  }
+}
 
 float readWaterDistanceCm() {
   digitalWrite(TRIGGER_PIN, LOW);
@@ -148,10 +211,20 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // --- 📡 DYNAMIC SETTINGS LISTENER ---
   if (topicStr == setThresholdTopic("water_level")) {
     waterLevelThreshold = message.toFloat();
+    validateWaterThresholds();
     preferences.begin("settings", false);
     preferences.putFloat("water_thresh", waterLevelThreshold);
+    preferences.putFloat("water_stop_thresh", waterLevelStopThreshold);
     preferences.end();
-    Serial.println("[CONFIG] Water Level updated: " + String(waterLevelThreshold));
+    Serial.println("[CONFIG] Water Level updated: " + String(waterLevelThreshold) + ", Stop: " + String(waterLevelStopThreshold));
+  }
+  else if (topicStr == setThresholdTopic("water_stop")) {
+    waterLevelStopThreshold = message.toFloat();
+    validateWaterThresholds();
+    preferences.begin("settings", false);
+    preferences.putFloat("water_stop_thresh", waterLevelStopThreshold);
+    preferences.end();
+    Serial.println("[CONFIG] Water Stop updated: " + String(waterLevelStopThreshold));
   }
   else if (topicStr == setThresholdTopic("temp_min")) {
     tempMin = message.toFloat();
@@ -189,8 +262,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
     servoActive = true;
     servoStartTime = millis();
   } 
-  else if (message == "pump_on") digitalWrite(pumpPin, LOW);
-  else if (message == "pump_off") digitalWrite(pumpPin, HIGH);
+  else if (message == "pump_on") {
+    setManualPumpState(true);
+  }
+  else if (message == "pump_off") {
+    setManualPumpState(false);
+  }
 }
 
 boolean reconnect() {
@@ -201,6 +278,7 @@ boolean reconnect() {
     // Subscribe to commands and all config topics
     client.subscribe(commandTopic().c_str());
     client.subscribe(setThresholdTopic("water_level").c_str());
+    client.subscribe(setThresholdTopic("water_stop").c_str());
     client.subscribe(setThresholdTopic("temp_min").c_str());
     client.subscribe(setThresholdTopic("temp_max").c_str());
     client.subscribe(setThresholdTopic("tds_min").c_str());
@@ -225,18 +303,24 @@ void setup() {
   pinMode(RESET_BUTTON, INPUT_PULLUP);
   pinMode(TRIGGER_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
-  pinMode(pumpPin, OUTPUT);
-  digitalWrite(pumpPin, HIGH);
+  pinMode(pumpInPin, OUTPUT);
+  pinMode(pumpOutPin, OUTPUT);
+  digitalWrite(pumpInPin, HIGH);
+  digitalWrite(pumpOutPin, HIGH);
+  fillPumpOn = false;
+  drainPumpOn = false;
   pinMode(TDS_PIN, INPUT);
 
   // --- 💾 LOAD SAVED SETTINGS FROM FLASH MEMORY ---
   preferences.begin("settings", true);
   waterLevelThreshold = preferences.getFloat("water_thresh", 5.0);
+  waterLevelStopThreshold = preferences.getFloat("water_stop_thresh", 4.0);
   tempMin = preferences.getFloat("temp_min", 24.0);
   tempMax = preferences.getFloat("temp_max", 28.0);
   tdsMin = preferences.getFloat("tds_min", 70.0);
   tdsMax = preferences.getFloat("tds_max", 500.0);
   preferences.end();
+  validateWaterThresholds();
   // ------------------------------------------------
 
   ESP32PWM::allocateTimer(0);
@@ -301,6 +385,7 @@ void loop() {
     
     if(currentTemp != DEVICE_DISCONNECTED_C) {
       if (client.connected()) publishSensor("temperature", currentTemp);
+      tempPumpDemand = (currentTemp < tempMin) || (currentTemp > tempMax);
       
       if (currentTemp < tempMin) {
           tempAlert = true;
@@ -311,6 +396,8 @@ void loop() {
       } else {
           tempAlert = false; 
       }
+
+      applyPumpControl();
     }
   }
 
@@ -320,14 +407,21 @@ void loop() {
     float currentDist = readWaterDistanceCm();
     
     if (currentDist > 0) {
+      lastWaterDistanceCm = currentDist;
+      hasValidWaterDistance = true;
       if (client.connected()) publishSensor("waterlevel", currentDist);
       
       if (currentDist >= waterLevelThreshold) {
          waterAlert = true;
          if (client.connected()) publishAlert("waterlevel", "LOW", currentDist);
+      } else if (currentDist <= waterLevelStopThreshold) {
+        waterAlert = true;
+        if (client.connected()) publishAlert("waterlevel", "HIGH", currentDist);
       } else {
          waterAlert = false; 
       }
+
+      applyPumpControl();
     }
   }
 
@@ -359,6 +453,8 @@ void loop() {
       publishSensor("tds", tdsValue);
     }
     
+    tdsPumpDemand = (tdsValue < tdsMin) || (tdsValue > tdsMax);
+
     if (tdsValue < tdsMin) {
         tdsAlert = true;
         if (client.connected()) publishAlert("tds", "LOW", tdsValue);
@@ -368,6 +464,8 @@ void loop() {
     } else {
         tdsAlert = false; 
     } 
+
+    applyPumpControl();
 
     // Serial.print("[TDS Raw ADC] ");
     // Serial.print(rawAdc);
