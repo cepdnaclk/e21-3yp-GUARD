@@ -6,15 +6,18 @@ const influx = new InfluxDB({ url: process.env.INFLUX_URL, token: process.env.IN
 const writeApi = influx.getWriteApi(process.env.INFLUX_ORG, process.env.INFLUX_BUCKET, 'ns');
 
 export const initMqtt = () => {
-    const client = mqtt.connect('mqtt://localhost:1883', {
-        username: process.env.MQTT_USER,
-        password: process.env.MQTT_PASSWORD
+    // THE FIX: Secure TLS connection to HiveMQ Cloud
+    const client = mqtt.connect('mqtts://71d3962284c44824be0bfe8cfedfedb7.s1.eu.hivemq.cloud:8883', {
+        username: process.env.MQTT_USER,     // Make sure this is "thisen" in your .env
+        password: process.env.MQTT_PASSWORD, // Make sure this is "Thisen123thi" in your .env
+        clientId: `GUARD_Backend_${Math.random().toString(16).slice(3)}`, // Prevents cloud boot-loops
+        rejectUnauthorized: true // Enforces strict SSL/TLS verification
     }); 
 
     client.on('connect', () => {
-        console.log('📡 MQTT Broker connected successfully!');
+        console.log('☁️  MQTT Broker (HiveMQ Cloud) connected successfully!');
         client.subscribe('sensor/+/+', (err) => {
-            if (!err) console.log('✅ Listening for individual sensor topics (sensor/+/+) via MQTT...');
+            if (!err) console.log('✅ Listening for individual sensor topics (sensor/+/+) via HiveMQ...');
         });
     });
 
@@ -25,13 +28,9 @@ export const initMqtt = () => {
         const sensorType = topicParts[2];   
 
         try {
-            // THE FIX: Parse the JSON object and extract the "value" property
             const payload = JSON.parse(message.toString());
             const sensorValue = parseFloat(payload.value);
             
-            // Note: We are ignoring payload.time for now and letting the Node.js server 
-            // automatically stamp the exact arrival time. This prevents tricky timezone bugs!
-
             let mongoData = { status: "online" }; 
             let influxFieldName = "";
 
@@ -80,5 +79,10 @@ export const initMqtt = () => {
         } catch (error) {
             console.error(`❌ MQTT Error for Tank ${tankId}:`, error.message);
         }
+    });
+
+    // Helpful error logging if HiveMQ rejects the connection
+    client.on('error', (err) => {
+        console.error('❌ MQTT Connection Error:', err.message);
     });
 };
