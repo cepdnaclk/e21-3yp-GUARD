@@ -9,3 +9,18 @@
   color: var(--text-muted);
   font-size: 1rem;
 }
+
+.sensor-history-chart-title {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.sensor-history-empty-note {
+  margin-top: 0.75rem;
+}
+
+.sensor-chart-wrap {
+  width: 100%;
+  min-height: 360px;
+  overflow-x: auto;
+}

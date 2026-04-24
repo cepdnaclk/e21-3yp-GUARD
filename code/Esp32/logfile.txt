@@ -7,7 +7,9 @@
 #include "time.h"
 #include <ESP32Servo.h> 
 #include <Preferences.h>
-#include <Adafruit_NeoPixel.h> // Required for ESP32-S3 Onboard LED      
+#include <Adafruit_NeoPixel.h> // Required for ESP32-S3 Onboard LED
+#include <SPI.h> 
+#include <SD.h>      
 
 // ---------------- Pins & Constants ----------------
 #define RESET_BUTTON 0
@@ -22,6 +24,10 @@ const int pumpPin = 18;
 #define TRIGGER_PIN 5
 #define ECHO_PIN 15
 
+const int SD_PIN = 9; // SD card chip select pin (adjust if needed)
+const uint32_t SD_SPI_FREQ = 1000000; // 1 MHz for better signal tolerance
+
+
 // ---------------- Objects -------------------------
 Adafruit_NeoPixel pixels(NUMPIXELS, RGB_LED_PIN, NEO_GRB + NEO_KHZ800);
 Preferences preferences;
@@ -30,6 +36,11 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
+File logFile;
+bool sdMounted = false;
+unsigned long lastSDRetry = 0;
+const unsigned long SD_RETRY_INTERVAL = 10000;
+
 
 // ---------------- State Variables -----------------
 float tempThreshold = 30.0; 
@@ -83,6 +94,72 @@ void publishSensor(String parameter, float value) {
   Serial.println("[MQTT] Sent: " + payload);
 }
 
+bool initSDCard() {
+  Serial.print("[SD] Initializing SD card...");
+
+  SPI.begin();
+
+  if (!SD.begin(SD_PIN, SPI, SD_SPI_FREQ)) {
+    sdMounted = false;
+    Serial.println("Failed!");
+    Serial.printf("[SD] Mount failed on CS=%d at %lu Hz\n", SD_PIN, SD_SPI_FREQ);
+    return false;
+  }
+
+  sdMounted = true;
+  Serial.println("Success!");
+
+  File sessionLog = SD.open("/log.txt", FILE_APPEND);
+  if (sessionLog) {
+    sessionLog.println("----- New Session -----");
+    sessionLog.close();
+  }
+
+  File dataLog = SD.open("/data.txt", FILE_APPEND);
+  if (dataLog) {
+    dataLog.println("----- New Session -----");
+    dataLog.close();
+  } else {
+    Serial.println("[SD] Mounted, but failed to open /data.txt");
+  }
+
+  return true;
+}
+
+void logSensorToSD(const String& sensorName, float value) {
+  if (!sdMounted) {
+    unsigned long now = millis();
+    if (now - lastSDRetry >= SD_RETRY_INTERVAL) {
+      lastSDRetry = now;
+      initSDCard();
+    }
+    if (!sdMounted) {
+      Serial.println("[SD] Skip log: file system not mounted");
+      return;
+    }
+  }
+
+  struct tm timeinfo;
+  char buf[25];
+  if (!getLocalTime(&timeinfo)) {
+    strcpy(buf, "0000-00-00 00:00:00");
+  } else {
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  }
+
+  File dataFile = SD.open("/data.txt", FILE_APPEND);
+  if (!dataFile) {
+    sdMounted = false;
+    Serial.println("[SD] Failed to open /data.txt for appending");
+    return;
+  }
+
+  String line = String(buf) + "," + sensorName + "," + String(value, 2);
+  dataFile.println(line);
+  dataFile.close();
+  Serial.println("[SD] Logged: " + line);
+}
+
 // ---------------- MQTT Callback ------------------
 void callback(char* topic, byte* payload, unsigned int length) {
   String message = "";
@@ -130,7 +207,10 @@ boolean reconnect() {
 // ---------------- Setup ---------------------------
 void setup() {
   Serial.begin(115200); 
-  
+
+  // Setup SD card once at boot; runtime retries happen in loop/logging path.
+  initSDCard();
+
   // Initialize Hardware 
   pixels.begin();
   pixels.setBrightness(50); // Set to 50/255 so it's not blinding
@@ -164,6 +244,14 @@ void setup() {
 
 // ---------------- Main Loop -----------------------
 void loop() {
+  if (!sdMounted) {
+    unsigned long nowRetry = millis();
+    if (nowRetry - lastSDRetry >= SD_RETRY_INTERVAL) {
+      lastSDRetry = nowRetry;
+      initSDCard();
+    }
+  }
+
   if (!client.connected()) {
     unsigned long now = millis();
     if (now - lastReconnectAttempt > 5000) {
@@ -190,6 +278,7 @@ void loop() {
     float tempC = sensors.getTempCByIndex(0);
     
     if(tempC != DEVICE_DISCONNECTED_C) {
+      logSensorToSD("temperature", tempC);
       if (client.connected()) publishSensor("temperature", tempC);
 
       // RGB LED Threshold Check
@@ -210,6 +299,7 @@ void loop() {
     float waterDistanceCm = readWaterDistanceCm();
 
     if (waterDistanceCm > 0) {
+      logSensorToSD("water_level", waterDistanceCm);
       if (client.connected()) publishSensor("water_level", waterDistanceCm);
 
       if (waterDistanceCm >= waterLevelThreshold) {

@@ -10,3 +10,17 @@
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+.tank-chart-card {
+  margin-bottom: 1rem;
+}
+
+.tank-chart-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.tank-chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+}

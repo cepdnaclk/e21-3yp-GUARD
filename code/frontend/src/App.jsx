@@ -9,6 +9,7 @@ import DeviceDetail from './pages/DeviceDetail';
 import SensorHistory from './pages/SensorHistory';
 import Alerts from './pages/Alerts';
 import Profile from './pages/Profile';
+import Users from './pages/Users';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -39,8 +40,10 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/devices" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><Devices /></RoleRoute>} />
         <Route path="/devices/:id" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><DeviceDetail /></RoleRoute>} />
-        <Route path="/sensors/history" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><SensorHistory /></RoleRoute>} />
+        <Route path="/analytics" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><SensorHistory /></RoleRoute>} />
+        <Route path="/sensors/history" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><SensorHistory /></RoleRoute>} />
         <Route path="/alerts" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><Alerts /></RoleRoute>} />
+        <Route path="/users" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><Users /></RoleRoute>} />
         <Route path="/profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />

@@ -1,6 +1,6 @@
 /* ========== Dashboard ========== */
 .dashboard-page {
-  background: #d8e8f3;
+  background: #e6ecf0;
   min-height: calc(100vh - 56px);
   margin: -1.5rem;
   padding: 1.5rem;
@@ -12,16 +12,24 @@
   margin-bottom: 1.5rem;
 }
 
+.dash-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0e3454;
+  margin-right: auto;
+}
+
 .dash-search {
   width: 100%;
   max-width: 520px;
   padding: 0.6rem 1.3rem;
   border-radius: 999px;
-  border: 1px solid #b0cadd;
-  background: #e4eff8;
+  border: 1px solid #064673;
+  background: #e6ecf0;
   font-size: 0.95rem;
   color: #0e3454;
   outline: none;
+  
 }
 
 .dash-search:focus {
@@ -49,6 +57,8 @@
   background: #0d1f2d;
   border-radius: 18px;
   padding: 1.25rem;
+  width: 25rem;
+  height: 16rem;
   color: #fff;
   transition: transform 0.15s;
 }
@@ -63,14 +73,14 @@
 }
 
 .tank-name {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #fff;
 }
 
 .tank-status-dot {
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #3a5268;
   flex-shrink: 0;
@@ -88,9 +98,10 @@
 }
 
 .sensor-tile {
-  background: #1a3044;
+  background: #0d1f2d;
   border-radius: 10px;
-  padding: 0.55rem 0.4rem;
+  border: #4a7fa0 solid 1.5px;
+  padding: 0.6rem 0.6rem;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -98,8 +109,8 @@
 }
 
 .sensor-tile-name {
-  font-size: 0.62rem;
-  color: #7a9ab8;
+  font-size: 1rem;
+  color: #fbfbfb;
   text-transform: capitalize;
   white-space: nowrap;
   overflow: hidden;
@@ -107,9 +118,9 @@
 }
 
 .sensor-tile-value {
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: #00d4c8;
+  color: #a8d0e9;
 }
 
 .no-readings {

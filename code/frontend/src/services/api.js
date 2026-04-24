@@ -1,28 +1,34 @@
 const BASE_URL = 'http://localhost:5000/api';
 
+// Sensor keys used by the backend and the UI.
+const SENSOR_FIELDS = [
+  ['temp', 'Temperature'],
+  ['pH', 'pH'],
+  ['tds', 'TDS'],
+  ['turbidity', 'Turbidity'],
+  ['waterLevel', 'Water Level'],
+];
+
+// Sends one request to the backend and automatically adds the JWT token.
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('token');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
-  const data = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    const message = data?.errors?.[0]?.msg || data?.error || `Request failed (${res.status})`;
-    throw new Error(message);
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.error || data?.errors?.[0]?.msg || `Request failed (${response.status})`);
+  }
+
   return data;
 }
 
-async function requestSoft(endpoint, options = {}, fallback = null) {
-  try {
-    return await request(endpoint, options);
-  } catch {
-    return fallback;
-  }
-}
-
+// Converts a tank record from the backend into the frontend device shape.
 function toDeviceFromTank(tank) {
   return {
     id: tank.id,
@@ -41,31 +47,68 @@ function toDeviceFromTank(tank) {
   };
 }
 
-// Auth
+// Turns one history row into a list of readings for the chart UI.
+function toReadingRows(row, deviceId) {
+  const readingTime = row.time || new Date().toISOString();
+  const readings = [];
+
+  for (const [key, sensorName] of SENSOR_FIELDS) {
+    const value = row[key];
+
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    readings.push({
+      id: `${deviceId}-${key}-${readingTime}`,
+      sensorId: key,
+      sensorType: { sensorName },
+      value,
+      readingTime,
+    });
+  }
+
+  return readings;
+}
+
 export const authApi = {
+  // Public auth routes.
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   googleLogin: (idToken) => request('/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
-  getMe: () => request('/auth/me'),
-  updateProfile: (body) => request('/auth/profile', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Admin-only routes.
+  createAdmin: (body) => request('/auth/create-admin', { method: 'POST', body: JSON.stringify(body) }),
+  createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
 };
 
-// Devices
 export const deviceApi = {
+  // GET /api/tanks
   list: async () => {
     const tanks = await request('/tanks');
     return Array.isArray(tanks) ? tanks.map(toDeviceFromTank) : [];
   },
-  create: async (body) => {
-    const payload = {
-      tankId: String(body.deviceId),
-      name: body.deviceName || `Tank ${body.deviceId}`,
-    };
-    const created = await request('/tanks/register', { method: 'POST', body: JSON.stringify(payload) });
+
+  // POST /api/tanks/register
+  create: async ({ deviceId, deviceName }) => {
+    const created = await request('/tanks/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        tankId: String(deviceId),
+        name: deviceName || `Tank ${deviceId}`,
+      }),
+    });
+
     return created?.tank ? toDeviceFromTank(created.tank) : created;
   },
-  get: async (id) => {
-    const status = await request(`/tanks/${id}/status`);
+
+  // POST /api/tanks/:tankId/assign-user
+  assignUser: (tankId, userId) => request(`/tanks/${tankId}/assign-user`, { method: 'POST', body: JSON.stringify({ userId }) }),
+
+  // GET /api/tanks/:tankId/status
+  get: async (tankId) => {
+    const status = await request(`/tanks/${tankId}/status`);
+
     return {
       deviceId: status.tankId,
       deviceName: status.name,
@@ -75,82 +118,61 @@ export const deviceApi = {
   },
 };
 
-// Sensor Types
-export const sensorTypeApi = {
-  list: async () => {
-    const seed = [
-      { id: 'temp', sensorName: 'Temperature' },
-      { id: 'pH', sensorName: 'pH' },
-      { id: 'tds', sensorName: 'TDS' },
-      { id: 'turbidity', sensorName: 'Turbidity' },
-      { id: 'waterLevel', sensorName: 'Water Level' },
-    ];
-    return requestSoft('/sensor-types', {}, seed);
-  },
-  create: (body) => request('/sensor-types', { method: 'POST', body: JSON.stringify(body) }),
-  get: (id) => request(`/sensor-types/${id}`),
-};
-
-// Sensor Readings
 export const sensorApi = {
-  latest: async (deviceId) => {
-    const status = await request(`/tanks/${deviceId}/status`);
-    const stats = status.currentStats || {};
+  // Public sensor log route used by the hardware or test clients.
+  log: (body) => request('/sensors/log', { method: 'POST', body: JSON.stringify(body) }),
 
-    return [
-      { id: `${deviceId}-temperature`, sensorId: 'temperature', sensorType: { sensorName: 'Temperature' }, value: stats.temp, readingTime: new Date().toISOString() },
-      { id: `${deviceId}-ph`, sensorId: 'pH', sensorType: { sensorName: 'pH' }, value: stats.pH, readingTime: new Date().toISOString() },
-      { id: `${deviceId}-tds`, sensorId: 'tds', sensorType: { sensorName: 'TDS' }, value: stats.tds, readingTime: new Date().toISOString() },
-      { id: `${deviceId}-turbidity`, sensorId: 'turbidity', sensorType: { sensorName: 'Turbidity' }, value: stats.turbidity, readingTime: new Date().toISOString() },
-      { id: `${deviceId}-waterLevel`, sensorId: 'waterLevel', sensorType: { sensorName: 'Water Level' }, value: stats.waterLevel, readingTime: new Date().toISOString() },
-    ].filter((entry) => entry.value !== null && entry.value !== undefined);
+  // Reads the current tank status and converts it into a simple sensor list.
+  latest: async (deviceId) => {
+    const { currentStats = {} } = await request(`/tanks/${deviceId}/status`);
+    const latestReadings = [];
+
+    for (const [key, sensorName] of SENSOR_FIELDS) {
+      const value = currentStats[key === 'temp' ? 'temp' : key];
+
+      if (value === null || value === undefined) {
+        continue;
+      }
+
+      latestReadings.push({
+        id: `${deviceId}-${key}`,
+        sensorId: key,
+        sensorType: { sensorName },
+        value,
+        readingTime: new Date().toISOString(),
+      });
+    }
+
+    return latestReadings;
   },
-  history: async (params) => {
-    const rows = await request(`/sensors/history/${params.deviceId}`);
+
+  // Fetches Influx history and reshapes it for charts and tables.
+  history: async ({ deviceId, sensorId, from, to }) => {
+    const rows = await request(`/sensors/history/${deviceId}`);
     if (!Array.isArray(rows)) return [];
 
-    const filtered = [];
+    const historyReadings = [];
+
     for (const row of rows) {
-      const sensors = [
-        { key: 'temp', label: 'Temperature' },
-        { key: 'pH', label: 'pH' },
-        { key: 'tds', label: 'TDS' },
-        { key: 'turbidity', label: 'Turbidity' },
-        { key: 'waterLevel', label: 'Water Level' },
-      ];
+      const readings = toReadingRows(row, deviceId);
 
-      for (const sensor of sensors) {
-        if (row[sensor.key] === null || row[sensor.key] === undefined) continue;
-
-        if (params.sensorId && params.sensorId !== sensor.key && params.sensorId !== sensor.label) {
+      for (const reading of readings) {
+        if (sensorId && reading.sensorId !== sensorId && reading.sensorType.sensorName !== sensorId) {
           continue;
         }
 
-        const readingTime = row.time || new Date().toISOString();
-        if (params.from && new Date(readingTime) < new Date(params.from)) continue;
-        if (params.to && new Date(readingTime) > new Date(params.to)) continue;
+        if (from && new Date(reading.readingTime) < new Date(from)) {
+          continue;
+        }
 
-        filtered.push({
-          id: `${params.deviceId}-${sensor.key}-${readingTime}`,
-          sensorId: sensor.key,
-          sensorType: { sensorName: sensor.label },
-          value: row[sensor.key],
-          readingTime,
-        });
+        if (to && new Date(reading.readingTime) > new Date(to)) {
+          continue;
+        }
+
+        historyReadings.push(reading);
       }
     }
 
-    return filtered;
+    return historyReadings;
   },
-};
-
-// Alerts
-export const alertApi = {
-  list: async (params = {}) => {
-    const qs = new URLSearchParams();
-    if (params.deviceId) qs.set('device_id', params.deviceId);
-    if (params.resolved !== undefined) qs.set('resolved', String(params.resolved));
-    return requestSoft(`/alerts?${qs.toString()}`, {}, []);
-  },
-  resolve: async (alertId) => requestSoft('/alerts/resolve', { method: 'POST', body: JSON.stringify({ alertId }) }, { message: 'No alert backend route configured.' }),
 };
