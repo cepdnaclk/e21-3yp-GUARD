@@ -21,6 +21,10 @@ const int pumpPin = 18;
 #define TRIGGER_PIN 5
 #define ECHO_PIN 15
 
+#define TDS_PIN 12        // 🔵 TDS ADDED
+#define VREF 3.3          // 🔵 TDS ADDED
+#define ADC_RESOLUTION 4095
+
 // ---------------- Network Config ------------------
 const char* mqtt_server = "71d3962284c44824be0bfe8cfedfedb7.s1.eu.hivemq.cloud";
 const int mqtt_port = 8883; 
@@ -80,8 +84,10 @@ const unsigned long SERVO_RUN_TIME = 3000;
 unsigned long lastTempTime = 0;
 unsigned long lastWaterTime = 0;
 unsigned long lastReconnectAttempt = 0;
+unsigned long lastTdsTime = 0;   // 🔵 TDS ADDED
 const unsigned long TEMP_INTERVAL = 10000; 
 const unsigned long WATER_INTERVAL = 10000;
+const unsigned long TDS_INTERVAL = 10000;   // 🔵 TDS ADDED
 unsigned long pressStart = 0;
 
 unsigned long DeviceID = 100;
@@ -171,6 +177,7 @@ void setup() {
   pinMode(ECHO_PIN, INPUT);
   pinMode(pumpPin, OUTPUT);
   digitalWrite(pumpPin, HIGH);
+  pinMode(TDS_PIN, INPUT);
 
   preferences.begin("settings", true);
   tempThreshold = preferences.getFloat("threshold", 30.0);
@@ -213,7 +220,6 @@ void loop() {
     client.loop();
   }
 
-  // Servo & Sensor logic remains the same...
   if (servoActive && (millis() - servoStartTime >= SERVO_RUN_TIME)) {
     myServo.write(90); 
     delay(100);       
@@ -227,8 +233,10 @@ void loop() {
     lastTempTime = now;
     sensors.requestTemperatures();
     float currentTemp = sensors.getTempCByIndex(0);
+    
     if(currentTemp != DEVICE_DISCONNECTED_C) {
       if (client.connected()) publishSensor("temperature", currentTemp);
+      
       if (currentTemp >= tempThreshold) pixels.setPixelColor(0, pixels.Color(255, 0, 0)); 
       else pixels.setPixelColor(0, pixels.Color(0, 255, 0));
       pixels.show();
@@ -239,13 +247,56 @@ void loop() {
     lastWaterTime = now;
     float currentDist = readWaterDistanceCm();
     if (currentDist > 0) {
-      if (client.connected()) publishSensor("water_level", currentDist);
+      if (client.connected()) publishSensor("waterlevel", currentDist);
       if (currentDist >= waterLevelThreshold) {
          pixels.setPixelColor(0, pixels.Color(255, 0, 0)); 
          Serial.println("[ALERT] Low Water!");
       }
       pixels.show();
     }
+  }
+
+  // 🧪 🔵 TDS PUBLISH LOOP (Custom Native Math)
+  if (now - lastTdsTime > TDS_INTERVAL) {
+    lastTdsTime = now;
+
+    // 1. Take a quick average of 10 readings to filter out electrical noise
+    float rawAdc = 0;
+    for(int i = 0; i < 10; i++) {
+        rawAdc += analogRead(TDS_PIN);
+        delay(10); 
+    }
+    rawAdc = rawAdc / 10.0;
+
+    // 2. Convert the raw ADC number into actual Voltage
+    float voltage = rawAdc * (VREF / ADC_RESOLUTION);
+
+    // 3. Get temperature for compensation (Assume 25°C if probe is disconnected)
+    sensors.requestTemperatures();
+    float tempC = sensors.getTempCByIndex(0);
+    if (tempC == DEVICE_DISCONNECTED_C) tempC = 25.0;
+
+    // 4. Apply DFRobot's exact temperature compensation formula
+    float compensationCoefficient = 1.0 + 0.02 * (tempC - 25.0);
+    float compensationVoltage = voltage / compensationCoefficient;
+
+    // 5. Apply the official DFRobot TDS mathematical curve
+    float tdsValue = (133.42 * pow(compensationVoltage, 3) - 255.86 * pow(compensationVoltage, 2) + 857.39 * compensationVoltage) * 0.5;
+
+    // Clean up negative noise
+    if (tdsValue < 0) tdsValue = 0;
+
+    // Send it to the MQTT Broker
+    if (client.connected()) {
+      publishSensor("tds", tdsValue);
+    }
+    
+    // Print to Serial for debugging
+    Serial.print("[TDS Raw ADC] ");
+    Serial.print(rawAdc);
+    Serial.print("  |  [Calculated TDS] ");
+    Serial.print(tdsValue);
+    Serial.println(" ppm");
   }
 
   // Reset Logic
