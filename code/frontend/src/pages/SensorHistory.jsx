@@ -158,12 +158,11 @@ export default function SensorHistory() {
             <label>To</label>
             <input type="datetime-local" value={filters.to} onChange={set('to')} />
           </div>
-          <button className="btn btn-primary btn-sm" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={fetchHistory} disabled={!filters.deviceId || loading}>
+          <button className="btn btn-primary action-pill-btn" onClick={fetchHistory} disabled={!filters.deviceId || loading} type="button">
             {loading ? 'Loading...' : 'Fetch'}
           </button>
           <button
-            className="btn btn-primary btn-sm"
-            style={{ padding: '4px 8px', fontSize: '12px' }}
+            className="btn btn-primary action-pill-btn"
             onClick={() => setShowAnalytics((value) => !value)}
             disabled={!filters.deviceId}
             type="button"

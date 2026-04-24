@@ -74,7 +74,7 @@ export default function Users() {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-primary action-pill-btn"
             onClick={() => openMode('admin')}
             disabled={!canCreateAdmin || busy}
             title={canCreateAdmin ? 'Create ADMIN account' : 'Only SUPER_ADMIN can create admins'}
@@ -84,7 +84,7 @@ export default function Users() {
 
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-primary action-pill-btn"
             onClick={() => openMode('user')}
             disabled={!canCreateUser || busy}
             title={canCreateUser ? 'Create USER account' : 'Only ADMIN or SUPER_ADMIN can create users'}

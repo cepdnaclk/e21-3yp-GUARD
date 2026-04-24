@@ -59,6 +59,18 @@ export default function Devices() {
       setBusy(false);
     }
   };
+  // const handleDelete = async (deviceId) => {
+  //   if (!canAddDevice) {
+  //     setError('Only ADMIN can delete devices.');
+  //     return;
+  //   }
+  //   setBusy(true);
+  //   try {
+  //     const body = { deviceId: form.deviceId.trim() };
+  //     if (!body.deviceId) {
+  //       throw new Error('Device ID is required.');
+  //     }
+    
 
   if (loading) return <div className="empty-state"><p>Loading devices...</p></div>;
 

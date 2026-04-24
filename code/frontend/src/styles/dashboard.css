@@ -39,15 +39,19 @@
 
 .dash-main-grid {
   display: grid;
-  grid-template-columns: 1fr 260px;
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 1.5rem;
   align-items: start;
   margin-bottom: 1.5rem;
 }
 
+.dash-tanks {
+  min-width: 0;
+}
+
 .tank-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.25rem;
 }
 
@@ -57,10 +61,12 @@
   background: #0d1f2d;
   border-radius: 18px;
   padding: 1.25rem;
-  width: 25rem;
+  width: 100%;
+  max-width: none;
   height: 16rem;
   color: #fff;
   transition: transform 0.15s;
+  box-sizing: border-box;
 }
 
 .tank-card:hover { transform: translateY(-2px); }
@@ -195,6 +201,20 @@
 .dash-stat-card.danger { border-left-color: #ef4444; }
 .dash-stat-card.success { border-left-color: #22c55e; }
 
+@media (max-width: 1200px) {
+  .tank-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .dash-main-grid { grid-template-columns: 1fr; }
+
+  .tank-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tank-card {
+    max-width: none;
+  }
 }
