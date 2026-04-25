@@ -8,6 +8,8 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "seed": "node seed.js",
+    "seedUserData": "node \"sample data/seedUserData.js\"",
+    "seedSensorData": "node \"sample data/seedSensorData.js\"",
     "seed:analytics": "node seed-analytics.js",
     "db:init": "docker exec dockercomposeformongodbandinf-mongodb-1 mongosh --eval \"try { rs.initiate(); } catch(e) { print('Already initialized'); } cfg = rs.conf(); cfg.members[0].host = 'localhost:27017'; rs.reconfig(cfg, {force: true}); print('✅ Replica Set Ready!');\"",
     "db:prep": "net stop MongoDB && npm run db:init"

@@ -1,7 +1,30 @@
 import { useState, useEffect } from 'react';
-import { deviceApi, alertApi } from '../services/api';
+import { deviceApi, sensorApi } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 import '../styles/alerts.css';
+
+function buildAlerts(devices, sensorData) {
+  const alerts = [];
+
+  for (const device of devices) {
+    const readings = sensorData[device.deviceId] || [];
+    const hasReadings = readings.length > 0;
+
+    if (!hasReadings || device.status !== 'online') {
+      alerts.push({
+        id: `${device.deviceId}-offline`,
+        type: 'Status',
+        message: `${device.deviceName || `Tank ${device.deviceId}`} appears offline`,
+        value: device.status || 'unknown',
+        deviceId: device.deviceId,
+        createdAt: device.updatedAt || new Date().toISOString(),
+        resolved: false,
+      });
+    }
+  }
+
+  return alerts;
+}
 
 export default function Alerts() {
   const [searchParams] = useSearchParams();
@@ -9,6 +32,7 @@ export default function Alerts() {
 
   const [devices, setDevices] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [allAlerts, setAllAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(null);
 
@@ -20,16 +44,38 @@ export default function Alerts() {
   const loadAlerts = async (f = filters) => {
     setLoading(true);
     try {
-      const params = {};
-      if (f.deviceId) params.deviceId = f.deviceId;
-      if (f.resolved !== '') params.resolved = f.resolved === 'true';
-      setAlerts(await alertApi.list(params));
+      const devs = await deviceApi.list();
+
+      const readingEntries = await Promise.all(
+        devs.map(async (device) => {
+          try {
+            const latest = await sensorApi.latest(device.deviceId);
+            return [device.deviceId, Array.isArray(latest) ? latest : []];
+          } catch {
+            return [device.deviceId, []];
+          }
+        })
+      );
+
+      const sensorData = Object.fromEntries(readingEntries);
+      const generatedAlerts = buildAlerts(devs, sensorData);
+
+      setDevices(devs);
+      setAllAlerts(generatedAlerts);
+
+      const filteredAlerts = generatedAlerts.filter((alert) => {
+        if (f.deviceId && alert.deviceId !== f.deviceId) return false;
+        if (f.resolved === 'true' && !alert.resolved) return false;
+        if (f.resolved === 'false' && alert.resolved) return false;
+        return true;
+      });
+
+      setAlerts(filteredAlerts);
     } catch { setAlerts([]); }
     setLoading(false);
   };
 
   useEffect(() => {
-    deviceApi.list().then(setDevices).catch(() => {});
     loadAlerts();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -42,8 +88,19 @@ export default function Alerts() {
   const handleResolve = async (alertId) => {
     setResolving(alertId);
     try {
-      await alertApi.resolve(alertId);
-      await loadAlerts();
+      const updated = allAlerts.map((alert) => (
+        alert.id === alertId ? { ...alert, resolved: true } : alert
+      ));
+      setAllAlerts(updated);
+
+      const filtered = updated.filter((alert) => {
+        if (filters.deviceId && alert.deviceId !== filters.deviceId) return false;
+        if (filters.resolved === 'true' && !alert.resolved) return false;
+        if (filters.resolved === 'false' && alert.resolved) return false;
+        return true;
+      });
+
+      setAlerts(filtered);
     } catch { /* ignore */ }
     setResolving(null);
   };

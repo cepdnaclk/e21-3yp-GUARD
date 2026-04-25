@@ -17,6 +17,11 @@ export default function Login() {
   const [resendMsg, setResendMsg] = useState('');
   const [resendBusy, setResendBusy] = useState(false);
   const googleBtnRef = useRef(null);
+  const googleLoginRef = useRef(googleLogin);
+
+  useEffect(() => {
+    googleLoginRef.current = googleLogin;
+  }, [googleLogin]);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleBtnRef.current) return;
@@ -37,7 +42,7 @@ export default function Login() {
           setError('');
           setBusy(true);
           try {
-            await googleLogin(response.credential);
+            await googleLoginRef.current(response.credential);
           } catch (err) {
             setError(err.message || 'Google sign in failed.');
           } finally {
@@ -69,7 +74,7 @@ export default function Login() {
     script.defer = true;
     script.onload = renderGoogleButton;
     document.head.appendChild(script);
-  }, [googleLogin]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,7 +83,10 @@ export default function Login() {
     setResendMsg('');
     setBusy(true);
     try {
-      await login(form);
+      await login({
+        username: form.username.trim(),
+        password: form.password,
+      });
     } catch (err) {
       // Backend returns this exact message when email is not verified
       if (err.message && err.message.toLowerCase().includes('email not verified')) {
