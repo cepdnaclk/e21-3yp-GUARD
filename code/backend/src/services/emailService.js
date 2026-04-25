@@ -98,3 +98,54 @@ export const sendVerificationEmail = async (toEmail, fullName, token) => {
 
   await transporter.sendMail(mailOptions);
 };
+
+/**
+ * Send an alert notification email when a sensor reading is out of range.
+ */
+export const sendAlertEmail = async (toEmail, tankName, alertType, value) => {
+  const mailOptions = {
+    from: `"G.U.A.R.D Alert" <${process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: `🚨 ALERT: ${tankName} - ${alertType}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fafafa; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e1e1e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+            .header { background: #d32f2f; padding: 24px; text-align: center; }
+            .header h1 { color: #ffffff; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1.5px; }
+            .body { padding: 32px; color: #333333; }
+            .alert-box { background: #fff5f5; border: 1px solid #ffcdd2; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
+            .alert-box .type { font-size: 14px; color: #d32f2f; font-weight: bold; margin-bottom: 8px; }
+            .alert-box .value { font-size: 32px; color: #c62828; font-weight: 800; }
+            .footer { background: #f5f5f5; padding: 16px; font-size: 12px; color: #757575; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>System Alert</h1>
+            </div>
+            <div class="body">
+              <p>Critical alert detected for tank: <strong>${tankName}</strong></p>
+              <div class="alert-box">
+                <div class="type">${alertType.toUpperCase()}</div>
+                <div class="value">${value}</div>
+              </div>
+              <p>Please check the system immediately to ensure the safety of the aquatic environment.</p>
+              <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/alerts" style="color: #1a73e8; font-weight: 600;">View all alerts in Dashboard →</a></p>
+            </div>
+            <div class="footer">
+              &copy; ${new Date().getFullYear()} G.U.A.R.D — Advanced Aquatic Protection
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};

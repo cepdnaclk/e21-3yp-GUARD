@@ -1,6 +1,7 @@
 import mqtt from 'mqtt';
 import prisma from '../lib/prisma.js';
 import { InfluxDB, Point } from '@influxdata/influxdb-client';
+import { sendAlertEmail } from './emailService.js';
 
 const influx = new InfluxDB({ url: process.env.INFLUX_URL, token: process.env.INFLUX_TOKEN });
 const writeApi = influx.getWriteApi(process.env.INFLUX_ORG, process.env.INFLUX_BUCKET, 'ns');
@@ -20,8 +21,8 @@ export const initMqtt = () => {
 
     client.on('connect', () => {
         console.log(`☁️  MQTT Broker connected successfully to ${brokerUrl}!`);
-        client.subscribe('sensor/+/+', (err) => {
-            if (!err) console.log('✅ Listening for individual sensor topics (sensor/+/+) via HiveMQ...');
+        client.subscribe(['sensor/+/+', 'alert/+/+'], (err) => {
+            if (!err) console.log('✅ Listening for sensor and alert topics via HiveMQ...');
         });
     });
 
@@ -33,6 +34,16 @@ export const initMqtt = () => {
 
         try {
             const payload = JSON.parse(message.toString());
+
+            if (topicParts[0] === 'alert') {
+                const alertType = payload.alert || 'OUT OF RANGE';
+                const sensorValue = payload.value;
+                const parameter = topicParts[2];
+
+                await processAlert(tankId, parameter, alertType, sensorValue);
+                return;
+            }
+
             const sensorValue = parseFloat(payload.value);
             
             let mongoData = { status: "online" }; 
@@ -100,6 +111,39 @@ export const initMqtt = () => {
     });
 };
 
+/**
+ * Internal logic to handle an alert: find users and send emails.
+ */
+export const processAlert = async (tankId, parameter, alertType, sensorValue) => {
+    console.log(`🚨 Processing ALERT for Tank ${tankId}: ${alertType} (${sensorValue})`);
+
+    // 1. Find the tank and its associated users (Admin + Workers)
+    const tank = await prisma.tank.findUnique({
+        where: { tankId },
+        include: {
+            admin: { select: { email: true } },
+            workers: { select: { email: true } }
+        }
+    });
+
+    if (!tank) {
+        console.warn(`⚠️ Alert received for unregistered Tank: ${tankId}`);
+        return;
+    }
+
+    // 2. Collect all emails
+    const recipientEmails = [tank.admin.email, ...tank.workers.map(w => w.email)];
+    
+    // 3. Send emails in parallel
+    const emailPromises = recipientEmails.map(email => 
+        sendAlertEmail(email, tank.name, `${parameter} ${alertType}`, sensorValue)
+            .catch(err => console.error(`❌ Failed to send alert email to ${email}:`, err.message))
+    );
+
+    await Promise.all(emailPromises);
+    console.log(`🚨 ALERT EMAIL SENT for Tank ${tankId} [${parameter}]: ${alertType} (${sensorValue})`);
+};
+
 export const publishActuatorCommand = (topic, payload) => {
     if (!mqttClient || !mqttClient.connected) {
         throw new Error('MQTT broker is not connected.');
@@ -108,7 +152,7 @@ export const publishActuatorCommand = (topic, payload) => {
     const message = typeof payload === 'string' ? payload : JSON.stringify(payload);
 
     return new Promise((resolve, reject) => {
-        mqttClient.publish(topic, message, { qos: 1 }, (error) => {
+        mqttClient.publish(topic, message, { qos: 0 }, (error) => {
             if (error) {
                 reject(error);
                 return;

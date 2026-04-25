@@ -112,7 +112,7 @@ export default function Register() {
     setResendMsg('');
     setResendBusy(true);
     try {
-      const res = await authApi.resendVerification(pendingEmail);
+      const res = await authApi.resendVerification(form.username, pendingEmail);
       setResendMsg(res?.message || 'Verification email sent!');
     } catch (err) {
       setResendMsg(err.message || 'Failed to resend. Please try again.');

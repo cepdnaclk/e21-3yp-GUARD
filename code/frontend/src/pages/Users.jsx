@@ -51,11 +51,11 @@ export default function Users() {
       if (form.phoneNumber.trim()) payload.phoneNumber = form.phoneNumber.trim();
 
       if (mode === 'admin') {
-        await authApi.createAdmin(payload);
-        setSuccess('Admin account created successfully.');
+        const result = await authApi.createAdmin(payload);
+        setSuccess(result.message || 'Admin account created successfully.');
       } else if (mode === 'user') {
-        await authApi.createUser(payload);
-        setSuccess('User account created successfully.');
+        const result = await authApi.createUser(payload);
+        setSuccess(result.message || 'User account created successfully.');
       }
 
       setForm(emptyForm);

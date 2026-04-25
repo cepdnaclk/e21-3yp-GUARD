@@ -213,22 +213,32 @@ export const verifyEmail = async (req, res) => {
 
 // ─── Resend Verification Email ────────────────────────────────────────────────
 export const resendVerificationEmail = async (req, res) => {
-  const { email } = req.body;
+  const { username, email } = req.body;
 
   if (!email) {
     return res.status(400).json({ error: "Email is required." });
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Find user by username if provided, otherwise find by email (for backward compatibility or direct calls)
+    let user;
+    if (username) {
+      user = await prisma.user.findUnique({ where: { username } });
+      
+      if (user && user.email !== email) {
+        return res.status(400).json({ error: "The provided email does not match the email registered for this account." });
+      }
+    } else {
+      user = await prisma.user.findUnique({ where: { email } });
+    }
 
     if (!user) {
-      // Respond generically to avoid user enumeration
-      return res.status(200).json({ message: "If that email exists in our system, a verification link has been sent." });
+      // Respond generically if user not found
+      return res.status(200).json({ message: "If that email exists in our system for this account, a verification link has been sent." });
     }
 
     if (user.emailVerified) {
-      return res.status(400).json({ error: "This email is already verified." });
+      return res.status(400).json({ error: "This account is already verified." });
     }
 
     const newToken = crypto.randomBytes(32).toString("hex");
@@ -267,25 +277,46 @@ export const createAdminBySuperAdmin = async (req, res) => {
       return res.status(409).json({ error: "Username or email already exists." });
     }
 
+    const resolvedEmail = email;
+    const isRealEmail = !resolvedEmail.endsWith("@local.guard");
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Admin accounts created by SUPER_ADMIN are trusted — mark them verified
+    // Generate a verification token (valid for 24 hours)
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
+
     const user = await prisma.user.create({
       data: {
         username,
-        email,
+        email: resolvedEmail,
         password: hashedPassword,
         role: "ADMIN",
         fullName,
         address,
         phoneNumber,
-        emailVerified: true, // Admin accounts are pre-verified by SUPER_ADMIN
+        // If it's a real email, require verification. Otherwise (@local.guard), it's pre-verified.
+        emailVerified: !isRealEmail,
+        verificationToken: isRealEmail ? verificationToken : null,
+        verificationTokenExpiry: isRealEmail ? verificationTokenExpiry : null,
       },
     });
 
+    // Send verification email only if a real email was provided
+    if (isRealEmail) {
+      try {
+        await sendVerificationEmail(resolvedEmail, fullName, verificationToken);
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError.message);
+      }
+    }
+
     return res.status(201).json({
-      message: "Admin account created.",
+      message: isRealEmail 
+        ? "Admin account created. A verification email has been sent." 
+        : "Admin account created successfully.",
       userId: user.id,
+      emailVerified: user.emailVerified,
     });
   } catch (error) {
     console.error("Create admin error:", error);
@@ -308,26 +339,47 @@ export const createUserByAdmin = async (req, res) => {
       return res.status(409).json({ error: "Username or email already exists." });
     }
 
+    const resolvedEmail = email;
+    const isRealEmail = !resolvedEmail.endsWith("@local.guard");
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Users created directly by an ADMIN are trusted — mark them verified
+    // Generate a verification token (valid for 24 hours)
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
+
     const user = await prisma.user.create({
       data: {
         username,
-        email,
+        email: resolvedEmail,
         password: hashedPassword,
         role: "USER",
         fullName,
         address,
         phoneNumber,
         adminId,
-        emailVerified: true, // Admin-created accounts are pre-verified
+        // If it's a real email, require verification. Otherwise (@local.guard), it's pre-verified.
+        emailVerified: !isRealEmail,
+        verificationToken: isRealEmail ? verificationToken : null,
+        verificationTokenExpiry: isRealEmail ? verificationTokenExpiry : null,
       },
     });
 
+    // Send verification email only if a real email was provided
+    if (isRealEmail) {
+      try {
+        await sendVerificationEmail(resolvedEmail, fullName, verificationToken);
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError.message);
+      }
+    }
+
     return res.status(201).json({
-      message: "User account created under admin.",
+      message: isRealEmail 
+        ? "User account created. A verification email has been sent to the user." 
+        : "User account created under admin.",
       userId: user.id,
+      emailVerified: user.emailVerified,
     });
   } catch (error) {
     console.error("Create user error:", error);
