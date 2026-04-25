@@ -6,6 +6,7 @@ import {
   getAllTanks,
   assignUserToTank,
   unassignUserFromTank,
+  deleteTankByAdmin,
 } from "../controllers/tankController.js";
 import { sendActuatorCommand } from "../controllers/actuatorController.js";
 import {
@@ -34,6 +35,17 @@ const validateRequest = (req, res, next) => {
 router.post("/register", verifyToken, requireRole("ADMIN"), registerTank);
 router.post("/:tankId/assign-user", verifyToken, requireRole("ADMIN"), assignUserToTank);
 router.post("/:tankId/unassign-user", verifyToken, requireRole("ADMIN"), unassignUserFromTank);
+router.delete(
+  "/:tankId",
+  verifyToken,
+  requireRole("ADMIN"),
+  [
+    param("tankId").trim().notEmpty().withMessage("tankId is required."),
+    body("name").trim().notEmpty().withMessage("name is required."),
+  ],
+  validateRequest,
+  deleteTankByAdmin
+);
 
 router.post(
   "/:tankId/actuators",

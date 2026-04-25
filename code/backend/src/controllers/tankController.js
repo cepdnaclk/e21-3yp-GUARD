@@ -3,6 +3,7 @@ import { findAccessibleTank } from "../lib/tankAccess.js";
 
 const uniqueIds = (arr) => [...new Set(arr || [])];
 
+
 export const registerTank = async (req, res) => {
   const { name, tankId, workerIds = [] } = req.body;
   const adminId = req.user.userId;
@@ -99,17 +100,32 @@ export const getAllTanks = async (req, res) => {
   try {
     let where = {};
 
-    if (req.user.role === "ADMIN") {
+    if (req.user.role === "SUPER_ADMIN") {
+      where = {};
+    } else if (req.user.role === "ADMIN") {
       where = { adminId: req.user.userId };
     } else if (req.user.role === "USER") {
       where = { workerIds: { has: req.user.userId } };
     } else {
-      return res.status(403).json({ error: "SUPER_ADMIN has no tank access." });
+      return res.status(403).json({ error: "Access denied." });
     }
 
     const tanks = await prisma.tank.findMany({ where });
 
-    const processed = tanks.map((tank) => {
+    const tanksWithWorkers = await Promise.all(
+      tanks.map(async (tank) => {
+        let workers = [];
+        if (Array.isArray(tank.workerIds) && tank.workerIds.length > 0) {
+          workers = await prisma.user.findMany({
+            where: { id: { in: tank.workerIds } },
+            select: { id: true, username: true, fullName: true },
+          });
+        }
+        return { ...tank, workers };
+      })
+    );
+
+    const processed = tanksWithWorkers.map((tank) => {
       const hasValues = tank.lastTemp !== null && tank.lastPh !== null;
       const isHealthy =
         hasValues &&
@@ -213,5 +229,71 @@ export const unassignUserFromTank = async (req, res) => {
   } catch (error) {
     console.error("Unassign user error:", error);
     return res.status(500).json({ error: "Failed to unassign user from tank." });
+  }
+};
+
+export const deleteTankByAdmin = async (req, res) => {
+  const { tankId } = req.params;
+  const { name } = req.body;
+
+  if (req.user.role !== "ADMIN") {
+    return res.status(403).json({ error: "Access denied- only for Admins" });
+  }
+
+  if (!name) {
+    return res.status(400).json({ error: "name is required." });
+  }
+
+  try {
+    const tank = await prisma.tank.findFirst({
+      where: {
+        tankId,
+        name,
+        adminId: req.user.userId,
+      },
+      select: {
+        id: true,
+        tankId: true,
+        name: true,
+      },
+    });
+
+    if (!tank) {
+      return res.status(404).json({ error: "Tank not found." });
+    }
+
+    const assignedUsers = await prisma.user.findMany({
+      where: {
+        assignedTankIds: { has: tank.id },
+      },
+      select: {
+        id: true,
+        assignedTankIds: true,
+      },
+    });
+
+    await Promise.all(
+      assignedUsers.map((user) =>
+        prisma.user.update({
+          where: { id: user.id },
+          data: {
+            assignedTankIds: (user.assignedTankIds || []).filter((assignedTankId) => assignedTankId !== tank.id),
+          },
+        })
+      )
+    );
+
+    await prisma.tank.delete({
+      where: { id: tank.id },
+    });
+
+    return res.status(200).json({
+      message: "Tank deleted successfully.",
+      tankId: tank.tankId,
+      name: tank.name,
+    });
+  } catch (error) {
+    console.error("Delete tank error:", error);
+    return res.status(500).json({ error: "Failed to delete tank." });
   }
 };

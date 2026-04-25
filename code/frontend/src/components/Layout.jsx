@@ -14,9 +14,11 @@ export default function Layout() {
   const { user, role, logout } = useAuth();
   const navigate = useNavigate();
 
-  const navItems = role === 'USER'
-    ? NAV_ITEMS
-    : [...NAV_ITEMS, { to: '/users', label: 'Users' }];
+  const navItems = role === 'SUPER_ADMIN'
+    ? [{ to: '/users', label: 'Users' }] // only Users
+    : role === 'ADMIN'
+    ? [...NAV_ITEMS, { to: '/users', label: 'Users' }] // all pages
+    : NAV_ITEMS.filter(item => item.to !== '/users'); // USER → everything except Users
 
   const initials = user?.fullName
     ? user.fullName.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()

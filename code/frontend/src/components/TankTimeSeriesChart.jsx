@@ -30,9 +30,10 @@ function formatTooltipValue(value, name) {
   return [value, name];
 }
 
-export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 10000000 }) {
+export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000 }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
   const historyUrl = useMemo(() => `/api/sensors/history/${deviceId}`, [deviceId]);
@@ -43,8 +44,12 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 10000000
     let active = true;
     const controller = new AbortController();
 
-    const loadHistory = async () => {
-      setLoading(true);
+    const loadHistory = async (isInitialLoad = false) => {
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       setError('');
 
       try {
@@ -75,14 +80,20 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 10000000
           setRows([]);
         }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          if (isInitialLoad) {
+            setLoading(false);
+          } else {
+            setRefreshing(false);
+          }
+        }
       }
     };
 
-    loadHistory();
+    loadHistory(true);
 
     const timer = autoRefreshMs
-      ? setInterval(loadHistory, autoRefreshMs)
+      ? setInterval(() => loadHistory(false), autoRefreshMs)
       : null;
 
     return () => {
@@ -103,7 +114,9 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 10000000
     <div className="tank-chart-card card">
       <div className="card-header">
         <h3>Tank Sensor Trends</h3>
-        <span className="tank-chart-meta">Auto refresh: {Math.round(autoRefreshMs / 1000)}s</span>
+        <span className="tank-chart-meta">
+          Auto refresh: {Math.round(autoRefreshMs / 1000)}s{refreshing ? ' (updating...)' : ''}
+        </span>
       </div>
 
       {loading ? (

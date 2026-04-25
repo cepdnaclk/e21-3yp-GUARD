@@ -43,6 +43,7 @@ export const logData = async (req, res) => {
 // Fetch historical data for frontend charts
 export const getTankHistory = async (req, res) => {
   const { tankId } = req.params;
+  const { from, to } = req.query;
 
   try {
     let accessWhere = null;
@@ -52,7 +53,7 @@ export const getTankHistory = async (req, res) => {
     } else if (req.user.role === "USER") {
       accessWhere = { tankId, workerIds: { has: req.user.userId } };
     } else {
-      return res.status(403).json({ error: "SUPER_ADMIN has no tank access." });
+      return res.status(403).json({ error: "Access denied." });
     }
 
     const tank = await prisma.tank.findFirst({
@@ -67,9 +68,32 @@ export const getTankHistory = async (req, res) => {
     // Sanitise tankId to prevent Flux injection
     const safeTankId = tankId.replace(/[^a-zA-Z0-9_-]/g, '');
 
+    let rangeClause = '|> range(start: -24h)';
+
+    if (from || to) {
+      const parsedFrom = from ? new Date(from) : null;
+      const parsedTo = to ? new Date(to) : null;
+
+      if ((parsedFrom && Number.isNaN(parsedFrom.getTime())) || (parsedTo && Number.isNaN(parsedTo.getTime()))) {
+        return res.status(400).json({ error: 'Invalid from/to date format.' });
+      }
+
+      if (parsedFrom && parsedTo && parsedFrom > parsedTo) {
+        return res.status(400).json({ error: '"from" must be earlier than "to".' });
+      }
+
+      if (parsedFrom && parsedTo) {
+        rangeClause = `|> range(start: time(v: "${parsedFrom.toISOString()}"), stop: time(v: "${parsedTo.toISOString()}"))`;
+      } else if (parsedFrom) {
+        rangeClause = `|> range(start: time(v: "${parsedFrom.toISOString()}"))`;
+      } else if (parsedTo) {
+        rangeClause = `|> range(start: -30d, stop: time(v: "${parsedTo.toISOString()}"))`;
+      }
+    }
+
     const fluxQuery = `
       from(bucket: "${process.env.INFLUX_BUCKET}")
-        |> range(start: -24h)
+        ${rangeClause}
         |> filter(fn: (r) => r._measurement == "water_quality")
         |> filter(fn: (r) => r.tankId == "${safeTankId}")
         |> aggregateWindow(every: 5m, fn: last, createEmpty: true)
@@ -78,12 +102,20 @@ export const getTankHistory = async (req, res) => {
     `;
 
     const historyData = [];
+    let responded = false;
 
     queryApi.queryRows(fluxQuery, {
       next(row, tableMeta) {
         const dataObject = tableMeta.toObject(row);
 
-        if (dataObject.temperature || dataObject.pH) {
+        const hasAnyValue =
+          dataObject.temperature != null ||
+          dataObject.pH != null ||
+          dataObject.tds != null ||
+          dataObject.turbidity != null ||
+          dataObject.waterLevel != null;
+
+        if (hasAnyValue) {
           historyData.push({
             time: dataObject._time,
             temp: dataObject.temperature || null,
@@ -95,10 +127,14 @@ export const getTankHistory = async (req, res) => {
         }
       },
       error(error) {
+        if (responded) return;
+        responded = true;
         console.error("Influx query error:", error);
         res.status(500).json({ error: "Failed to fetch historical data." });
       },
       complete() {
+        if (responded) return;
+        responded = true;
         res.status(200).json(historyData);
       },
     });

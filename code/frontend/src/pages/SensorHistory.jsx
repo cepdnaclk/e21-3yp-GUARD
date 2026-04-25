@@ -87,6 +87,9 @@ export default function SensorHistory() {
   const [readings, setReadings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [fetchError, setFetchError] = useState('');
+  const [fetchInfo, setFetchInfo] = useState('');
+  const [hasFetched, setHasFetched] = useState(false);
 
   const [filters, setFilters] = useState({
     deviceId: initialDeviceId,
@@ -97,8 +100,17 @@ export default function SensorHistory() {
 
   useEffect(() => {
     Promise.all([deviceApi.list()])
-      .then(([devs]) => { setDevices(devs); setSensorTypes(SENSOR_TYPES); })
-      .catch(() => {});
+      .then(([devs]) => {
+        setDevices(devs);
+        setSensorTypes(SENSOR_TYPES);
+        if (!initialDeviceId && Array.isArray(devs) && devs.length > 0) {
+          setFilters((prev) => ({ ...prev, deviceId: devs[0].deviceId }));
+        }
+        setFetchError('');
+      })
+      .catch((err) => {
+        setFetchError(err?.message || 'Failed to load devices.');
+      });
   }, []);
 
   // Auto-fetch if device_id in URL
@@ -107,19 +119,53 @@ export default function SensorHistory() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchHistory = async () => {
-    if (!filters.deviceId) return;
+    if (!filters.deviceId) {
+      setFetchError('Please select a device first.');
+      setFetchInfo('');
+      return;
+    }
+
+    if (filters.from && filters.to && new Date(filters.from) > new Date(filters.to)) {
+      setFetchError('"From" date must be before "To" date.');
+      setFetchInfo('');
+      return;
+    }
+
     setLoading(true);
+    setFetchError('');
+    setFetchInfo('');
     try {
       const params = { deviceId: filters.deviceId };
       if (filters.sensorId) params.sensorId = filters.sensorId;
-      if (filters.from) params.from = new Date(filters.from).toISOString();
-      if (filters.to) params.to = new Date(filters.to).toISOString();
-      setReadings(await sensorApi.history(params));
-    } catch { setReadings([]); }
-    setLoading(false);
+      // Keep datetime-local values as-is to avoid invalid Date conversion edge cases.
+      if (filters.from) params.from = filters.from;
+      if (filters.to) params.to = filters.to;
+      const fetched = await sensorApi.history(params);
+      setReadings(fetched);
+      setHasFetched(true);
+      setFetchInfo(
+        fetched.length > 0
+          ? `Loaded ${fetched.length} reading${fetched.length !== 1 ? 's' : ''}.`
+          : 'Fetch completed: no readings found for the selected filters.'
+      );
+    } catch (err) {
+      setReadings([]);
+      setHasFetched(true);
+      setFetchError(err?.message || 'Failed to fetch sensor history.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const set = (field) => (e) => setFilters({ ...filters, [field]: e.target.value });
+  const clearReadings = () => {
+    setReadings([]);
+    setHasFetched(false);
+    setFetchError('');
+    setFetchInfo('');
+    setShowAnalytics(false);
+  };
+
+  const set = (field) => (e) => setFilters((prev) => ({ ...prev, [field]: e.target.value }));
   const chartData = transformReadingsToChartData(readings);
   const selectedLineConfig = filters.sensorId ? getLineConfig(filters.sensorId) : null;
   const displayAnalyticsMessage = showAnalytics && readings.length === 0;
@@ -129,6 +175,8 @@ export default function SensorHistory() {
       <h3 className="sensor-history-title">Sensor History</h3>
 
       <div className="card">
+        {fetchError ? <p className="error-msg">{fetchError}</p> : null}
+        {fetchInfo ? <p className="sensor-history-summary">{fetchInfo}</p> : null}
         <div className="filters">
           <div className="form-group">
             <label>Device *</label>
@@ -158,8 +206,16 @@ export default function SensorHistory() {
             <label>To</label>
             <input type="datetime-local" value={filters.to} onChange={set('to')} />
           </div>
-          <button className="btn btn-primary action-pill-btn" onClick={fetchHistory} disabled={!filters.deviceId || loading} type="button">
+          <button className="btn btn-primary action-pill-btn" onClick={fetchHistory} type="button">
             {loading ? 'Loading...' : 'Fetch'}
+          </button>
+          <button
+            className="btn btn-primary action-pill-btn"
+            onClick={clearReadings}
+            type="button"
+            disabled={readings.length === 0 && !hasFetched}
+          >
+            Clear Readings
           </button>
           <button
             className="btn btn-primary action-pill-btn"
@@ -232,7 +288,7 @@ export default function SensorHistory() {
         )}
 
         {readings.length === 0 ? (
-          <div className="empty-state"><p>No readings found. Select a device and click Fetch.</p></div>
+          <div className="empty-state"><p>{hasFetched ? 'No readings found for the selected filters.' : 'Select a device and click Fetch.'}</p></div>
         ) : (
           <>
             <p className="sensor-history-summary">
