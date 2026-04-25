@@ -37,6 +37,7 @@ function toDeviceFromTank(tank) {
     createdAt: tank.createdAt,
     updatedAt: tank.updatedAt,
     status: tank.status,
+    workers: tank.workers || [],
     currentStats: {
       temp: tank.lastTemp,
       pH: tank.lastPh,
@@ -76,10 +77,17 @@ export const authApi = {
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   googleLogin: (idToken) => request('/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
+  updateProfile: (body) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
 
   // Admin-only routes.
   createAdmin: (body) => request('/auth/create-admin', { method: 'POST', body: JSON.stringify(body) }),
   createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
+  getUsersByAdmin: () => request('/auth/users'),
+  deleteUserByAdmin: (userId) => request(`/auth/users/${userId}`, { method: 'DELETE' }),
+
+  // SUPER_ADMIN-only routes.
+  getAdminsBySuperAdmin: () => request('/auth/admins'),
+  deleteAdminBySuperAdmin: (adminId) => request(`/auth/admins/${adminId}`, { method: 'DELETE' }),
 };
 
 export const deviceApi = {
@@ -104,6 +112,18 @@ export const deviceApi = {
 
   // POST /api/tanks/:tankId/assign-user
   assignUser: (tankId, userId) => request(`/tanks/${tankId}/assign-user`, { method: 'POST', body: JSON.stringify({ userId }) }),
+
+  // DELETE /api/tanks/:tankId
+  deleteTank: (tankId, name) => request(`/tanks/${tankId}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ name }),
+  }),
+
+  // POST /api/tanks/:tankId/actuators
+  actuate: (tankId, command) => request(`/tanks/${tankId}/actuators`, {
+    method: 'POST',
+    body: JSON.stringify({ command }),
+  }),
 
   // GET /api/tanks/:tankId/status
   get: async (tankId) => {
@@ -148,7 +168,24 @@ export const sensorApi = {
 
   // Fetches Influx history and reshapes it for charts and tables.
   history: async ({ deviceId, sensorId, from, to }) => {
-    const rows = await request(`/sensors/history/${deviceId}`);
+    const query = new URLSearchParams();
+
+    if (from) {
+      const parsedFrom = new Date(from);
+      if (!Number.isNaN(parsedFrom.getTime())) {
+        query.set('from', parsedFrom.toISOString());
+      }
+    }
+
+    if (to) {
+      const parsedTo = new Date(to);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        query.set('to', parsedTo.toISOString());
+      }
+    }
+
+    const querySuffix = query.toString() ? `?${query.toString()}` : '';
+    const rows = await request(`/sensors/history/${encodeURIComponent(deviceId)}${querySuffix}`);
     if (!Array.isArray(rows)) return [];
 
     const historyReadings = [];
@@ -158,14 +195,6 @@ export const sensorApi = {
 
       for (const reading of readings) {
         if (sensorId && reading.sensorId !== sensorId && reading.sensorType.sensorName !== sensorId) {
-          continue;
-        }
-
-        if (from && new Date(reading.readingTime) < new Date(from)) {
-          continue;
-        }
-
-        if (to && new Date(reading.readingTime) > new Date(to)) {
           continue;
         }
 

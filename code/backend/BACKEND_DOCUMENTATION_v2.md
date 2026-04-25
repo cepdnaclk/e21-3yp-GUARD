@@ -22,6 +22,7 @@ Protected routes:
 - POST /api/auth/create-user
 - POST /api/tanks/register
 - POST /api/tanks/:tankId/assign-user
+- POST /api/tanks/:tankId/actuators
 - GET /api/tanks
 - GET /api/tanks/:tankId/status
 - GET /api/sensors/history/:tankId
@@ -394,6 +395,60 @@ Access:
 - ADMIN can read own tanks
 - USER can read assigned tanks only
 
+### 6.5 Control Tank Actuators (ADMIN or USER)
+
+Endpoint:
+- POST /api/tanks/:tankId/actuators
+
+Headers:
+
+Authorization: Bearer <ADMIN_OR_USER_TOKEN>
+
+Request body example:
+
+```json
+{
+  "command": "feed"
+}
+```
+
+Supported commands:
+- feed: Activate feed mechanism
+- pump_on: Turn pump on
+- pump_off: Turn pump off
+
+Validation:
+- command is required and must be one of the supported values
+- user must have access to the tank (tank owner for ADMIN, assigned for USER)
+
+Success response example (202 Accepted):
+
+```json
+{
+  "message": "feed command queued.",
+  "tankId": "GUARD-001",
+  "command": "feed",
+  "topic": "device/GUARD-001/command",
+  "payload": "feed"
+}
+```
+
+Error responses:
+- 400 invalid command or missing fields
+- 404 tank not found or no access
+- 503 MQTT broker not connected or publish failed
+
+Behavior:
+- Command is published to MQTT topic device/{tankId}/command
+- Payload contains plain text command word (feed, pump_on, or pump_off)
+- Response returns 202 (Accepted) when command is queued successfully
+
+Related files:
+- src/routes/tankRoutes.js
+- src/controllers/actuatorController.js
+- src/services/actuatorService.js
+- src/services/mqttService.js
+
 ## 7. Sensor APIs
 
 Controller:
@@ -502,6 +557,29 @@ Current behavior:
 - payload time is ignored
 - Mongo latest tank state is updated
 - Influx measurement water_quality is updated
+
+## 9. MQTT Actuation
+
+Service:
+- src/services/mqttService.js
+- src/services/actuatorService.js
+
+Publish topic pattern:
+- device/{tankId}/command
+
+Supported commands:
+- feed: Activate feed mechanism
+- pump_on: Turn pump on
+- pump_off: Turn pump off
+
+Payload format:
+- Plain text string containing the command word
+
+Example:
+- Topic: device/GUARD-001/command
+- Payload: feed
+
+The backend publishes actuator commands when receiving requests to POST /api/tanks/:tankId/actuators with a JSON body containing the command field. The ESP32 connected to the MQTT broker receives the command on this topic and executes it.
 
 ## 9. Seed and Run
 

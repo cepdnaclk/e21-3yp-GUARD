@@ -112,7 +112,7 @@ export default function DeviceDetail() {
       </div>
 
       {/* Time Series Chart */}
-      <TankTimeSeriesChart deviceId={id} />
+      <TankTimeSeriesChart deviceId={id} autoRefreshMs={30000} />
 
       {/* Device Alerts */}
       {alerts.length > 0 && (
