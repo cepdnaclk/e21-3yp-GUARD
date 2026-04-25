@@ -7,12 +7,13 @@ const writeApi = influx.getWriteApi(process.env.INFLUX_ORG, process.env.INFLUX_B
 let mqttClient = null;
 
 export const initMqtt = () => {
-    // THE FIX: Secure TLS connection to HiveMQ Cloud
-    const client = mqtt.connect('mqtts://71d3962284c44824be0bfe8cfedfedb7.s1.eu.hivemq.cloud:8883', {
-        username: process.env.MQTT_USER,     // Make sure this is "thisen" in your .env
-        password: process.env.MQTT_PASSWORD, // Make sure this is "Thisen123thi" in your .env
-        clientId: `GUARD_Backend_${Math.random().toString(16).slice(3)}`, // Prevents cloud boot-loops
-        rejectUnauthorized: true // Enforces strict SSL/TLS verification
+    const brokenUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+
+    const client = mqtt.connect(brokenUrl, {
+        username: process.env.MQTT_USERNAME || process.env.MQTT_USER,
+        password: process.env.MQTT_PASSWORD,
+        clientId: `GUARD_Backend_${Math.random().toString(16).slice(3)}`,
+        rejectUnauthorized: true
     });
     mqttClient = client;
 
@@ -25,15 +26,15 @@ export const initMqtt = () => {
 
     client.on('message', async (topic, message) => {
         const topicParts = topic.split('/');
-        
-        const tankId = topicParts[1];       
-        const sensorType = topicParts[2];   
+
+        const tankId = topicParts[1];
+        const sensorType = topicParts[2];
 
         try {
             const payload = JSON.parse(message.toString());
             const sensorValue = parseFloat(payload.value);
-            
-            let mongoData = { status: "online" }; 
+
+            let mongoData = { status: "online" };
             let influxFieldName = "";
 
             switch (sensorType) {
@@ -59,24 +60,34 @@ export const initMqtt = () => {
                     break;
                 default:
                     console.log(`⚠️ Unknown sensor topic: ${sensorType}`);
-                    return; 
+                    return;
             }
 
             // TASK A: Update MongoDB 
-            await prisma.tank.update({
-                where: { tankId },
-                data: mongoData
-            });
+            const tank = await prisma.tank.findUnique({ where: { tankId } });
+            if (tank) {
+                await prisma.tank.update({
+                    where: { tankId },
+                    data: mongoData
+                });
+            } else {
+                console.warn(`⚠️ Tank ${tankId} not found in MongoDB. Skipping MQTT update.`);
+                // We still write to InfluxDB if we want history for unregistered tanks, 
+                // but usually we only want it for registered ones. 
+                // Let's only write to Influx if tank exists.
+            }
 
-            // TASK B: Update InfluxDB 
-            const point = new Point('water_quality')
-                .tag('tankId', tankId)
-                .floatField(influxFieldName, sensorValue);
+            if (tank) {
+                // TASK B: Update InfluxDB 
+                const point = new Point('water_quality')
+                    .tag('tankId', tankId)
+                    .floatField(influxFieldName, sensorValue);
 
-            writeApi.writePoint(point);
-            await writeApi.flush();
+                writeApi.writePoint(point);
+                await writeApi.flush();
 
-            console.log(`⚡ MQTT sync: Tank ${tankId} -> [${sensorType}] updated to ${sensorValue}`);
+                console.log(`⚡ MQTT sync: Tank ${tankId} -> [${sensorType}] updated to ${sensorValue}`);
+            }
 
         } catch (error) {
             console.error(`❌ MQTT Error for Tank ${tankId}:`, error.message);
