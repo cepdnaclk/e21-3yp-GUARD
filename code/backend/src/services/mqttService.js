@@ -131,6 +131,23 @@ export const processAlert = async (tankId, parameter, alertType, sensorValue) =>
         return;
     }
 
+    // 1.5 Save the alert to the database for the /alerts page
+    try {
+        await prisma.alert.create({
+            data: {
+                tankId: tankId,
+                tankInternalId: tank.id,
+                type: parameter,
+                message: alertType,
+                value: sensorValue,
+                resolved: false
+            }
+        });
+        console.log(`✅ Alert saved to database for Tank ${tankId}`);
+    } catch (dbError) {
+        console.error(`❌ Failed to save alert to database:`, dbError.message);
+    }
+
     // 2. Collect all emails
     const recipientEmails = [tank.admin.email, ...tank.workers.map(w => w.email)];
     

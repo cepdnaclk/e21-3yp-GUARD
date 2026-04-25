@@ -1,30 +1,7 @@
 import { useState, useEffect } from 'react';
-import { deviceApi, sensorApi } from '../services/api';
+import { deviceApi, alertApi } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 import '../styles/alerts.css';
-
-function buildAlerts(devices, sensorData) {
-  const alerts = [];
-
-  for (const device of devices) {
-    const readings = sensorData[device.deviceId] || [];
-    const hasReadings = readings.length > 0;
-
-    if (!hasReadings || device.status !== 'online') {
-      alerts.push({
-        id: `${device.deviceId}-offline`,
-        type: 'Status',
-        message: `${device.deviceName || `Tank ${device.deviceId}`} appears offline`,
-        value: device.status || 'unknown',
-        deviceId: device.deviceId,
-        createdAt: device.updatedAt || new Date().toISOString(),
-        resolved: false,
-      });
-    }
-  }
-
-  return alerts;
-}
 
 export default function Alerts() {
   const [searchParams] = useSearchParams();
@@ -32,46 +9,44 @@ export default function Alerts() {
 
   const [devices, setDevices] = useState([]);
   const [alerts, setAlerts] = useState([]);
-  const [allAlerts, setAllAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(null);
 
   const [filters, setFilters] = useState({
     deviceId: initialDeviceId,
-    resolved: 'false',
+    resolved: 'false', // Default to active alerts
   });
 
   const loadAlerts = async (f = filters) => {
     setLoading(true);
     try {
+      // 1. Load registered devices for filters
       const devs = await deviceApi.list();
-
-      const readingEntries = await Promise.all(
-        devs.map(async (device) => {
-          try {
-            const latest = await sensorApi.latest(device.deviceId);
-            return [device.deviceId, Array.isArray(latest) ? latest : []];
-          } catch {
-            return [device.deviceId, []];
-          }
-        })
-      );
-
-      const sensorData = Object.fromEntries(readingEntries);
-      const generatedAlerts = buildAlerts(devs, sensorData);
-
       setDevices(devs);
-      setAllAlerts(generatedAlerts);
 
-      const filteredAlerts = generatedAlerts.filter((alert) => {
-        if (f.deviceId && alert.deviceId !== f.deviceId) return false;
-        if (f.resolved === 'true' && !alert.resolved) return false;
-        if (f.resolved === 'false' && alert.resolved) return false;
-        return true;
+      // 2. Load stored alerts from backend (MQTT alerts)
+      const storedAlerts = await alertApi.list({
+        tankId: f.deviceId,
+        resolved: f.resolved === '' ? undefined : f.resolved
       });
 
-      setAlerts(filteredAlerts);
-    } catch { setAlerts([]); }
+      // 3. Reshape for UI
+      const processedAlerts = storedAlerts.map(a => ({
+        id: a.id,
+        type: a.type.charAt(0).toUpperCase() + a.type.slice(1),
+        message: a.message,
+        value: a.value,
+        deviceId: a.tankId,
+        createdAt: a.createdAt,
+        resolved: a.resolved,
+        tankName: a.tank?.name
+      }));
+
+      setAlerts(processedAlerts);
+    } catch (err) { 
+      console.error("Failed to load alerts:", err);
+      setAlerts([]); 
+    }
     setLoading(false);
   };
 
@@ -88,20 +63,12 @@ export default function Alerts() {
   const handleResolve = async (alertId) => {
     setResolving(alertId);
     try {
-      const updated = allAlerts.map((alert) => (
-        alert.id === alertId ? { ...alert, resolved: true } : alert
-      ));
-      setAllAlerts(updated);
-
-      const filtered = updated.filter((alert) => {
-        if (filters.deviceId && alert.deviceId !== filters.deviceId) return false;
-        if (filters.resolved === 'true' && !alert.resolved) return false;
-        if (filters.resolved === 'false' && alert.resolved) return false;
-        return true;
-      });
-
-      setAlerts(filtered);
-    } catch { /* ignore */ }
+      await alertApi.resolve(alertId);
+      // Refresh list after resolve
+      await loadAlerts();
+    } catch (err) {
+      alert(err.message || "Failed to resolve alert");
+    }
     setResolving(null);
   };
 
@@ -162,7 +129,7 @@ export default function Alerts() {
                     </td>
                     <td>{a.message}</td>
                     <td>{a.value}</td>
-                    <td>{a.deviceId}</td>
+                    <td>{a.deviceId} {a.tankName ? `(${a.tankName})` : ''}</td>
                     <td>{new Date(a.createdAt).toLocaleString()}</td>
                     <td>
                       {a.resolved

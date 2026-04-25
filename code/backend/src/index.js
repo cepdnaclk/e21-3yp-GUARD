@@ -4,6 +4,7 @@ import 'dotenv/config';
 import authRoutes from './routes/authRoutes.js';
 import tankRoutes from './routes/tankRoutes.js';     // ADDED THIS IMPORT
 import sensorRoutes from './routes/sensorRoutes.js'; // ADDED THIS IMPORT
+import alertRoutes from './routes/alertRoutes.js';
 import prisma from './lib/prisma.js'; 
 import { initMqtt } from './services/mqttService.js';
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/tanks', tankRoutes);     // ADDED THIS ROUTE
 app.use('/api/sensors', sensorRoutes); // ADDED THIS ROUTE
+app.use('/api/alerts', alertRoutes);
 
 app.get('/', (req, res) => res.send('Water IoT Backend is running!'));
 

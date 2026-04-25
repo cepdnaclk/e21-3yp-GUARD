@@ -86,6 +86,14 @@ export const authApi = {
   createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
 };
 
+export const alertApi = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/alerts?${qs}`);
+  },
+  resolve: (alertId) => request('/alerts/resolve', { method: 'POST', body: JSON.stringify({ alertId }) }),
+};
+
 export const deviceApi = {
   // GET /api/tanks
   list: async () => {
