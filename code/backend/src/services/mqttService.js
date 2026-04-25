@@ -6,8 +6,8 @@ const influx = new InfluxDB({ url: process.env.INFLUX_URL, token: process.env.IN
 const writeApi = influx.getWriteApi(process.env.INFLUX_ORG, process.env.INFLUX_BUCKET, 'ns');
 
 export const initMqtt = () => {
-    const client = mqtt.connect('mqtt://localhost:1883', {
-        username: process.env.MQTT_USER,
+    const client = mqtt.connect(process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883', {
+        username: process.env.MQTT_USERNAME || process.env.MQTT_USER,
         password: process.env.MQTT_PASSWORD
     }); 
 
@@ -62,20 +62,30 @@ export const initMqtt = () => {
             }
 
             // TASK A: Update MongoDB 
-            await prisma.tank.update({
-                where: { tankId },
-                data: mongoData
-            });
+            const tank = await prisma.tank.findUnique({ where: { tankId } });
+            if (tank) {
+                await prisma.tank.update({
+                    where: { tankId },
+                    data: mongoData
+                });
+            } else {
+                console.warn(`⚠️ Tank ${tankId} not found in MongoDB. Skipping MQTT update.`);
+                // We still write to InfluxDB if we want history for unregistered tanks, 
+                // but usually we only want it for registered ones. 
+                // Let's only write to Influx if tank exists.
+            }
 
-            // TASK B: Update InfluxDB 
-            const point = new Point('water_quality')
-                .tag('tankId', tankId)
-                .floatField(influxFieldName, sensorValue);
+            if (tank) {
+                // TASK B: Update InfluxDB 
+                const point = new Point('water_quality')
+                    .tag('tankId', tankId)
+                    .floatField(influxFieldName, sensorValue);
 
-            writeApi.writePoint(point);
-            await writeApi.flush();
+                writeApi.writePoint(point);
+                await writeApi.flush();
 
-            console.log(`⚡ MQTT sync: Tank ${tankId} -> [${sensorType}] updated to ${sensorValue}`);
+                console.log(`⚡ MQTT sync: Tank ${tankId} -> [${sensorType}] updated to ${sensorValue}`);
+            }
 
         } catch (error) {
             console.error(`❌ MQTT Error for Tank ${tankId}:`, error.message);
