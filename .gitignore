@@ -9,3 +9,6 @@ code/backend/scratch/create_admin.js
 code/backend/scratch/find_user_by_email.js
 code/backend/scratch/find_tank.js
 code/backend/scratch/find_admin.js
+code/backend/scratch/cleanup_alerts.js
+code/backend/scratch/dump_alerts.js
+code/backend/scratch/test_unassign.js

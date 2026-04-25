@@ -7,6 +7,8 @@ import {
   createUserByAdmin,
   verifyEmail,
   resendVerificationEmail,
+  getWorkersByAdmin,
+  getMe,
 } from "../controllers/authController.js";
 import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
@@ -22,6 +24,7 @@ router.get("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerificationEmail);
 
 // ── Protected routes ─────────────────────────────────────────────────────────
+router.get("/me", verifyToken, getMe);
 router.post(
   "/create-admin",
   verifyToken,
@@ -34,6 +37,13 @@ router.post(
   verifyToken,
   requireRole("ADMIN"),
   createUserByAdmin
+);
+
+router.get(
+  "/workers",
+  verifyToken,
+  requireRole("ADMIN"),
+  getWorkersByAdmin
 );
 
 export default router;

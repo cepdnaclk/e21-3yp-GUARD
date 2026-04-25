@@ -455,3 +455,54 @@ export const googleLogin = async (req, res) => {
     return res.status(401).json({ error: "Invalid Google token." });
   }
 };
+
+// ─── Get Workers (ADMIN only) ────────────────────────────────────────────────
+export const getWorkersByAdmin = async (req, res) => {
+  const adminId = req.user.userId;
+
+  try {
+    const workers = await prisma.user.findMany({
+      where: { adminId, role: "USER" },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+      },
+    });
+
+    return res.json(workers);
+  } catch (error) {
+    console.error("Get workers error:", error);
+    return res.status(500).json({ error: "Failed to fetch workers." });
+  }
+};
+
+// ─── Get Current User Profile (Token Required) ────────────────────────────────
+export const getMe = async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        address: true,
+        phoneNumber: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    console.error("Get me error:", error);
+    return res.status(500).json({ error: "Failed to fetch profile." });
+  }
+};

@@ -1,22 +1,7 @@
 import prisma from "../lib/prisma.js";
+import { findAccessibleTank } from "../lib/tankAccess.js";
 
 const uniqueIds = (arr) => [...new Set(arr || [])];
-
-const findAccessibleTank = async (tankId, user) => {
-  if (user.role === "ADMIN") {
-    return prisma.tank.findFirst({
-      where: { tankId, adminId: user.userId },
-    });
-  }
-
-  if (user.role === "USER") {
-    return prisma.tank.findFirst({
-      where: { tankId, workerIds: { has: user.userId } },
-    });
-  }
-
-  return null;
-};
 
 export const registerTank = async (req, res) => {
   const { name, tankId, workerIds = [] } = req.body;
@@ -147,16 +132,30 @@ export const getTankStatus = async (req, res) => {
   const { tankId } = req.params;
 
   try {
-    const tank = await findAccessibleTank(tankId, req.user);
+    const tank = await prisma.tank.findUnique({
+      where: { tankId },
+      include: {
+        workers: {
+          select: { id: true, fullName: true, username: true }
+        }
+      }
+    });
 
     if (!tank) {
-      return res.status(404).json({ error: "Tank not found or no access." });
+      return res.status(404).json({ error: "Tank not found." });
+    }
+
+    // Verify access
+    const accessible = await findAccessibleTank(tankId, req.user);
+    if (!accessible) {
+      return res.status(403).json({ error: "Access denied." });
     }
 
     return res.json({
       name: tank.name,
       tankId: tank.tankId,
       status: tank.status,
+      workers: tank.workers, // Include worker details
       currentStats: {
         temp: tank.lastTemp,
         pH: tank.lastPh,
@@ -168,5 +167,51 @@ export const getTankStatus = async (req, res) => {
   } catch (error) {
     console.error("Get tank status error:", error);
     return res.status(500).json({ error: "Error fetching tank status." });
+  }
+};
+
+export const unassignUserFromTank = async (req, res) => {
+  const { tankId } = req.params;
+  const { userId } = req.body;
+  const adminId = req.user.userId;
+
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required." });
+  }
+
+  try {
+    const tank = await prisma.tank.findFirst({
+      where: { tankId, adminId },
+    });
+
+    if (!tank) {
+      return res.status(404).json({ error: `Tank ${tankId} not found or you are not the owner.` });
+    }
+
+    const worker = await prisma.user.findFirst({
+      where: { id: userId, role: "USER", adminId },
+    });
+
+    if (!worker) {
+      return res.status(404).json({ error: "Worker not found or not created by you." });
+    }
+
+    const nextWorkerIds = (tank.workerIds || []).filter(id => id !== userId);
+    const nextAssignedTankIds = (worker.assignedTankIds || []).filter(id => id !== tank.id);
+
+    await prisma.tank.update({
+      where: { id: tank.id },
+      data: { workerIds: nextWorkerIds },
+    });
+
+    await prisma.user.update({
+      where: { id: worker.id },
+      data: { assignedTankIds: nextAssignedTankIds },
+    });
+
+    return res.status(200).json({ message: "User unassigned from tank successfully." });
+  } catch (error) {
+    console.error("Unassign user error:", error);
+    return res.status(500).json({ error: "Failed to unassign user from tank." });
   }
 };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { deviceApi, sensorApi } from '../services/api';
+import { deviceApi, sensorApi, authApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import TankTimeSeriesChart from '../components/TankTimeSeriesChart';
 import '../styles/device-detail.css';
 
@@ -45,29 +46,66 @@ function buildLocalAlerts(device, readings) {
 
 export default function DeviceDetail() {
   const { id } = useParams();
+  const { role } = useAuth();
   const [device, setDevice] = useState(null);
   const [readings, setReadings] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [dev, latest] = await Promise.all([
-          deviceApi.get(id),
-          sensorApi.latest(id),
-        ]);
-        setDevice(dev);
-        setReadings(latest);
-        setAlerts(buildLocalAlerts(dev, latest));
-      } catch (err) {
-        setError(err.message);
+  // Admin only: list of all workers to assign from
+  const [allWorkers, setAllWorkers] = useState([]);
+  const [busy, setBusy] = useState(false);
+
+  const loadData = async () => {
+    try {
+      const [dev, latest] = await Promise.all([
+        deviceApi.get(id),
+        sensorApi.latest(id),
+      ]);
+      setDevice(dev);
+      setReadings(latest);
+      setAlerts(buildLocalAlerts(dev, latest));
+
+      if (role === 'ADMIN') {
+        const workers = await authApi.listWorkers();
+        setAllWorkers(workers);
       }
+    } catch (err) {
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
-    load();
-  }, [id]);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [id, role]);
+
+  const handleAssign = async (userId) => {
+    setBusy(true);
+    try {
+      await deviceApi.assignUser(id, userId);
+      await loadData(); // Refresh device workers
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleUnassign = async (userId) => {
+    if (!window.confirm('Are you sure you want to remove this worker from this device?')) return;
+    setBusy(true);
+    try {
+      await deviceApi.unassignUser(id, userId);
+      await loadData(); // Refresh device workers
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading) return <div className="empty-state"><p>Loading device...</p></div>;
   if (error) return <div className="empty-state"><p className="error-msg">{error}</p></div>;
@@ -113,6 +151,63 @@ export default function DeviceDetail() {
 
       {/* Time Series Chart */}
       <TankTimeSeriesChart deviceId={id} />
+
+      {/* Worker Assignment (ADMIN only) */}
+      {role === 'ADMIN' && (
+        <div className="card">
+          <div className="card-header">
+            <h3>Assigned Workers ({device.workers?.length || 0})</h3>
+            <div className="worker-assign-form">
+              <select 
+                className="form-control" 
+                defaultValue="" 
+                onChange={(e) => e.target.value && handleAssign(e.target.value)}
+                disabled={busy}
+              >
+                <option value="" disabled>Assign a worker...</option>
+                {allWorkers
+                  .filter(w => !device.workers?.some(aw => aw.id === w.id))
+                  .map(w => (
+                    <option key={w.id} value={w.id}>{w.fullName} ({w.username})</option>
+                  ))
+                }
+              </select>
+            </div>
+          </div>
+          {device.workers?.length === 0 ? (
+            <div className="empty-state"><p>No workers assigned to this device.</p></div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {device.workers.map((w) => (
+                    <tr key={w.id}>
+                      <td>{w.fullName}</td>
+                      <td>{w.username}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button 
+                          className="btn btn-outline btn-sm btn-danger" 
+                          onClick={() => handleUnassign(w.id)}
+                          disabled={busy}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Device Alerts */}
       {alerts.length > 0 && (

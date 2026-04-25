@@ -46,11 +46,7 @@ const getLocalIp = () => {
  * @param {string} token     - The raw verification token (will be URL-encoded)
  */
 export const sendVerificationEmail = async (toEmail, fullName, token) => {
-  // TEMP: Force use of host LAN IP so the link works from a phone.
-  // We ignore process.env.FRONTEND_URL here temporarily because Node might not
-  // reload the .env file without a full backend restart.
-  // Revert back when done: const baseUrl = process.env.FRONTEND_URL || `http://${getLocalIp()}:5173`;
-  const baseUrl = `http://${getLocalIp()}:5173`;
+  const baseUrl = process.env.FRONTEND_URL || `http://${getLocalIp()}:5173`;
   const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
 
   const mailOptions = {

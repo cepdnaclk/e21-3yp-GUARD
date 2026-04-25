@@ -1,164 +1,184 @@
 import mqtt from 'mqtt';
 import prisma from '../lib/prisma.js';
-import { InfluxDB, Point } from '@influxdata/influxdb-client';
+import { Point } from '@influxdata/influxdb-client';
+import { writeApi } from '../lib/influx.js';
 import { sendAlertEmail } from './emailService.js';
+import { io } from '../index.js';
 
-const influx = new InfluxDB({ url: process.env.INFLUX_URL, token: process.env.INFLUX_TOKEN });
-const writeApi = influx.getWriteApi(process.env.INFLUX_ORG, process.env.INFLUX_BUCKET, 'ns');
 let mqttClient = null;
 
+// Sensor type → [mongoField, influxField]
+const SENSOR_MAP = {
+    temperature: ['lastTemp', 'temperature'],
+    ph:          ['lastPh', 'pH'],
+    tds:         ['lastTds', 'tds'],
+    turbidity:   ['lastTurb', 'turbidity'],
+    waterlevel:  ['lastWaterLevel', 'waterLevel'],
+};
+
 export const initMqtt = () => {
-    // Read the broker URL from .env, fallback to localhost if not found
     const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
     
     const client = mqtt.connect(brokerUrl, {
         username: process.env.MQTT_USERNAME || process.env.MQTT_USER,
         password: process.env.MQTT_PASSWORD,
         clientId: `GUARD_Backend_${Math.random().toString(16).slice(3)}`,
-        rejectUnauthorized: true // Enforces strict SSL/TLS verification for HiveMQ Cloud
+        rejectUnauthorized: true,
     });
     mqttClient = client;
 
     client.on('connect', () => {
-        console.log(`☁️  MQTT Broker connected successfully to ${brokerUrl}!`);
+        console.log(`☁️  MQTT connected to ${brokerUrl}`);
         client.subscribe(['sensor/+/+', 'alert/+/+'], (err) => {
-            if (!err) console.log('✅ Listening for sensor and alert topics via HiveMQ...');
+            if (!err) console.log('✅ Listening for sensor and alert topics...');
         });
     });
 
     client.on('message', async (topic, message) => {
-        const topicParts = topic.split('/');
-        
-        const tankId = topicParts[1];       
-        const sensorType = topicParts[2];   
+        const [prefix, tankId, sensorType] = topic.split('/');
 
         try {
             const payload = JSON.parse(message.toString());
 
-            if (topicParts[0] === 'alert') {
-                const alertType = payload.alert || 'OUT OF RANGE';
-                const sensorValue = payload.value;
-                const parameter = topicParts[2];
+            if (prefix === 'alert') {
+                await processAlert(
+                    tankId,
+                    sensorType,
+                    payload.alert || 'OUT OF RANGE',
+                    payload.value
+                );
+                return;
+            }
 
-                await processAlert(tankId, parameter, alertType, sensorValue);
+            // ── Sensor data ingestion ────────────────────────────────────
+            const mapping = SENSOR_MAP[sensorType];
+            if (!mapping) {
+                console.log(`⚠️ Unknown sensor topic: ${sensorType}`);
                 return;
             }
 
             const sensorValue = parseFloat(payload.value);
-            
-            let mongoData = { status: "online" }; 
-            let influxFieldName = "";
-
-            switch (sensorType) {
-                case 'temperature':
-                    mongoData.lastTemp = sensorValue;
-                    influxFieldName = 'temperature';
-                    break;
-                case 'ph':
-                    mongoData.lastPh = sensorValue;
-                    influxFieldName = 'pH';
-                    break;
-                case 'tds':
-                    mongoData.lastTds = sensorValue;
-                    influxFieldName = 'tds';
-                    break;
-                case 'turbidity':
-                    mongoData.lastTurb = sensorValue;
-                    influxFieldName = 'turbidity';
-                    break;
-                case 'waterlevel':
-                    mongoData.lastWaterLevel = sensorValue;
-                    influxFieldName = 'waterLevel';
-                    break;
-                default:
-                    console.log(`⚠️ Unknown sensor topic: ${sensorType}`);
-                    return; 
+            if (Number.isNaN(sensorValue)) {
+                console.warn(`⚠️ Invalid sensor value for ${tankId}/${sensorType}: ${payload.value}`);
+                return;
             }
 
-            // TASK A: Update MongoDB (only if tank is registered)
-            const tankExists = await prisma.tank.findUnique({
-                where: { tankId }
-            });
+            const [mongoField, influxField] = mapping;
 
-            if (!tankExists) {
-                console.log(`⚠️ Ignored MQTT message for unregistered Tank: ${tankId}`);
-                return; // Stop processing if tank isn't in MongoDB
+            // Single DB call: update returns error if tank doesn't exist
+            try {
+                await prisma.tank.update({
+                    where: { tankId },
+                    data: { [mongoField]: sensorValue, status: 'online' },
+                });
+            } catch (updateErr) {
+                // P2025 = Record not found — tank is not registered
+                if (updateErr.code === 'P2025') {
+                    return; // silently ignore unregistered tanks
+                }
+                throw updateErr;
             }
 
-            await prisma.tank.update({
-                where: { tankId },
-                data: mongoData
-            });
-
-            // TASK B: Update InfluxDB 
+            // Write to InfluxDB (batched — flush handled by writeApi config)
             const point = new Point('water_quality')
                 .tag('tankId', tankId)
-                .floatField(influxFieldName, sensorValue);
-
+                .floatField(influxField, sensorValue);
             writeApi.writePoint(point);
-            await writeApi.flush();
 
-            console.log(`⚡ MQTT sync: Tank ${tankId} -> [${sensorType}] updated to ${sensorValue}`);
+            // Real-time update via Socket.io
+            if (io) {
+                io.emit('sensor_data', { 
+                    tankId, 
+                    sensorType, 
+                    value: sensorValue,
+                    timestamp: new Date().toISOString()
+                });
+            }
 
         } catch (error) {
-            console.error(`❌ MQTT Error for Tank ${tankId}:`, error.message);
+            console.error(`❌ MQTT Error for ${tankId}:`, error.message);
         }
     });
 
-    // Helpful error logging if HiveMQ rejects the connection
     client.on('error', (err) => {
         console.error('❌ MQTT Connection Error:', err.message);
+    });
+
+    client.on('offline', () => {
+        console.warn('⚠️ MQTT client went offline');
+    });
+
+    client.on('reconnect', () => {
+        console.log('🔄 MQTT reconnecting...');
     });
 };
 
 /**
- * Internal logic to handle an alert: find users and send emails.
+ * Cleanly disconnect the MQTT client on server shutdown.
+ */
+export const shutdownMqtt = () => {
+    if (mqttClient) {
+        mqttClient.end(true);
+        console.log('✅ MQTT client disconnected.');
+    }
+};
+
+/**
+ * Process an alert: persist to DB, then notify users by email.
  */
 export const processAlert = async (tankId, parameter, alertType, sensorValue) => {
-    console.log(`🚨 Processing ALERT for Tank ${tankId}: ${alertType} (${sensorValue})`);
+    console.log(`🚨 ALERT for Tank ${tankId}: ${parameter} ${alertType} (${sensorValue})`);
 
-    // 1. Find the tank and its associated users (Admin + Workers)
     const tank = await prisma.tank.findUnique({
         where: { tankId },
         include: {
             admin: { select: { email: true } },
-            workers: { select: { email: true } }
-        }
+            workers: { select: { email: true } },
+        },
     });
 
     if (!tank) {
-        console.warn(`⚠️ Alert received for unregistered Tank: ${tankId}`);
+        console.warn(`⚠️ Alert for unregistered Tank: ${tankId}`);
         return;
     }
 
-    // 1.5 Save the alert to the database for the /alerts page
+    // Save alert to DB
     try {
-        await prisma.alert.create({
-            data: {
-                tankId: tankId,
-                tankInternalId: tank.id,
-                type: parameter,
-                message: alertType,
-                value: sensorValue,
-                resolved: false
-            }
-        });
-        console.log(`✅ Alert saved to database for Tank ${tankId}`);
+        const alertData = {
+            tankId,
+            tankInternalId: tank.id,
+            type: parameter,
+            message: alertType,
+            value: sensorValue ?? 0,
+            resolved: false,
+        };
+
+        const newAlert = await prisma.alert.create({ data: alertData });
+        
+        // Real-time notification via Socket.io
+        if (io) {
+            io.emit('alert_new', {
+                ...newAlert,
+                tankName: tank.name
+            });
+        }
     } catch (dbError) {
-        console.error(`❌ Failed to save alert to database:`, dbError.message);
+        console.error('❌ Failed to save alert to DB:', dbError.message);
     }
 
-    // 2. Collect all emails
-    const recipientEmails = [tank.admin.email, ...tank.workers.map(w => w.email)];
-    
-    // 3. Send emails in parallel
-    const emailPromises = recipientEmails.map(email => 
-        sendAlertEmail(email, tank.name, `${parameter} ${alertType}`, sensorValue)
-            .catch(err => console.error(`❌ Failed to send alert email to ${email}:`, err.message))
+    // Send emails concurrently
+    const emails = [
+        tank.admin.email,
+        ...tank.workers.map((w) => w.email),
+    ].filter(Boolean);
+
+    await Promise.allSettled(
+        emails.map((email) =>
+            sendAlertEmail(email, tank.name, `${parameter} ${alertType}`, sensorValue)
+        )
     );
 
-    await Promise.all(emailPromises);
-    console.log(`🚨 ALERT EMAIL SENT for Tank ${tankId} [${parameter}]: ${alertType} (${sensorValue})`);
+    console.log(`📧 Alert emails sent to ${emails.length} recipient(s)`);
 };
 
 export const publishActuatorCommand = (topic, payload) => {
@@ -170,11 +190,7 @@ export const publishActuatorCommand = (topic, payload) => {
 
     return new Promise((resolve, reject) => {
         mqttClient.publish(topic, message, { qos: 0 }, (error) => {
-            if (error) {
-                reject(error);
-                return;
-            }
-
+            if (error) return reject(error);
             resolve();
         });
     });

@@ -18,7 +18,7 @@ export const getAlerts = async (req, res) => {
 
         // 2. Filters
         if (tankId) query.tankId = tankId;
-        if (resolved !== undefined) query.resolved = resolved === 'true';
+        if (resolved === 'true' || resolved === 'false') query.resolved = resolved === 'true';
 
         const alerts = await prisma.alert.findMany({
             where: query,

@@ -84,6 +84,7 @@ export const authApi = {
   // Admin-only routes.
   createAdmin: (body) => request('/auth/create-admin', { method: 'POST', body: JSON.stringify(body) }),
   createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
+  listWorkers: () => request('/auth/workers'),
 };
 
 export const alertApi = {
@@ -117,6 +118,9 @@ export const deviceApi = {
   // POST /api/tanks/:tankId/assign-user
   assignUser: (tankId, userId) => request(`/tanks/${tankId}/assign-user`, { method: 'POST', body: JSON.stringify({ userId }) }),
 
+  // POST /api/tanks/:tankId/unassign-user
+  unassignUser: (tankId, userId) => request(`/tanks/${tankId}/unassign-user`, { method: 'POST', body: JSON.stringify({ userId }) }),
+
   // GET /api/tanks/:tankId/status
   get: async (tankId) => {
     const status = await request(`/tanks/${tankId}/status`);
@@ -125,6 +129,7 @@ export const deviceApi = {
       deviceId: status.tankId,
       deviceName: status.name,
       status: status.status,
+      workers: status.workers || [],
       currentStats: status.currentStats || {},
     };
   },

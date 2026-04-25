@@ -98,7 +98,7 @@ model Alert {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   
   // Link to the tank
-  tankId    String   // The human-readable tank ID (e.g., GUARD-101)
+  tankId    String?  // human-readable tank ID (e.g., GUARD-101); nullable for legacy records
   tank      Tank     @relation(fields: [tankInternalId], references: [id])
   tankInternalId String @db.ObjectId @map("tank_internal_id")
 

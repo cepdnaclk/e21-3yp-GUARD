@@ -5,6 +5,7 @@ import {
   getTankStatus,
   getAllTanks,
   assignUserToTank,
+  unassignUserFromTank,
 } from "../controllers/tankController.js";
 import { sendActuatorCommand } from "../controllers/actuatorController.js";
 import {
@@ -14,6 +15,12 @@ import {
 } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+router.use((req, res, next) => {
+    console.log(`📦 TankRouter: ${req.method} ${req.url}`);
+    next();
+});
+
 const validateRequest = (req, res, next) => {
   const errors = validationResult(req);
 
@@ -26,6 +33,7 @@ const validateRequest = (req, res, next) => {
 
 router.post("/register", verifyToken, requireRole("ADMIN"), registerTank);
 router.post("/:tankId/assign-user", verifyToken, requireRole("ADMIN"), assignUserToTank);
+router.post("/:tankId/unassign-user", verifyToken, requireRole("ADMIN"), unassignUserFromTank);
 
 router.post(
   "/:tankId/actuators",
