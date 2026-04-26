@@ -145,3 +145,50 @@ export const sendAlertEmail = async (toEmail, tankName, alertType, value) => {
 
   await transporter.sendMail(mailOptions);
 };
+
+/**
+ * Send a 6-digit password reset code.
+ */
+export const sendPasswordResetEmail = async (toEmail, fullName, code) => {
+  const mailOptions = {
+    from: `"G.U.A.R.D System" <${process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: "Your G.U.A.R.D Password Reset Code",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <style>
+            body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #1a73e8, #0d47a1); padding: 32px; text-align: center; }
+            .header h1 { color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 2px; }
+            .body { padding: 32px; color: #333333; }
+            .body p { line-height: 1.6; }
+            .code-box { background: #f4f4f4; border: 2px dashed #1a73e8; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #1a73e8; }
+            .footer { background: #f4f4f4; padding: 16px 32px; font-size: 12px; color: #888888; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Password Reset</h1>
+            </div>
+            <div class="body">
+              <p>Hi <strong>${fullName}</strong>,</p>
+              <p>We received a request to reset your password. Here is your 6-digit verification code:</p>
+              <div class="code-box">${code}</div>
+              <p>This code will expire in 15 minutes. If you did not request this, please ignore this email.</p>
+            </div>
+            <div class="footer">
+              &copy; ${new Date().getFullYear()} G.U.A.R.D — Aquatic Monitoring System
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};

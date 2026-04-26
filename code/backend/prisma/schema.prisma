@@ -28,11 +28,13 @@ model User {
   createdAt   DateTime @default(now())
 
   // ==========================================
-  // ✉️ EMAIL VERIFICATION
+  // ✉️ EMAIL VERIFICATION & PASSWORD RESET
   // ==========================================
   emailVerified           Boolean  @default(false)
   verificationToken       String?  @unique
   verificationTokenExpiry DateTime?
+  resetPasswordToken      String?  
+  resetPasswordExpiry     DateTime?
 
   // ==========================================
   // 🏢 HIERARCHY: ADMIN -> USERS
@@ -58,14 +60,16 @@ model User {
 model Tank {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   tankId       String   @unique // e.g., "GUARD-001"
+  productKey   String   @unique // 16 digits key: XXXX-XXXX-XXXX-XXXX
   name         String
+  isRegistered Boolean  @default(false)
   
   // ==========================================
   // 👑 OWNERSHIP & ACCESS CONTROL
   // ==========================================
-  // 1. The Admin who owns/created this tank
-  adminId      String   @db.ObjectId
-  admin        User     @relation("AdminOwnedTanks", fields: [adminId], references: [id])
+  // 1. The Admin who owns/created this tank (null until Admin claims it)
+  adminId      String?  @db.ObjectId
+  admin        User?    @relation("AdminOwnedTanks", fields: [adminId], references: [id])
 
   // 2. The Workers who have permission to view/manage this tank
   workerIds    String[] @db.ObjectId

@@ -344,6 +344,35 @@ Notes:
 - Returns 400 if the account is already verified or if the email/username pair is incorrect.
 - Returns generic success message if the user is not found to prevent enumeration.
 
+### 5.8 Forgot Password (Public)
+
+The forgot password process involves 4 steps to ensure security and accommodate users who forgot their username.
+
+#### Step 1: Init
+- **POST** `/api/auth/forgot-password/init`
+- Body: `{ "username": "string" }`
+- Returns: `{ "maskedEmail": "r***@example.com" }` (Allows user to see which email is linked).
+
+#### Step 2: Send/Verify Email
+- **POST** `/api/auth/forgot-password/verify-email`
+- Body: `{ "username": "string", "email": "string" }` OR `{ "email": "string" }`
+- Behavior:
+  - If `username` provided: Verifies email matches the one for that username.
+  - If `email` only provided: Finds user by email.
+- Returns: `{ "message": "Verification code sent...", "username": "string" }`
+- Result: Sends a 6-digit code to the user's email.
+
+#### Step 3: Verify Code
+- **POST** `/api/auth/forgot-password/verify-code`
+- Body: `{ "username": "string", "code": "string" }`
+- Returns: Success or 400 (Invalid/Expired code).
+
+#### Step 4: Reset Password
+- **POST** `/api/auth/forgot-password/reset`
+- Body: `{ "username": "string", "code": "string", "newPassword": "string" }`
+- Validation: Password must be >= 8 characters and contain at least one number.
+- Result: Updates password and clears reset tokens.
+
 ## 6. Tank APIs
 
 Controller:
@@ -399,10 +428,31 @@ Success response example:
 ```
 
 Validation:
-- name and tankId are required
-- workerIds can include only USER accounts under the same ADMIN
+- `productKey` and `name` are required.
+- **Product Key Format**: Must be 16 digits. The backend normalizes it to `XXXX-XXXX-XXXX-XXXX` format.
+- `workerIds` can include only USER accounts under the same ADMIN.
 
-### 6.2 Assign User to Tank (ADMIN only)
+### 6.2 Add Product to Inventory (SUPER_ADMIN only)
+
+Endpoint:
+- POST /api/tanks/add-product
+
+Headers:
+- Authorization: Bearer <SUPER_ADMIN_TOKEN>
+
+Request body:
+```json
+{
+  "tankId": "GUARD-200",
+  "productKey": "H88Y-W1PA-9HX0-SA3M"
+}
+```
+
+Behavior:
+- Creates a device entry with `isRegistered: false` and `adminId: null`.
+- These devices are "floating" in inventory until an Admin claims them using the Product Key via `/api/tanks/register`.
+
+### 6.3 Assign User to Tank (ADMIN only)
 
 Endpoint:
 - POST /api/tanks/:tankId/assign-user
@@ -427,11 +477,57 @@ Success response example:
 }
 ```
 
-Validation:
-- tank must belong to current ADMIN
 - user must be USER and belong to current ADMIN
 
-### 6.3 Get Tanks (ADMIN or USER)
+### 6.4 Unassign User from Tank (ADMIN only)
+
+Endpoint:
+- POST /api/tanks/:tankId/unassign-user
+
+Headers:
+- Authorization: Bearer <ADMIN_TOKEN>
+
+Request body example:
+```json
+{
+  "userId": "<USER_ID>"
+}
+```
+
+Success response:
+```json
+{
+  "message": "User unassigned from tank."
+}
+```
+
+### 6.5 Delete Tank (ADMIN or SUPER_ADMIN)
+
+Endpoint:
+- DELETE /api/tanks/:tankId
+
+Headers:
+- Authorization: Bearer <ADMIN_OR_SUPER_ADMIN_TOKEN>
+
+Request body (required for ADMIN only):
+```json
+{
+  "name": "Main Tank"
+}
+```
+
+Behavior:
+- **ADMIN**: Must provide the exact name of the tank as confirmation. Can only delete tanks they own.
+- **SUPER_ADMIN**: Can delete any tank by `tankId` without needing to provide the name in the body.
+
+Success response:
+```json
+{
+  "message": "Tank deleted successfully"
+}
+```
+
+### 6.6 Get Tanks (ADMIN, USER, or SUPER_ADMIN)
 
 Endpoint:
 - GET /api/tanks
@@ -441,15 +537,15 @@ Headers:
 Authorization: Bearer <ADMIN_OR_USER_TOKEN>
 
 Behavior:
-- ADMIN receives all tanks owned by that ADMIN
-- USER receives only tanks assigned to that USER
-- SUPER_ADMIN is blocked by controller logic
+- ADMIN receives all tanks owned by that ADMIN.
+- USER receives only tanks assigned to that USER.
+- **SUPER_ADMIN receives ALL tanks** in the system (Inventory view).
 
 Response:
 - array of tanks with computed isHealthy field
 - isHealthy currently checks temperature and pH ranges
 
-### 6.4 Get Tank Status (ADMIN or USER)
+### 6.7 Get Tank Status (ADMIN, USER, or SUPER_ADMIN)
 
 Endpoint:
 - GET /api/tanks/:tankId/status
@@ -476,10 +572,11 @@ Success response example:
 ```
 
 Access:
-- ADMIN can read own tanks
-- USER can read assigned tanks only
+- ADMIN can read own tanks.
+- USER can read assigned tanks only.
+- **SUPER_ADMIN can read any tank.**
 
-### 6.5 Control Tank Actuators (ADMIN or USER)
+### 6.8 Control Tank Actuators (ADMIN or USER)
 
 Endpoint:
 - POST /api/tanks/:tankId/actuators
@@ -859,7 +956,7 @@ password : ChangeMe123!
 Demo ADMIN / USER credentials (seed:analytics only):
 
 ```
-ADMIN  username : analytics_admin     password : Admin@1234
+ADMIN  username : analytics_admin     password : Admin@123
 USER   username : analytics_worker_1  password : Worker@1234
 ```
 

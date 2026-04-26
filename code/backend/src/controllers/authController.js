@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import crypto from "crypto";
 import prisma from "../lib/prisma.js";
-import { sendVerificationEmail } from "../services/emailService.js";
+import { sendVerificationEmail, sendPasswordResetEmail } from "../services/emailService.js";
 
 const DEFAULT_GOOGLE_CLIENT_ID = "108391237039-0jg9nf8pjn48vi5bqi8bbth2kfe03vtm.apps.googleusercontent.com";
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID);
@@ -690,3 +690,147 @@ export const updateProfile = async (req, res) => {
         return res.status(500).json({ error: "Failed to update profile." });
     }
 };
+
+// ─── Forgot Password Flow ──────────────────────────────────────────────────────
+
+function maskEmail(email) {
+  if (!email || !email.includes("@")) return email;
+  const [localPart, domain] = email.split("@");
+  if (localPart.length <= 2) {
+    return `${localPart[0]}***@${domain}`;
+  }
+  return `${localPart[0]}${localPart[1]}***@${domain}`;
+}
+
+export const forgotPasswordInit = async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: "Username is required." });
+
+  try {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      // Don't leak whether user exists, just return a generic message or fake mask
+      return res.status(404).json({ error: "User not found." });
+    }
+    
+    // Check if it's a real email
+    if (user.email.endsWith("@local.guard")) {
+      return res.status(400).json({ error: "Account does not have a valid email for recovery. Please contact support." });
+    }
+
+    const maskedEmail = maskEmail(user.email);
+    return res.status(200).json({ maskedEmail });
+  } catch (err) {
+    console.error("Forgot password init error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const forgotPasswordVerifyEmail = async (req, res) => {
+  const { username, email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required." });
+
+  try {
+    let user;
+    if (username) {
+      // Path A: User remembered username, confirming email
+      user = await prisma.user.findUnique({ where: { username } });
+      if (!user) return res.status(404).json({ error: "User not found." });
+      if (user.email.toLowerCase() !== email.toLowerCase()) {
+        return res.status(400).json({ error: "Email address does not match our records." });
+      }
+    } else {
+      // Path B: User forgot username, providing email directly
+      user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ error: "No account found with this email address." });
+      }
+    }
+
+    // Generate 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: resetCode,
+        resetPasswordExpiry: expiry,
+      },
+    });
+
+    await sendPasswordResetEmail(user.email, user.fullName, resetCode);
+
+    return res.status(200).json({ 
+      message: "Verification code sent to your email.",
+      username: user.username // Return username so frontend can track it
+    });
+  } catch (err) {
+    console.error("Forgot password verify email error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const forgotPasswordVerifyCode = async (req, res) => {
+  const { username, code } = req.body;
+  if (!username || !code) return res.status(400).json({ error: "Username and code are required." });
+
+  try {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) return res.status(404).json({ error: "User not found." });
+
+    if (!user.resetPasswordToken || user.resetPasswordToken !== code) {
+      return res.status(400).json({ error: "Invalid verification code." });
+    }
+
+    if (user.resetPasswordExpiry && user.resetPasswordExpiry < new Date()) {
+      return res.status(400).json({ error: "Verification code has expired. Please request a new one." });
+    }
+
+    return res.status(200).json({ message: "Code verified successfully." });
+  } catch (err) {
+    console.error("Forgot password verify code error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const forgotPasswordReset = async (req, res) => {
+  const { username, code, newPassword } = req.body;
+  if (!username || !code || !newPassword) {
+    return res.status(400).json({ error: "Missing required fields." });
+  }
+
+  // Password validation: min 8 chars, at least 1 number
+  if (newPassword.length < 8 || !/\d/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must be at least 8 characters long and contain at least one number." });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) return res.status(404).json({ error: "User not found." });
+
+    if (!user.resetPasswordToken || user.resetPasswordToken !== code) {
+      return res.status(400).json({ error: "Invalid verification code." });
+    }
+
+    if (user.resetPasswordExpiry && user.resetPasswordExpiry < new Date()) {
+      return res.status(400).json({ error: "Verification code has expired. Please request a new one." });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpiry: null,
+      },
+    });
+
+    return res.status(200).json({ message: "Password reset successfully. You can now log in." });
+  } catch (err) {
+    console.error("Forgot password reset error:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
