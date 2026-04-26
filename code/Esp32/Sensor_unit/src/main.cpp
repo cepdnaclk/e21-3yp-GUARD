@@ -76,29 +76,13 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 // ---------------- State Variables -----------------
-float tempMin = 24.0; 
-float tempMax = 28.0; 
-float tdsMin = 70.0;
-float tdsMax = 500.0;
+float tempThreshold = 30.0; 
 float waterLevelThreshold = 5.0;
-float waterLevelStopThreshold = 4.0;
-
 bool servoActive = false;
 unsigned long servoStartTime = 0;
 const unsigned long SERVO_RUN_TIME = 3000; 
-
-// ⏱️ TIMING INTERVALS
-const unsigned long POLL_INTERVAL = 2000;     // Read sensors every 2 seconds
-const unsigned long PUBLISH_INTERVAL = 10000; // Routine publish every 10 seconds
-
-// ⏱️ TIMING TRACKERS
-unsigned long lastTempRead = 0;
-unsigned long lastWaterRead = 0;
-unsigned long lastTdsRead = 0;
-
-unsigned long lastTempPub = 0;
-unsigned long lastWaterPub = 0;
-unsigned long lastTdsPub = 0;
+unsigned long lastTempTime = 0;
+unsigned long lastWaterTime = 0;
 unsigned long lastReconnectAttempt = 0;
 unsigned long lastTdsTime = 0;   // 🔵 TDS ADDED
 const unsigned long TEMP_INTERVAL = 10000; 
@@ -106,10 +90,8 @@ const unsigned long WATER_INTERVAL = 10000;
 const unsigned long TDS_INTERVAL = 10000;   // 🔵 TDS ADDED
 unsigned long pressStart = 0;
 
-// 🚦 SYSTEM HEALTH FLAGS
-bool tempAlert = false;
-bool waterAlert = false;
-bool tdsAlert = false;
+unsigned long DeviceID = 100;
+String clientID = "ESP32_" + String(DeviceID);
 
 // ---------------- Helper Functions ----------------
 String buildTopic(String parameter) { return "sensor/" + String(DeviceID) + "/" + parameter; }
@@ -139,13 +121,6 @@ void publishSensor(String parameter, float value) {
   Serial.println("[MQTT] Sent: " + payload);
 }
 
-void publishAlert(String parameter, String alertType, float value) {
-  String topic = "alert/" + String(DeviceID) + "/" + parameter; 
-  String payload = "{\"alert\":\"" + alertType + "\",\"value\":" + String(value) + "}";
-  client.publish(topic.c_str(), payload.c_str(), true);
-  Serial.println("🚨 [ALERT PUBLISHED] " + parameter + " is " + alertType + "! Value: " + String(value));
-}
-
 // ---------------- MQTT Callback ------------------
 void callback(char* topic, byte* payload, unsigned int length) {
   String message = "";
@@ -155,14 +130,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (topicStr == setThresholdTopic("temperature")) {
     tempThreshold = message.toFloat();
     preferences.begin("settings", false);
-    preferences.putFloat("w_level", waterLevelThreshold);
-    preferences.putFloat("w_stop", waterLevelStopThreshold);
+    preferences.putFloat("threshold", tempThreshold);
     preferences.end();
   }
   else if (topicStr == setThresholdTopic("water_level")) {
     waterLevelThreshold = message.toFloat();
     preferences.begin("settings", false);
-    preferences.putFloat("temp_min", tempMin);
+    preferences.putFloat("water_threshold", waterLevelThreshold);
     preferences.end();
   }
   else if (message == "feed" && !servoActive) {
@@ -180,12 +154,8 @@ boolean reconnect() {
   if (client.connect(clientID.c_str(), mqtt_user, mqtt_password)) {
     Serial.println("connected!");
     client.subscribe(commandTopic().c_str());
+    client.subscribe(setThresholdTopic("temperature").c_str());
     client.subscribe(setThresholdTopic("water_level").c_str());
-    client.subscribe(setThresholdTopic("water_stop").c_str());
-    client.subscribe(setThresholdTopic("temp_min").c_str());
-    client.subscribe(setThresholdTopic("temp_max").c_str());
-    client.subscribe(setThresholdTopic("tds_min").c_str());
-    client.subscribe(setThresholdTopic("tds_max").c_str());
     return true;
   }
   Serial.print("failed, rc=");
@@ -210,19 +180,12 @@ void setup() {
   pinMode(TDS_PIN, INPUT);
 
   preferences.begin("settings", true);
-  waterLevelThreshold = preferences.getFloat("w_level", 5.0);
-  waterLevelStopThreshold = preferences.getFloat("w_stop", 4.0);
-  tempMin = preferences.getFloat("temp_min", 24.0);
-  tempMax = preferences.getFloat("temp_max", 28.0);
-  tdsMin = preferences.getFloat("tds_min", 70.0);
-  tdsMax = preferences.getFloat("tds_max", 500.0);
+  tempThreshold = preferences.getFloat("threshold", 30.0);
+  waterLevelThreshold = preferences.getFloat("water_threshold", 20.0);
   preferences.end();
-  validateWaterThresholds();
 
   ESP32PWM::allocateTimer(0);
   myServo.setPeriodHertz(50);
-
-  WiFi.mode(WIFI_STA); 
 
   WiFiManager wm;
   wm.autoConnect(("ESP32_GUARD_" + String(DeviceID)).c_str());
@@ -247,12 +210,6 @@ void setup() {
 
 // ---------------- Main Loop -----------------------
 void loop() {
-  if (WiFi.status() != WL_CONNECTED) {
-      Serial.println("[WIFI] Disconnected. Waiting for auto-reconnect...");
-      delay(1000);
-      return; 
-  }
-
   if (!client.connected()) {
     unsigned long now = millis();
     if (now - lastReconnectAttempt > 5000) {
@@ -341,7 +298,6 @@ void loop() {
     Serial.print(tdsValue);
     Serial.println(" ppm");
   }
-  pixels.show();
 
   // Reset Logic
   if (digitalRead(RESET_BUTTON) == LOW) {

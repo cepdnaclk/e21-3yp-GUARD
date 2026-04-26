@@ -14,43 +14,22 @@ export default function Alerts() {
 
   const [filters, setFilters] = useState({
     deviceId: initialDeviceId,
-    resolved: 'false', // Default to active alerts
+    resolved: 'false',
   });
 
   const loadAlerts = async (f = filters) => {
     setLoading(true);
     try {
-      // 1. Load registered devices for filters
-      const devs = await deviceApi.list();
-      setDevices(devs);
-
-      // 2. Load stored alerts from backend (MQTT alerts)
-      const storedAlerts = await alertApi.list({
-        tankId: f.deviceId,
-        resolved: f.resolved === '' ? undefined : f.resolved
-      });
-
-      // 3. Reshape for UI
-      const processedAlerts = storedAlerts.map(a => ({
-        id: a.id,
-        type: a.type.charAt(0).toUpperCase() + a.type.slice(1),
-        message: a.message,
-        value: a.value,
-        deviceId: a.tankId,
-        createdAt: a.createdAt,
-        resolved: a.resolved,
-        tankName: a.tank?.name
-      }));
-
-      setAlerts(processedAlerts);
-    } catch (err) { 
-      console.error("Failed to load alerts:", err);
-      setAlerts([]); 
-    }
+      const params = {};
+      if (f.deviceId) params.deviceId = f.deviceId;
+      if (f.resolved !== '') params.resolved = f.resolved === 'true';
+      setAlerts(await alertApi.list(params));
+    } catch { setAlerts([]); }
     setLoading(false);
   };
 
   useEffect(() => {
+    deviceApi.list().then(setDevices).catch(() => {});
     loadAlerts();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -64,11 +43,8 @@ export default function Alerts() {
     setResolving(alertId);
     try {
       await alertApi.resolve(alertId);
-      // Refresh list after resolve
       await loadAlerts();
-    } catch (err) {
-      alert(err.message || "Failed to resolve alert");
-    }
+    } catch { /* ignore */ }
     setResolving(null);
   };
 
@@ -129,7 +105,7 @@ export default function Alerts() {
                     </td>
                     <td>{a.message}</td>
                     <td>{a.value}</td>
-                    <td>{a.deviceId} {a.tankName ? `(${a.tankName})` : ''}</td>
+                    <td>{a.deviceId}</td>
                     <td>{new Date(a.createdAt).toLocaleString()}</td>
                     <td>
                       {a.resolved

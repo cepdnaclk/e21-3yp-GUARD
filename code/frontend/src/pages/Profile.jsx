@@ -92,7 +92,7 @@ export default function Profile() {
         address: form.address.trim(),
       });
       setIsEditing(false);
-      setSuccess('Profile updated in this session.');
+      setSuccess('Profile updated successfully.');
     } catch (err) {
       setError(err.message || 'Failed to update profile.');
     } finally {
@@ -115,9 +115,6 @@ export default function Profile() {
       <div className="profile-card">
         {error ? <p className="error-msg profile-message">{error}</p> : null}
         {success ? <p className="profile-success-msg profile-message">{success}</p> : null}
-        <p className="profile-message" style={{ marginTop: 0 }}>
-          Profile edits are currently stored locally because no backend profile update endpoint is available.
-        </p>
 
         <div className="profile-grid">
           <label className="profile-field">

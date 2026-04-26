@@ -1,28 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { deviceApi } from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import '../styles/devices.css';
 
 export default function Devices() {
-  const { role } = useAuth();
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [form, setForm] = useState({
     deviceId: '',
     deviceName: '',
-  });
-  const [deleteForm, setDeleteForm] = useState({
-    deviceId: '',
-    deviceName: '',
+    temperature: '',
+    ph: '',
+    turbidity: '',
+    waterLevel: '',
   });
   const [error, setError] = useState('');
-  const [deleteError, setDeleteError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const canAddDevice = role === 'ADMIN'; // Only admins can add devices
   const loadDevices = async () => {
     try {
       setDevices(await deviceApi.list());
@@ -35,73 +30,27 @@ export default function Devices() {
   const handleAdd = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (!canAddDevice) {
-      setError('Only ADMIN can add devices.');
-      return;
-    }
-
     setBusy(true);
     try {
-      const body = { deviceId: form.deviceId.trim() };
-      if (!body.deviceId) {
-        throw new Error('Device ID is required.');
-      }
-
-      if (form.deviceName.trim()) {
-        body.deviceName = form.deviceName.trim();
-      }
-
+      const body = { deviceId: parseInt(form.deviceId, 10) };
+      if (form.deviceName) body.deviceName = form.deviceName;
+      if (form.temperature !== '') body.temperature = parseFloat(form.temperature);
+      if (form.ph !== '') body.ph = parseFloat(form.ph);
+      if (form.turbidity !== '') body.turbidity = parseFloat(form.turbidity);
+      if (form.waterLevel !== '') body.waterLevel = parseFloat(form.waterLevel);
       await deviceApi.create(body);
       setForm({
         deviceId: '',
         deviceName: '',
+        temperature: '',
+        ph: '',
+        turbidity: '',
+        waterLevel: '',
       });
       setShowForm(false);
       await loadDevices();
     } catch (err) {
       setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleDelete = async (e) => {
-    e.preventDefault();
-    setDeleteError('');
-
-    if (!canAddDevice) {
-      setDeleteError('Only ADMIN can delete devices.');
-      return;
-    }
-
-    const deviceId = deleteForm.deviceId.trim();
-    const deviceName = deleteForm.deviceName.trim();
-
-    if (!deviceId || !deviceName) {
-      setDeleteError('Device ID and Device Name are required.');
-      return;
-    }
-
-    const confirmDelete = window.confirm(
-      `Are you sure you want to permanently delete device ${deviceId} (${deviceName})?`
-    );
-
-    if (!confirmDelete) {
-      return;
-    }
-
-    setBusy(true);
-    try {
-      await deviceApi.deleteTank(deviceId, deviceName);
-      setDeleteForm({
-        deviceId: '',
-        deviceName: '',
-      });
-      setShowDeleteForm(false);
-      await loadDevices();
-    } catch (err) {
-      setDeleteError(err.message || 'Failed to delete device.');
     } finally {
       setBusy(false);
     }
@@ -115,99 +64,54 @@ export default function Devices() {
         <h3>Devices ({devices.length})</h3>
       </div>
       <div className="devices-actions">
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            setShowForm(true);
-            setShowDeleteForm(false);
-            setDeleteError('');
-          }}
-          disabled={!canAddDevice || busy}
-          title={canAddDevice ? 'Add new device' : 'Only ADMIN can add devices'}
-        >
-          Add Device
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            setShowDeleteForm(true);
-            setShowForm(false);
-            setError('');
-          }}
-          disabled={!canAddDevice || busy}
-          title={canAddDevice ? 'Delete an existing device' : 'Only ADMIN can delete devices'}
-        >
-          Delete Device
-        </button>
-
-        {(showForm || showDeleteForm) ? (
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              setShowForm(false);
-              setShowDeleteForm(false);
-              setError('');
-              setDeleteError('');
-            }}
-          >
+        {showForm ? (
+          <button className="btn btn-primary" onClick={() => setShowForm(false)}>
             Cancel
           </button>
-        ) : null}
+        ) : (
+          <>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              Add Device
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              Edit Device
+            </button>
+          </>
+        )}
       </div>
 
-      {showForm && canAddDevice && (
+      {showForm && (
         <div className="card devices-form-card">
           <h3 className="devices-form-title">Register New Device</h3>
           {error && <p className="error-msg">{error}</p>}
           <form onSubmit={handleAdd} className="devices-form">
             <div className="form-group devices-form-device-id">
-              <label>Device ID (Tank ID) *</label>
-              <input type="text" value={form.deviceId} onChange={(e) => setForm({ ...form, deviceId: e.target.value })} required placeholder="GUARD-001" />
+              <label>Device ID (ESP32) *</label>
+              <input type="number" value={form.deviceId} onChange={(e) => setForm({ ...form, deviceId: e.target.value })} required min="1" />
             </div>
             <div className="form-group devices-form-device-name">
               <label>Device Name</label>
               <input type="text" value={form.deviceName} onChange={(e) => setForm({ ...form, deviceName: e.target.value })} placeholder="My Pond Sensor" />
             </div>
+            <div className="form-group devices-form-device-id">
+              <label>Temperature</label>
+              <input type="number" value={form.temperature} onChange={(e) => setForm({ ...form, temperature: e.target.value })} step="0.01" placeholder="e.g. 26.5" />
+            </div>
+            <div className="form-group devices-form-device-id">
+              <label>PH</label>
+              <input type="number" value={form.ph} onChange={(e) => setForm({ ...form, ph: e.target.value })} step="0.01" placeholder="e.g. 7.2" />
+            </div>
+            <div className="form-group devices-form-device-id">
+              <label>Turbidity</label>
+              <input type="number" value={form.turbidity} onChange={(e) => setForm({ ...form, turbidity: e.target.value })} step="0.01" placeholder="e.g. 30" />
+            </div>
+            <div className="form-group devices-form-device-id">
+              <label>Water Level</label>
+              <input type="number" value={form.waterLevel} onChange={(e) => setForm({ ...form, waterLevel: e.target.value })} step="0.01" placeholder="e.g. 65" />
+            </div>
           
             <button type="submit" className="btn btn-primary devices-form-submit" disabled={busy}>
               {busy ? 'Adding...' : 'Add'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {showDeleteForm && canAddDevice && (
-        <div className="card devices-form-card">
-          <h3 className="devices-form-title">Delete Device</h3>
-          {deleteError && <p className="error-msg">{deleteError}</p>}
-          <form onSubmit={handleDelete} className="devices-form">
-            <div className="form-group devices-form-device-id">
-              <label>Device ID (Tank ID) *</label>
-              <input
-                type="text"
-                value={deleteForm.deviceId}
-                onChange={(e) => setDeleteForm({ ...deleteForm, deviceId: e.target.value })}
-                required
-                placeholder="GUARD-001"
-              />
-            </div>
-            <div className="form-group devices-form-device-name">
-              <label>Device Name *</label>
-              <input
-                type="text"
-                value={deleteForm.deviceName}
-                onChange={(e) => setDeleteForm({ ...deleteForm, deviceName: e.target.value })}
-                required
-                placeholder="Main Tank"
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary devices-form-submit" disabled={busy}>
-              {busy ? 'Deleting...' : 'Delete'}
             </button>
           </form>
         </div>
@@ -222,7 +126,6 @@ export default function Devices() {
               <tr>
                 <th>Device ID</th>
                 <th>Name</th>
-                <th>User Assigned</th>
                 <th>Created</th>
                 <th></th>
               </tr>
@@ -232,7 +135,6 @@ export default function Devices() {
                 <tr key={d.deviceId}>
                   <td><strong>{d.deviceId}</strong></td>
                   <td>{d.deviceName || '—'}</td>
-                  <td>{Array.isArray(d.workers) && d.workers.length > 0 ? d.workers.map(w => w.fullName || w.username).join(', ') : '—'}</td>
                   <td>{new Date(d.createdAt).toLocaleDateString()}</td>
                   <td>
                     <Link to={`/devices/${d.deviceId}`} className="btn btn-outline btn-sm">Details</Link>

@@ -1,278 +1,571 @@
-# G.U.A.R.D - General Unit for Aquatic Risk Detection
+# G.U.A.R.D — General Unit for Aquatic Risk Detection
 
-Full-stack IoT aquaculture monitoring system with:
-- React frontend (Vite)
-- Express backend (Node.js)
-- MongoDB (Prisma, current tank state and users)
-- InfluxDB (time-series sensor history)
-- MQTT (ESP32 ingestion)
+Full-stack IoT aquaculture monitoring system — Node.js/Express backend, React frontend, ESP32 sensors, MQTT messaging, and PostgreSQL storage.
 
-## Current Architecture
+---
 
-ESP32 devices publish sensor values to MQTT topics:
+## Table of Contents
 
-sensor/<tankId>/<sensorType>
+1. [System Architecture](#system-architecture)
+2. [Data Flow](#data-flow)
+3. [Prerequisites](#prerequisites)
+4. [Environment Setup](#environment-setup)
+5. [Quick Start — Local Development](#quick-start--local-development)
+6. [Running the Frontend](#running-the-frontend)
+7. [Running the Backend](#running-the-backend)
+8. [Database Migrations](#database-migrations)
+9. [Seeding Test Data](#seeding-test-data)
+10. [API Reference](#api-reference)
+11. [MQTT Integration](#mqtt-integration)
+12. [Alert Rules](#alert-rules)
+13. [WebSocket Events](#websocket-events)
+14. [Project Structure](#project-structure)
+15. [Docker (optional)](#docker-optional)
+16. [Production Notes](#production-notes)
 
-The backend consumes those messages and writes:
-- latest tank state to MongoDB
-- historical points to InfluxDB
+---
 
-The frontend calls backend REST endpoints through /api and renders:
-- tank/device list
-- tank detail status
-- sensor history charts/tables
-- alerts view (frontend supports missing alert route gracefully)
+## System Architecture
 
-## Ports
+```
+ESP32 Devices
+     │  MQTT publish  sensor/<deviceId>/<sensorName>
+     ▼
+┌─────────────────┐      ┌──────────────────────────────────────┐
+│ Mosquitto Broker│─────▶│          G.U.A.R.D Backend           │
+│   port 1883     │      │  Express + MQTT.js + Prisma ORM      │
+└─────────────────┘      │  port 3000                           │
+                         │  ┌────────────────────────────────┐  │
+                         │  │  Alert Engine (rule-based)     │  │
+                         │  └────────────────────────────────┘  │
+                         └──────────────┬───────────────────────┘
+                                        │ REST API + WebSocket
+            ┌───────────────────────────┤
+            │                           │
+            ▼                           ▼
+   ┌─────────────────┐       ┌───────────────────────┐
+   │   PostgreSQL 16  │       │   React Frontend      │
+   │   port 5432      │       │   Vite dev: port 5173 │
+   └─────────────────┘       └───────────────────────┘
+```
 
-- Frontend dev server: 5173
-- Backend API server: 5000
-- MongoDB: 27017
-- InfluxDB: 8086
-- MQTT broker: 1883
+| Component   | Technology                   | Port       |
+| ----------- | ---------------------------- | ---------- |
+| Frontend    | React 19 + Vite 7            | 5173 (dev) |
+| Backend     | Node.js / Express 4          | 3000       |
+| Database    | PostgreSQL 16 + Prisma ORM 5 | 5432       |
+| MQTT Broker | Mosquitto 2.x                | 1883       |
+| IoT Devices | ESP32 (Arduino)              | —          |
+
+---
+
+## Data Flow
+
+### Sensor Ingestion (ESP32 → Database → Dashboard)
+
+1. An **ESP32** publishes a single sensor value to MQTT topic `sensor/<deviceId>/<sensorName>` (e.g. `sensor/100/temperature`).
+2. The backend **MQTT subscriber** receives the message, resolves the device and sensor type from the topic segments, and stores a normalised `sensor_reading` row in PostgreSQL.
+3. The **alert engine** runs rule-based checks against configurable thresholds. If a threshold is breached, an `Alert` record is created and broadcast to all connected clients via **WebSocket** (`alert` event).
+4. The **React frontend** receives the WebSocket event and displays a toast notification in real time.
+
+### User Interaction (Frontend → Backend → Database)
+
+1. The frontend sends REST API requests to `/api/*` (proxied by Vite to `http://localhost:3000`).
+2. The backend validates the JWT token, processes the request, queries PostgreSQL via Prisma, and returns JSON.
+3. The frontend renders the data — dashboards, device lists, sensor history, alerts, and profile.
+
+### Authentication Flow
+
+- **Password auth**: `POST /auth/register` → `POST /auth/login` → JWT token stored in `localStorage`
+- **Google OAuth** (optional): Google Sign-In button → `POST /auth/google` with ID token → JWT returned
+- Both methods produce the same JWT format — all protected routes work identically
+
+---
 
 ## Prerequisites
 
-- Node.js 22+
-- Docker Desktop (recommended for MongoDB and InfluxDB)
-- Mosquitto broker (local install or container)
+| Tool       | Version | Install                                     |
+| ---------- | ------- | ------------------------------------------- |
+| Node.js    | 22 LTS  | https://nodejs.org                          |
+| PostgreSQL | 16+     | https://www.postgresql.org/download/windows |
+| Mosquitto  | 2.x     | https://mosquitto.org/download              |
+
+> **Docker** is supported but optional — see [Docker (optional)](#docker-optional).
+
+---
 
 ## Environment Setup
 
-Backend env file: backend/.env
+### Backend (`backend/.env`)
 
-Important variables:
-
-- PORT=5000
-- DATABASE_URL=mongodb://localhost:27017/iot_db
-- JWT_SECRET=<strong-secret>
-- MQTT_BROKER_URL=mqtt://localhost:1883 (or your broker host)
-- MQTT_USER / MQTT_PASSWORD
-- INFLUX_URL=http://localhost:8086
-- INFLUX_TOKEN=<influx token>
-- INFLUX_ORG=G.U.A.R.D
-- INFLUX_BUCKET=guard_sensors
-
-## Quick Start (Local)
-
-### 1. Start MongoDB with replica set (required by Prisma)
-
-```powershell
-docker rm -f guard-mongo 2>$null
-docker run -d --name guard-mongo -p 27017:27017 mongo:7 --replSet rs0 --bind_ip_all
-docker exec guard-mongo mongosh --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]})"
+```env
+DATABASE_URL="postgresql://guard:guardpass@localhost:5432/guarddb"
+JWT_SECRET=<random-64-byte-hex>
+MQTT_BROKER_URL=mqtt://localhost:1883
+# GOOGLE_CLIENT_ID=<optional>
 ```
 
-### 2. Start InfluxDB
+| Variable                                | Required | Description                                            |
+| --------------------------------------- | -------- | ------------------------------------------------------ |
+| `DATABASE_URL`                          | ✅       | PostgreSQL connection string                           |
+| `JWT_SECRET`                            | ✅       | Random string for signing JWTs (min 32 chars)          |
+| `GOOGLE_CLIENT_ID`                      | —        | Google OAuth Client ID. Omit to disable `/auth/google` |
+| `MQTT_BROKER_URL`                       | —        | Default: `mqtt://localhost:1883`                       |
+| `PORT`                                  | —        | Default: `3000`                                        |
+| `CORS_ORIGIN`                           | —        | Comma-separated allowed origins                        |
+| `TEMP_MAX` / `TEMP_MIN`                 | —        | Temperature thresholds (°C). Default: 32 / 20          |
+| `PH_MAX` / `PH_MIN`                     | —        | pH thresholds. Default: 8.5 / 6.5                      |
+| `TURBIDITY_MAX`                         | —        | Turbidity threshold (NTU). Default: 50                 |
+| `WATER_LEVEL_MIN`                       | —        | Water level threshold (%). Default: 20                 |
+| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | —        | Leave blank to disable email alerts                    |
+| `ALERT_EMAIL`                           | —        | Recipient for email alerts                             |
 
-Use the same org/bucket/token values as backend/.env.
+**Generate a strong JWT secret:**
 
-```powershell
-docker rm -f guard-influx 2>$null
-docker run -d --name guard-influx -p 8086:8086 \
-  -e DOCKER_INFLUXDB_INIT_MODE=setup \
-  -e DOCKER_INFLUXDB_INIT_USERNAME=admin \
-  -e DOCKER_INFLUXDB_INIT_PASSWORD=Admin12345! \
-  -e DOCKER_INFLUXDB_INIT_ORG=G.U.A.R.D \
-  -e DOCKER_INFLUXDB_INIT_BUCKET=guard_sensors \
-  -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=<same-token-as-.env> \
-  influxdb:2.7
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-### 3. Start backend
+### Frontend (`frontend/.env.local`)
+
+```env
+VITE_GOOGLE_CLIENT_ID=<your-google-client-id>.apps.googleusercontent.com
+```
+
+> Optional — leave empty or omit the file to disable Google Sign-In on the login page.
+
+---
+
+## Quick Start — Local Development
+
+### 1. Create the PostgreSQL database
 
 ```powershell
-cd code/backend
+psql -U postgres -c "CREATE USER guard WITH PASSWORD 'guardpass';"
+psql -U postgres -c "CREATE DATABASE guarddb OWNER guard;"
+psql -U postgres -c "ALTER USER guard CREATEDB;"
+```
+
+### 2. Start the backend
+
+```powershell
+cd code\backend
+copy .env.example .env      # edit .env with your values
 npm install
-npx prisma generate
+npx prisma migrate dev      # creates all tables
+npm run dev                  # starts on http://localhost:3000
+```
+
+Verify:
+
+```powershell
+curl http://localhost:3000/health
+# {"status":"ok","timestamp":"..."}
+```
+
+### 3. Start the Mosquitto MQTT broker
+
+```powershell
+& "C:\Program Files\mosquitto\mosquitto.exe" -c "backend\mosquitto\mosquitto.conf" -v
+```
+
+### 4. Start the frontend
+
+```powershell
+cd code\frontend
+npm install
+npm run dev                  # starts on http://localhost:5173
+```
+
+Open http://localhost:5173 in your browser. Register a new account or log in.
+
+### 5. (Optional) Seed test data
+
+After creating a user account:
+
+```powershell
+cd code\backend
+node prisma/seed.js
+```
+
+This creates 4 devices, 5 sensor types, 1000 sensor readings, and 8 alerts for the first user in the database.
+
+---
+
+## Running the Frontend
+
+```powershell
+cd code\frontend
+npm install
 npm run dev
 ```
 
-Health check:
+| Script            | Command        | Description                                 |
+| ----------------- | -------------- | ------------------------------------------- |
+| `npm run dev`     | `vite`         | Start Vite dev server on port 5173 with HMR |
+| `npm run build`   | `vite build`   | Production build to `dist/`                 |
+| `npm run preview` | `vite preview` | Preview the production build locally        |
+
+### Vite Proxy Configuration
+
+The frontend dev server proxies API requests to the backend:
+
+| Path         | Target                  | Notes                                                   |
+| ------------ | ----------------------- | ------------------------------------------------------- |
+| `/api/*`     | `http://localhost:3000` | Strips `/api` prefix (e.g. `/api/devices` → `/devices`) |
+| `/socket.io` | `http://localhost:3000` | WebSocket upgrade enabled                               |
+
+### Frontend Pages
+
+| Page           | Route              | Description                                                                     |
+| -------------- | ------------------ | ------------------------------------------------------------------------------- |
+| Login          | `/login`           | Username/email + password form, optional Google Sign-In button                  |
+| Register       | `/register`        | Full registration form (name, username, password, optional email/phone/address) |
+| Dashboard      | `/`                | Stats cards, device table (top 5), active alerts (top 5), sensor types panel    |
+| Devices        | `/devices`         | Device list with inline add form                                                |
+| Device Detail  | `/devices/:id`     | Device info, latest sensor reading cards, active alerts                         |
+| Sensor History | `/sensors/history` | Filterable readings table — device, sensor type, date range                     |
+| Alerts         | `/alerts`          | Filterable alert list with resolve button                                       |
+| Profile        | `/profile`         | Read-only user profile                                                          |
+
+---
+
+## Running the Backend
 
 ```powershell
-curl http://localhost:5000/
-```
-
-Expected response: Water IoT Backend is running!
-
-### 4. Start frontend
-
-```powershell
-cd code/frontend
+cd code\backend
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173
+| Script                   | Command                 | Description                                                 |
+| ------------------------ | ----------------------- | ----------------------------------------------------------- |
+| `npm run dev`            | `nodemon src/server.js` | Development server with auto-reload (kills port 3000 first) |
+| `npm start`              | `node src/server.js`    | Production server                                           |
+| `npm run prisma:migrate` | `prisma migrate dev`    | Create & apply a new migration                              |
+| `npm run prisma:deploy`  | `prisma migrate deploy` | Apply pending migrations (production)                       |
+| `npm run prisma:studio`  | `prisma studio`         | Open Prisma Studio GUI at http://localhost:5555             |
 
-## Backend Scripts
+---
 
-In backend/package.json:
+## Database Migrations
 
-- npm run dev -> nodemon src/index.js
-- npm start -> node src/index.js
-- npm run seed -> create SUPER_ADMIN if missing
-- npm run seed:analytics -> seed admin/users/tanks and Influx history points
+| Command                                | Purpose                                           |
+| -------------------------------------- | ------------------------------------------------- |
+| `npx prisma migrate dev --name <name>` | Create a new migration and apply it (development) |
+| `npx prisma migrate deploy`            | Apply pending migrations (production / Docker)    |
+| `npx prisma generate`                  | Regenerate Prisma client after schema changes     |
+| `npx prisma studio`                    | Open Prisma Studio GUI                            |
+
+### Database Schema
+
+```
+┌──────────┐     ┌──────────┐     ┌───────────────┐     ┌─────────────┐
+│  users   │────▶│ devices  │────▶│sensor_readings│◀────│sensor_types │
+│  (PK: id)│ 1:N │(PK: id)  │ 1:N │  (PK: id)     │ N:1 │  (PK: id)   │
+└──────────┘     │          │     └───────────────┘     └─────────────┘
+                 │          │────▶┌──────────┐
+                 └──────────┘ 1:N │  alerts  │
+                                  │ (PK: uuid)│
+                                  └──────────┘
+```
+
+| Model         | Table             | Primary Key               | Description                                                  |
+| ------------- | ----------------- | ------------------------- | ------------------------------------------------------------ |
+| User          | `users`           | Auto-increment int        | Username/password + optional Google OAuth                    |
+| Device        | `devices`         | Integer (ESP32 device ID) | IoT device / tank, linked to user                            |
+| SensorType    | `sensor_types`    | Auto-increment int        | Sensor definitions (name, frequency)                         |
+| SensorReading | `sensor_readings` | Auto-increment int        | Time-series: one value per device+sensor+time                |
+| Alert         | `alerts`          | UUID                      | Abnormal condition records with type, message, resolved flag |
+
+---
 
 ## Seeding Test Data
 
-### Base seed (super admin)
+After registering a user account, run:
 
 ```powershell
-cd code/backend
-npm run seed
+cd code\backend
+node prisma/seed.js
 ```
 
-### Analytics seed (recommended for UI analytics development)
+Seeds:
 
-```powershell
-cd code/backend
-npm run seed:analytics
+- **4 devices** — IDs 101, 102, 103, 150
+- **5 sensor types** — temperature, ph, turbidity, water_level, tds
+- **1000 sensor readings** — 25 readings per sensor per device over the last 24 hours
+- **8 alerts** — 5 active, 3 resolved
+
+---
+
+## API Reference
+
+All endpoints except `/auth/*` and `/health` require a JWT in the `Authorization` header:
+
 ```
-
-This seeds:
-- sample admin and worker users
-- multiple tanks with thresholds and current values
-- worker-to-tank assignments
-- historical sensor points in InfluxDB
-
-## API Reference (Current)
-
-Base URL: /api
+Authorization: Bearer <your_jwt_token>
+```
 
 ### Auth
 
-- POST /api/auth/login
-- POST /api/auth/register
-- POST /api/auth/create-admin (SUPER_ADMIN only)
-- POST /api/auth/create-user (ADMIN only)
+| Method | Endpoint         | Description                                                                   |
+| ------ | ---------------- | ----------------------------------------------------------------------------- |
+| `POST` | `/auth/register` | Register with username, password, fullName (+ optional email, phone, address) |
+| `POST` | `/auth/login`    | Login with `{ login, password }` — login accepts username or email            |
+| `POST` | `/auth/google`   | Login with Google ID token (optional, requires `GOOGLE_CLIENT_ID`)            |
+| `GET`  | `/auth/me`       | Get authenticated user profile                                                |
 
-Notes:
-- /api/auth/me is not implemented in current backend
-- frontend stores a local user snapshot so refresh does not force relogin unless token expired
+### Devices
 
-### Tanks
+| Method | Endpoint       | Description                                                     |
+| ------ | -------------- | --------------------------------------------------------------- |
+| `GET`  | `/devices`     | List all devices for the authenticated user                     |
+| `POST` | `/devices`     | Register a device: `{ deviceId (int), deviceName?, location? }` |
+| `GET`  | `/devices/:id` | Get a single device by integer ID                               |
 
-- POST /api/tanks/register (ADMIN)
-- POST /api/tanks/:tankId/assign-user (ADMIN)
-- GET /api/tanks (ADMIN, USER)
-- GET /api/tanks/:tankId/status (ADMIN, USER)
+### Sensor Types
+
+| Method | Endpoint            | Description                                       |
+| ------ | ------------------- | ------------------------------------------------- |
+| `GET`  | `/sensor-types`     | List all sensor type definitions                  |
+| `POST` | `/sensor-types`     | Create a sensor type: `{ sensorName, frequency }` |
+| `GET`  | `/sensor-types/:id` | Get a sensor type by ID                           |
 
 ### Sensors
 
-- POST /api/sensors/log (ESP32/test ingestion)
-- GET /api/sensors/history/:tankId (ADMIN, USER)
+| Method | Endpoint                                                              | Description                                    |
+| ------ | --------------------------------------------------------------------- | ---------------------------------------------- |
+| `GET`  | `/sensor/latest?device_id=<int>`                                      | Latest reading per sensor type on a device     |
+| `GET`  | `/sensor/history?device_id=<int>&sensor_id=<int>&from=<ISO>&to=<ISO>` | Historical readings (max 1000 rows, ascending) |
 
-### Authorization
+### Alerts
 
-Protected routes require:
+| Method | Endpoint                                  | Description                             |
+| ------ | ----------------------------------------- | --------------------------------------- |
+| `GET`  | `/alerts?device_id=<int>&resolved=<bool>` | List alerts (all params optional)       |
+| `POST` | `/alerts/resolve`                         | Resolve an alert: `{ alertId: "uuid" }` |
 
-Authorization: Bearer <jwt>
+### Health
 
-## MQTT Integration (Current)
+| Method | Endpoint  | Description                           |
+| ------ | --------- | ------------------------------------- |
+| `GET`  | `/health` | Returns `{ status: "ok", timestamp }` |
 
-Topic format:
+---
 
-sensor/<tankId>/<sensorType>
+## MQTT Integration
 
-Supported sensorType values in mqtt service:
-- temperature
-- ph
-- tds
-- turbidity
-- waterlevel
+### Topic Structure
 
-Payload JSON:
+```
+sensor/<deviceId>/<sensorName>
+```
+
+| Part         | Example       | Description                                                           |
+| ------------ | ------------- | --------------------------------------------------------------------- |
+| `deviceId`   | `100`         | Integer device ID (registered in the DB)                              |
+| `sensorName` | `temperature` | Must match a `sensor_name` in `sensor_types` table (case-insensitive) |
+
+**Examples:**
+
+```
+sensor/100/temperature
+sensor/100/ph
+sensor/100/tds
+sensor/100/turbidity
+sensor/100/water_level
+```
+
+### Payload (JSON)
 
 ```json
 {
   "value": 27.5,
-  "time": "2026-04-23 10:30:00"
+  "time": "2026-03-10 14:22:10"
 }
 ```
 
-The backend currently uses payload.value and writes server-time points.
+| Field   | Type   | Required | Description                                                                     |
+| ------- | ------ | -------- | ------------------------------------------------------------------------------- |
+| `value` | float  | ✅       | The sensor reading                                                              |
+| `time`  | string | —        | Timestamp `"YYYY-MM-DD HH:MM:SS"` from NTP. Defaults to server time if omitted. |
 
-## Frontend Notes (Current)
+### ESP32 Example (PubSubClient)
 
-- Frontend pages still use device-oriented labels, but API adapter maps them to tank endpoints.
-- Vite proxy forwards:
-  - /api -> http://localhost:5000
-  - /socket.io -> http://localhost:5000
-- Role access in UI for device/history pages: ADMIN and USER.
+```cpp
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
 
-## Current Project Structure
+const int   DEVICE_ID   = 100;
+const char* MQTT_SERVER = "192.168.1.100";
 
-```text
+void publishReading(const char* sensorName, float value) {
+  StaticJsonDocument<128> doc;
+  doc["value"] = value;
+  doc["time"]  = "2026-03-10 14:22:10"; // replace with NTP timestamp
+
+  char payload[128];
+  serializeJson(doc, payload);
+
+  char topic[64];
+  snprintf(topic, sizeof(topic), "sensor/%d/%s", DEVICE_ID, sensorName);
+  client.publish(topic, payload);
+}
+```
+
+### Requesting On-Demand Readings
+
+Publish to `device/<deviceId>/command` with the sensor name as payload (e.g. `"temperature"`). The ESP32 responds by publishing to the corresponding `sensor/` topic.
+
+---
+
+## Alert Rules
+
+All thresholds are configurable via environment variables.
+
+| Alert Type        | Condition         | Default Threshold | Env Variable      |
+| ----------------- | ----------------- | ----------------- | ----------------- |
+| `TEMP_HIGH`       | temperature > max | 32°C              | `TEMP_MAX`        |
+| `TEMP_LOW`        | temperature < min | 20°C              | `TEMP_MIN`        |
+| `PH_HIGH`         | pH > max          | 8.5               | `PH_MAX`          |
+| `PH_LOW`          | pH < min          | 6.5               | `PH_MIN`          |
+| `TURBIDITY_HIGH`  | turbidity > max   | 50 NTU            | `TURBIDITY_MAX`   |
+| `WATER_LEVEL_LOW` | water_level < min | 20%               | `WATER_LEVEL_MIN` |
+
+**Deduplication:** A new alert is only created if no unresolved alert of the same type already exists for that device.
+
+---
+
+## WebSocket Events
+
+Connect with any socket.io v4 client:
+
+```js
+import { io } from "socket.io-client";
+const socket = io("http://localhost:3000");
+
+socket.on("alert", (data) => {
+  // { id, type, message, value, deviceId, createdAt }
+});
+```
+
+The frontend automatically connects to WebSocket on login and displays toast notifications for incoming alerts.
+
+---
+
+## Project Structure
+
+```
 code/
 ├── backend/
 │   ├── src/
-│   │   ├── controllers/
-│   │   │   ├── authController.js
-│   │   │   ├── tankController.js
-│   │   │   └── sensorController.js
-│   │   ├── routes/
-│   │   │   ├── authRoutes.js
-│   │   │   ├── tankRoutes.js
-│   │   │   └── sensorRoutes.js
-│   │   ├── services/
-│   │   │   └── mqttService.js
+│   │   ├── modules/
+│   │   │   ├── auth/               → Username/password + Google OAuth + JWT
+│   │   │   ├── devices/            → Device registration & management
+│   │   │   ├── sensor-types/       → Sensor type definitions (CRUD)
+│   │   │   ├── sensors/            → Sensor reading queries
+│   │   │   ├── alerts/             → Alert engine & CRUD
+│   │   │   └── notifications/      → WebSocket + Email notifications
+│   │   ├── mqtt/
+│   │   │   └── mqttClient.js       → MQTT subscriber & ingestion pipeline
 │   │   ├── middleware/
-│   │   │   └── authMiddleware.js
-│   │   ├── lib/
-│   │   │   └── prisma.js
-│   │   └── index.js
+│   │   │   └── authMiddleware.js   → JWT Bearer token guard
+│   │   ├── database/
+│   │   │   └── prismaClient.js     → Prisma singleton
+│   │   ├── config/
+│   │   │   └── config.js           → Centralised env config with validation
+│   │   ├── utils/
+│   │   │   └── logger.js           → Winston logger
+│   │   ├── app.js                  → Express app (routes + middleware)
+│   │   └── server.js               → HTTP server entry point
 │   ├── prisma/
-│   │   └── schema.prisma
-│   ├── seed.js
-│   ├── seed-analytics.js
+│   │   ├── schema.prisma           → Database schema & relations
+│   │   ├── seed.js                 → Test data seeder
+│   │   └── migrations/             → SQL migration history
+│   ├── mosquitto/
+│   │   └── mosquitto.conf          → MQTT broker configuration
+│   ├── docker-compose.yml
+│   ├── Dockerfile
 │   ├── package.json
-│   └── .env
-└── frontend/
-    ├── src/
-    │   ├── pages/
-    │   ├── services/
-    │   │   ├── api.js
-    │   │   └── socket.js
-    │   ├── context/
-    │   │   └── AuthContext.jsx
-    │   ├── components/
-    │   ├── styles/
-    │   └── App.jsx
-    ├── vite.config.js
-    └── package.json
+│   ├── CHANGELOG.md
+│   └── .env.example
+│
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── Login.jsx           → Login form + Google Sign-In
+│   │   │   ├── Register.jsx        → Registration form
+│   │   │   ├── Dashboard.jsx       → Stats, devices, alerts, sensor types
+│   │   │   ├── Devices.jsx         → Device list + add form
+│   │   │   ├── DeviceDetail.jsx    → Device readings + alerts
+│   │   │   ├── SensorHistory.jsx   → Filterable readings history
+│   │   │   ├── Alerts.jsx          → Alert list with resolve
+│   │   │   └── Profile.jsx         → User profile display
+│   │   ├── components/
+│   │   │   └── Layout.jsx          → Sidebar + top bar + toast notifications
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx     → Auth state management
+│   │   ├── services/
+│   │   │   ├── api.js              → REST API helpers
+│   │   │   └── socket.js           → Socket.io client
+│   │   ├── styles/
+│   │   │   └── global.css          → Application stylesheet
+│   │   ├── App.jsx                 → Route definitions
+│   │   └── main.jsx                → React entry point
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── package.json
+│   ├── CHANGELOG.md
+│   └── .env.local
+│
+└── README.md                       ← You are here
 ```
 
-## Troubleshooting
+---
 
-### Prisma error about transactions / replica set
+## Docker (optional)
 
-If Prisma reports replica set required, restart MongoDB with --replSet rs0 and run rs.initiate as shown above.
+Docker Compose bundles PostgreSQL, Mosquitto, and the backend into a single command.
 
-### Sensor log or history returns 500
+### Switch `.env` to Docker service names
 
-Check InfluxDB is up and env values match:
-- INFLUX_URL
-- INFLUX_TOKEN
-- INFLUX_ORG
-- INFLUX_BUCKET
+```env
+DATABASE_URL="postgresql://guard:guardpass@postgres:5432/guarddb"
+MQTT_BROKER_URL=mqtt://mosquitto:1883
+```
 
-### Frontend shows no devices
+### Start the stack
 
-Make sure:
-- you are logged in as ADMIN or USER with assigned tanks
-  Admin account:
-      username = analytics_admin
-      password = Admin@1234
-  
-  User account:
-      username = analytics_worker_1
-      password = Worker@1234
+```powershell
+cd code\backend
+docker compose up --build
+```
 
-- sample data has been seeded with npm run seed:analytics
-- backend is running on port 5000
+```
+Services:
+  PostgreSQL  → localhost:5432
+  Mosquitto   → localhost:1883
+  Backend     → localhost:3000
+```
 
-### Refresh sends you to login
+### Stop
 
-Current frontend keeps session across refresh using token + cached user. If token is expired, logout on refresh is expected.
+```powershell
+docker compose down
+# Full reset (deletes DB data):
+docker compose down -v
+```
+
+---
+
+## Production Notes
+
+1. **HTTPS / WSS** — Place the backend behind an Nginx reverse proxy with TLS. Configure `CORS_ORIGIN` with your production domain. Serve the frontend `dist/` from Nginx or a CDN.
+2. **Frontend build** — Run `npm run build` in `code/frontend` and deploy the `dist/` folder. Update the API base URL if not using a reverse proxy.
+3. **Database** — Use a managed PostgreSQL service (e.g. AWS RDS, Supabase). Update `DATABASE_URL`.
+4. **JWT Secret** — Minimum 64-byte random secret. Rotate periodically.
+5. **Mosquitto authentication** — Set `allow_anonymous false` and configure a password file or TLS client certificates.
+6. **Environment secrets** — Never commit `.env`. Use Docker secrets or a secrets manager.
+7. **Rate limiting** — Add `express-rate-limit` to `/auth/login` and `/auth/google`.
+8. **Sensor readings partitioning** — For high-volume deployments consider PostgreSQL table partitioning on `sensor_readings` by month.
