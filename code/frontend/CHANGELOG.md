@@ -4,6 +4,26 @@ All notable changes to the frontend are documented in this file.
 
 ---
 
+## [1.4.0] — 2026-04-25
+
+### Added — Email Verification System
+
+-   **Mandatory Verification**: All new accounts (self-registered, Admin-created, or Super Admin-created) now require email verification before they can access the dashboard.
+-   **Email Service Integration**: Integrated high-priority HTML email notifications for registration and alerts.
+-   **Secure Resend Flow**: The "Resend Verification" feature now requires both a **username** and an **email address**, ensuring that verification links are only sent to the registered owner of the account.
+
+### Added — Admin & User Management
+
+-   **Admin User Creation**: Admins can now register new Workers (Users) directly from the dashboard. These accounts are automatically linked to the Admin and receive a verification email.
+-   **Super Admin Capabilities**: Super Admins can now create Admin accounts from the platform.
+
+### Added — MQTT Alert Notifications
+
+-   **Proactive Email Alerts**: The system now automatically emails the Tank Owner (Admin) and all assigned Workers whenever a critical aquatic alert is received via MQTT.
+-   **Alert Deduplication**: Backend logic ensures only one active alert is maintained per sensor type per tank, preventing notification spam.
+
+---
+
 ## [1.3.0] — 2026-04-21
 
 ### Changed — Navigation & Layout Refresh

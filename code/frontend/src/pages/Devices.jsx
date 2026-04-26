@@ -11,7 +11,7 @@ export default function Devices() {
   const [showForm, setShowForm] = useState(false);
   const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [form, setForm] = useState({
-    deviceId: '',
+    productKey: '',
     deviceName: '',
   });
   const [deleteForm, setDeleteForm] = useState({
@@ -32,6 +32,13 @@ export default function Devices() {
 
   useEffect(() => { loadDevices(); }, []);
 
+  // Format XXXXXXXXXXXXXXXX -> XXXX-XXXX-XXXX-XXXX as user types
+  const handleProductKeyChange = (e) => {
+    const digits = e.target.value.replace(/-/g, '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 16);
+    const formatted = digits.replace(/(.{4})(?=.)/g, '$1-');
+    setForm({ ...form, productKey: formatted });
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
     setError('');
@@ -43,20 +50,19 @@ export default function Devices() {
 
     setBusy(true);
     try {
-      const body = { deviceId: form.deviceId.trim() };
-      if (!body.deviceId) {
-        throw new Error('Device ID is required.');
+      // Strip dashes before sending to backend
+      const rawKey = form.productKey.replace(/-/g, '');
+      if (rawKey.length !== 16) {
+        throw new Error('Product Key must be exactly 16 characters.');
       }
 
+      const body = { productKey: rawKey };
       if (form.deviceName.trim()) {
         body.deviceName = form.deviceName.trim();
       }
 
       await deviceApi.create(body);
-      setForm({
-        deviceId: '',
-        deviceName: '',
-      });
+      setForm({ productKey: '', deviceName: '' });
       setShowForm(false);
       await loadDevices();
     } catch (err) {
@@ -165,8 +171,15 @@ export default function Devices() {
           {error && <p className="error-msg">{error}</p>}
           <form onSubmit={handleAdd} className="devices-form">
             <div className="form-group devices-form-device-id">
-              <label>Device ID (Tank ID) *</label>
-              <input type="text" value={form.deviceId} onChange={(e) => setForm({ ...form, deviceId: e.target.value })} required placeholder="GUARD-001" />
+              <label>Product Key *</label>
+              <input
+                type="text"
+                value={form.productKey}
+                onChange={handleProductKeyChange}
+                required
+                placeholder="XXXX-XXXX-XXXX-XXXX"
+                maxLength={19}
+              />
             </div>
             <div className="form-group devices-form-device-name">
               <label>Device Name</label>

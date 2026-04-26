@@ -1,38 +1,38 @@
 import prisma from "../lib/prisma.js";
+import { findAccessibleTank } from "../lib/tankAccess.js";
 
 const uniqueIds = (arr) => [...new Set(arr || [])];
 
-const findAccessibleTank = async (tankId, user) => {
-  if (user.role === "SUPER_ADMIN") {
-    return prisma.tank.findFirst({
-      where: { tankId },
-    });
-  }
-
-  if (user.role === "ADMIN") {
-    return prisma.tank.findFirst({
-      where: { tankId, adminId: user.userId },
-    });
-  }
-
-  if (user.role === "USER") {
-    return prisma.tank.findFirst({
-      where: { tankId, workerIds: { has: user.userId } },
-    });
-  }
-
-  return null;
+// Always store/look up product keys in XXXX-XXXX-XXXX-XXXX format
+const formatProductKey = (raw) => {
+  const clean = (raw || '').replace(/-/g, '').toUpperCase();
+  return clean.replace(/(.{4})(?=.)/g, '$1-');
 };
 
+
 export const registerTank = async (req, res) => {
-  const { name, tankId, workerIds = [] } = req.body;
+  const { productKey: rawKey, name, workerIds = [] } = req.body;
   const adminId = req.user.userId;
 
-  if (!name || !tankId) {
-    return res.status(400).json({ error: "name and tankId are required." });
+  if (!rawKey || !name) {
+    return res.status(400).json({ error: "productKey and name are required." });
   }
 
+  const productKey = formatProductKey(rawKey);
+
   try {
+    const tank = await prisma.tank.findUnique({
+      where: { productKey }
+    });
+
+    if (!tank) {
+      return res.status(404).json({ error: "Invalid product key. Please check the key on your device." });
+    }
+
+    if (tank.isRegistered) {
+      return res.status(400).json({ error: "This device is already registered to an account." });
+    }
+
     const cleanWorkerIds = uniqueIds(workerIds);
 
     if (cleanWorkerIds.length > 0) {
@@ -51,22 +51,58 @@ export const registerTank = async (req, res) => {
       }
     }
 
+    // Claim the device: assign this admin, set name, mark registered
+    const updatedTank = await prisma.tank.update({
+      where: { id: tank.id },
+      data: {
+        adminId,
+        name,
+        workerIds: cleanWorkerIds,
+        isRegistered: true,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Device registered successfully.",
+      tank: updatedTank,
+    });
+  } catch (error) {
+    console.error("Tank registration error:", error);
+    return res.status(500).json({ error: "Registration failed." });
+  }
+};
+
+export const addProduct = async (req, res) => {
+  const { productKey: rawKey, tankId } = req.body;
+
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ error: "Only Super Admin can add products." });
+  }
+
+  if (!rawKey || !tankId) {
+    return res.status(400).json({ error: "productKey and tankId are required." });
+  }
+
+  const productKey = formatProductKey(rawKey);
+
+  try {
+    // Device enters DB with NO admin — it floats until an admin claims it with the product key
     const tank = await prisma.tank.create({
       data: {
-        name,
         tankId,
-        adminId,
-        workerIds: cleanWorkerIds,
+        productKey,
+        name: "Unregistered Device",
+        isRegistered: false,
       },
     });
 
     return res.status(201).json({
-      message: "Tank registered successfully.",
+      message: "Product added to inventory. Admin can now register it using the product key.",
       tank,
     });
   } catch (error) {
-    console.error("Tank registration error:", error);
-    return res.status(400).json({ error: "Registration failed. Tank ID might already exist." });
+    console.error("Add product error:", error);
+    return res.status(400).json({ error: "Failed to add product. Product Key or Tank ID might already exist." });
   }
 };
 
@@ -168,16 +204,30 @@ export const getTankStatus = async (req, res) => {
   const { tankId } = req.params;
 
   try {
-    const tank = await findAccessibleTank(tankId, req.user);
+    const tank = await prisma.tank.findUnique({
+      where: { tankId },
+      include: {
+        workers: {
+          select: { id: true, fullName: true, username: true }
+        }
+      }
+    });
 
     if (!tank) {
-      return res.status(404).json({ error: "Tank not found or no access." });
+      return res.status(404).json({ error: "Tank not found." });
+    }
+
+    // Verify access
+    const accessible = await findAccessibleTank(tankId, req.user);
+    if (!accessible) {
+      return res.status(403).json({ error: "Access denied." });
     }
 
     return res.json({
       name: tank.name,
       tankId: tank.tankId,
       status: tank.status,
+      workers: tank.workers, // Include worker details
       currentStats: {
         temp: tank.lastTemp,
         pH: tank.lastPh,
@@ -192,30 +242,75 @@ export const getTankStatus = async (req, res) => {
   }
 };
 
-export const deleteTankByAdmin = async (req, res) => {
+export const unassignUserFromTank = async (req, res) => {
   const { tankId } = req.params;
-  const { name } = req.body;
+  const { userId } = req.body;
+  const adminId = req.user.userId;
 
-  if (req.user.role !== "ADMIN") {
-    return res.status(403).json({ error: "Access denied- only for Admins" });
-  }
-
-  if (!name) {
-    return res.status(400).json({ error: "name is required." });
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required." });
   }
 
   try {
     const tank = await prisma.tank.findFirst({
-      where: {
-        tankId,
-        name,
-        adminId: req.user.userId,
-      },
-      select: {
-        id: true,
-        tankId: true,
-        name: true,
-      },
+      where: { tankId, adminId },
+    });
+
+    if (!tank) {
+      return res.status(404).json({ error: `Tank ${tankId} not found or you are not the owner.` });
+    }
+
+    const worker = await prisma.user.findFirst({
+      where: { id: userId, role: "USER", adminId },
+    });
+
+    if (!worker) {
+      return res.status(404).json({ error: "Worker not found or not created by you." });
+    }
+
+    const nextWorkerIds = (tank.workerIds || []).filter(id => id !== userId);
+    const nextAssignedTankIds = (worker.assignedTankIds || []).filter(id => id !== tank.id);
+
+    await prisma.tank.update({
+      where: { id: tank.id },
+      data: { workerIds: nextWorkerIds },
+    });
+
+    await prisma.user.update({
+      where: { id: worker.id },
+      data: { assignedTankIds: nextAssignedTankIds },
+    });
+
+    return res.status(200).json({ message: "User unassigned from tank successfully." });
+  } catch (error) {
+    console.error("Unassign user error:", error);
+    return res.status(500).json({ error: "Failed to unassign user from tank." });
+  }
+};
+
+export const deleteTankByAdmin = async (req, res) => {
+  const { tankId } = req.params;
+  const { name } = req.body;
+  const isSuperAdmin = req.user.role === "SUPER_ADMIN";
+  const isAdmin = req.user.role === "ADMIN";
+
+  if (!isSuperAdmin && !isAdmin) {
+    return res.status(403).json({ error: "Access denied." });
+  }
+
+  // ADMIN must confirm with device name; SUPER_ADMIN can delete by tankId alone
+  if (isAdmin && !name) {
+    return res.status(400).json({ error: "name is required." });
+  }
+
+  try {
+    const whereClause = isSuperAdmin
+      ? { tankId }
+      : { tankId, name, adminId: req.user.userId };
+
+    const tank = await prisma.tank.findFirst({
+      where: whereClause,
+      select: { id: true, tankId: true, name: true },
     });
 
     if (!tank) {

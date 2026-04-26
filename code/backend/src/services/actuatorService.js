@@ -1,25 +1,8 @@
 import prisma from "../lib/prisma.js";
+import { findAccessibleTank } from "../lib/tankAccess.js";
 import { publishActuatorCommand } from "./mqttService.js";
 
 const SUPPORTED_COMMANDS = ["feed", "pump_on", "pump_off"];
-
-const findAccessibleTank = async (tankId, user) => {
-  if (user.role === "ADMIN") {
-    return prisma.tank.findFirst({
-      where: { tankId, adminId: user.userId },
-      select: { tankId: true },
-    });
-  }
-
-  if (user.role === "USER") {
-    return prisma.tank.findFirst({
-      where: { tankId, workerIds: { has: user.userId } },
-      select: { tankId: true },
-    });
-  }
-
-  return null;
-};
 
 const assertTankAccess = async (tankId, user) => {
   const tank = await findAccessibleTank(tankId, user);

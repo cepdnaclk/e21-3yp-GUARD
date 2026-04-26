@@ -5,20 +5,41 @@ import {
   googleLogin,
   createAdminBySuperAdmin,
   createUserByAdmin,
+  verifyEmail,
+  resendVerificationEmail,
+  getWorkersByAdmin,
+  getMe,
   getUsersByAdmin,
   deleteUserByAdmin,
   getAdminsBySuperAdmin,
   deleteAdminBySuperAdmin,
   updateProfile,
+  forgotPasswordInit,
+  forgotPasswordVerifyEmail,
+  forgotPasswordVerifyCode,
+  forgotPasswordReset,
 } from "../controllers/authController.js";
 import { verifyToken, requireRole, requireAnyRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+// ── Public routes ────────────────────────────────────────────────────────────
 router.post("/login", login);
 router.post("/register", register);
 router.post("/google", googleLogin);
 
+// Email verification (token arrives as a query-string param)
+router.get("/verify-email", verifyEmail);
+router.post("/resend-verification", resendVerificationEmail);
+
+// Forgot Password Flow
+router.post("/forgot-password/init", forgotPasswordInit);
+router.post("/forgot-password/verify-email", forgotPasswordVerifyEmail);
+router.post("/forgot-password/verify-code", forgotPasswordVerifyCode);
+router.post("/forgot-password/reset", forgotPasswordReset);
+
+// ── Protected routes ─────────────────────────────────────────────────────────
+router.get("/me", verifyToken, getMe);
 router.post(
   "/create-admin",
   verifyToken,
@@ -31,6 +52,13 @@ router.post(
   verifyToken,
   requireRole("ADMIN"),
   createUserByAdmin
+);
+
+router.get(
+  "/workers",
+  verifyToken,
+  requireRole("ADMIN"),
+  getWorkersByAdmin
 );
 
 router.get(

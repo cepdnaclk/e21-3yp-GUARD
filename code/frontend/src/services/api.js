@@ -34,6 +34,8 @@ function toDeviceFromTank(tank) {
     id: tank.id,
     deviceId: tank.tankId,
     deviceName: tank.name,
+    productKey: tank.productKey || null,
+    isRegistered: tank.isRegistered ?? true,
     createdAt: tank.createdAt,
     updatedAt: tank.updatedAt,
     status: tank.status,
@@ -77,17 +79,58 @@ export const authApi = {
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   googleLogin: (idToken) => request('/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
+  verifyEmail: (token) => request(`/auth/verify-email?token=${encodeURIComponent(token)}`),
+  resendVerification: (username, email) => request('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ username, email }) }),
+  getMe: () => request('/auth/me'),
   updateProfile: (body) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
+
+  // Forgot Password APIs
+  forgotPasswordInit: async (username) => {
+    return request('/auth/forgot-password/init', {
+      method: 'POST',
+      body: JSON.stringify({ username }),
+    });
+  },
+
+  forgotPasswordVerifyEmail: async (username, email) => {
+    return request('/auth/forgot-password/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ username, email }),
+    });
+  },
+
+  forgotPasswordVerifyCode: async (username, code) => {
+    return request('/auth/forgot-password/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ username, code }),
+    });
+  },
+
+  forgotPasswordReset: async (username, code, newPassword) => {
+    return request('/auth/forgot-password/reset', {
+      method: 'POST',
+      body: JSON.stringify({ username, code, newPassword }),
+    });
+  },
 
   // Admin-only routes.
   createAdmin: (body) => request('/auth/create-admin', { method: 'POST', body: JSON.stringify(body) }),
   createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
+  listWorkers: () => request('/auth/workers'),
   getUsersByAdmin: () => request('/auth/users'),
   deleteUserByAdmin: (userId) => request(`/auth/users/${userId}`, { method: 'DELETE' }),
 
   // SUPER_ADMIN-only routes.
   getAdminsBySuperAdmin: () => request('/auth/admins'),
   deleteAdminBySuperAdmin: (adminId) => request(`/auth/admins/${adminId}`, { method: 'DELETE' }),
+};
+
+export const alertApi = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/alerts?${qs}`);
+  },
+  resolve: (alertId) => request('/alerts/resolve', { method: 'POST', body: JSON.stringify({ alertId }) }),
 };
 
 export const deviceApi = {
@@ -98,12 +141,12 @@ export const deviceApi = {
   },
 
   // POST /api/tanks/register
-  create: async ({ deviceId, deviceName }) => {
+  create: async ({ productKey, deviceName }) => {
     const created = await request('/tanks/register', {
       method: 'POST',
       body: JSON.stringify({
-        tankId: String(deviceId),
-        name: deviceName || `Tank ${deviceId}`,
+        productKey: String(productKey),
+        name: deviceName || `Device ${productKey}`,
       }),
     });
 
@@ -112,6 +155,17 @@ export const deviceApi = {
 
   // POST /api/tanks/:tankId/assign-user
   assignUser: (tankId, userId) => request(`/tanks/${tankId}/assign-user`, { method: 'POST', body: JSON.stringify({ userId }) }),
+
+  // POST /api/tanks/:tankId/unassign-user
+  unassignUser: (tankId, userId) => request(`/tanks/${tankId}/unassign-user`, { method: 'POST', body: JSON.stringify({ userId }) }),
+
+  // POST /api/tanks/add-product (SUPER_ADMIN only)
+  addProduct: async (tankId, productKey) => {
+    return request('/tanks/add-product', {
+      method: 'POST',
+      body: JSON.stringify({ tankId, productKey }),
+    });
+  },
 
   // DELETE /api/tanks/:tankId
   deleteTank: (tankId, name) => request(`/tanks/${tankId}`, {
@@ -133,6 +187,7 @@ export const deviceApi = {
       deviceId: status.tankId,
       deviceName: status.name,
       status: status.status,
+      workers: status.workers || [],
       currentStats: status.currentStats || {},
     };
   },

@@ -2,9 +2,11 @@ import express from "express";
 import { body, param, validationResult } from "express-validator";
 import {
   registerTank,
+  addProduct,
   getTankStatus,
   getAllTanks,
   assignUserToTank,
+  unassignUserFromTank,
   deleteTankByAdmin,
 } from "../controllers/tankController.js";
 import { sendActuatorCommand } from "../controllers/actuatorController.js";
@@ -15,6 +17,12 @@ import {
 } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+router.use((req, res, next) => {
+    console.log(`📦 TankRouter: ${req.method} ${req.url}`);
+    next();
+});
+
 const validateRequest = (req, res, next) => {
   const errors = validationResult(req);
 
@@ -26,15 +34,14 @@ const validateRequest = (req, res, next) => {
 };
 
 router.post("/register", verifyToken, requireRole("ADMIN"), registerTank);
+router.post("/add-product", verifyToken, requireRole("SUPER_ADMIN"), addProduct);
 router.post("/:tankId/assign-user", verifyToken, requireRole("ADMIN"), assignUserToTank);
+router.post("/:tankId/unassign-user", verifyToken, requireRole("ADMIN"), unassignUserFromTank);
 router.delete(
   "/:tankId",
   verifyToken,
-  requireRole("ADMIN"),
-  [
-    param("tankId").trim().notEmpty().withMessage("tankId is required."),
-    body("name").trim().notEmpty().withMessage("name is required."),
-  ],
+  requireAnyRole(["ADMIN", "SUPER_ADMIN"]),
+  [param("tankId").trim().notEmpty().withMessage("tankId is required.")],
   validateRequest,
   deleteTankByAdmin
 );
@@ -56,7 +63,7 @@ router.post(
   sendActuatorCommand
 );
 
-router.get("/", verifyToken, requireAnyRole(["ADMIN", "USER"]), getAllTanks);
-router.get("/:tankId/status", verifyToken, requireAnyRole(["ADMIN", "USER"]), getTankStatus);
+router.get("/", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getAllTanks);
+router.get("/:tankId/status", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getTankStatus);
 
 export default router;

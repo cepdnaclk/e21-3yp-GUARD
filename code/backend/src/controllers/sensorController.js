@@ -1,13 +1,8 @@
 import prisma from '../lib/prisma.js';
-import { InfluxDB, Point } from '@influxdata/influxdb-client';
+import { Point } from '@influxdata/influxdb-client';
+import { writeApi, queryApi } from '../lib/influx.js';
 
-// Initialize the InfluxDB client
-const influx = new InfluxDB({ url: process.env.INFLUX_URL, token: process.env.INFLUX_TOKEN });
-const writeApi = influx.getWriteApi(process.env.INFLUX_ORG, process.env.INFLUX_BUCKET, 'ns');
-const queryApi = influx.getQueryApi(process.env.INFLUX_ORG);
-
-// (Optional) You can keep this HTTP route if you ever want to test via Postman, 
-// even though your ESP32 now uses MQTT instead of this!
+// (Optional) HTTP route for testing via Postman — ESP32 now uses MQTT instead.
 export const logData = async (req, res) => {
     const { tankId, temp, pH, tds, turbidity, waterLevel } = req.body;
 
@@ -33,7 +28,6 @@ export const logData = async (req, res) => {
             .floatField('waterLevel', waterLevel); 
 
         writeApi.writePoint(point);
-        await writeApi.flush(); 
 
         res.status(201).json({ 
             message: "Hybrid sync complete: State in Mongo, History in Influx!", 
@@ -71,6 +65,9 @@ export const getTankHistory = async (req, res) => {
       return res.status(404).json({ error: "Tank not found or no access." });
     }
 
+    // Sanitise tankId to prevent Flux injection
+    const safeTankId = tankId.replace(/[^a-zA-Z0-9_-]/g, '');
+
     let rangeClause = '|> range(start: -24h)';
 
     if (from || to) {
@@ -98,7 +95,7 @@ export const getTankHistory = async (req, res) => {
       from(bucket: "${process.env.INFLUX_BUCKET}")
         ${rangeClause}
         |> filter(fn: (r) => r._measurement == "water_quality")
-        |> filter(fn: (r) => r.tankId == "${tankId}")
+        |> filter(fn: (r) => r.tankId == "${safeTankId}")
         |> aggregateWindow(every: 5m, fn: last, createEmpty: true)
         |> fill(usePrevious: true)
         |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")

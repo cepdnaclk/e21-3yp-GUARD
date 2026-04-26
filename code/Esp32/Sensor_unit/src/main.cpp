@@ -10,6 +10,9 @@
 #include <Preferences.h>
 #include <Adafruit_NeoPixel.h>
 
+// 🟢 Include your hidden passwords
+#include "secrets.h"
+
 // ---------------- Pins & Constants ----------------
 #define RESET_BUTTON 0
 #define RESET_DURATION 3000
@@ -17,8 +20,8 @@
 #define RGB_LED_PIN 48   
 #define NUMPIXELS 1      
 const int servoPin = 13;
-const int pumpInPin = 18;
-const int pumpOutPin = 17;
+const int pumpInPin = 9;
+const int pumpOutPin = 10;
 #define TRIGGER_PIN 5
 #define ECHO_PIN 15
 
@@ -27,10 +30,11 @@ const int pumpOutPin = 17;
 #define ADC_RESOLUTION 4095
 
 // ---------------- Network Config ------------------
-const char* mqtt_server = "71d3962284c44824be0bfe8cfedfedb7.s1.eu.hivemq.cloud";
-const int mqtt_port = 8883; 
-const char* mqtt_user = "thisen";          
-const char* mqtt_password = "Thisen123thi"; 
+// 🟢 Everything is now pulled safely from secrets.h!
+const char* mqtt_server = SECRET_MQTT_SERVER;
+const int mqtt_port = SECRET_MQTT_PORT; 
+const char* mqtt_user = SECRET_MQTT_USER;          
+const char* mqtt_password = SECRET_MQTT_PASS; 
 
 // ISRG Root X1 — Let's Encrypt Root CA
 static const char* root_ca = R"EOF(
@@ -77,7 +81,6 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 // ---------------- State Variables -----------------
-// 🚨 ALERT BOUNDARIES (Overridden by Flash Memory on boot)
 float tempMin = 24.0; 
 float tempMax = 28.0; 
 float tdsMin = 70.0;
@@ -88,13 +91,20 @@ float waterLevelStopThreshold = 4.0;
 bool servoActive = false;
 unsigned long servoStartTime = 0;
 const unsigned long SERVO_RUN_TIME = 3000; 
-unsigned long lastTempTime = 0;
-unsigned long lastWaterTime = 0;
+
+// ⏱️ TIMING INTERVALS
+const unsigned long POLL_INTERVAL = 2000;     // Read sensors every 2 seconds
+const unsigned long PUBLISH_INTERVAL = 10000; // Routine publish every 10 seconds
+
+// ⏱️ TIMING TRACKERS
+unsigned long lastTempRead = 0;
+unsigned long lastWaterRead = 0;
+unsigned long lastTdsRead = 0;
+
+unsigned long lastTempPub = 0;
+unsigned long lastWaterPub = 0;
+unsigned long lastTdsPub = 0;
 unsigned long lastReconnectAttempt = 0;
-unsigned long lastTdsTime = 0;   
-const unsigned long TEMP_INTERVAL = 10000; 
-const unsigned long WATER_INTERVAL = 10000;
-const unsigned long TDS_INTERVAL = 10000;   
 unsigned long pressStart = 0;
 
 // 🚦 SYSTEM HEALTH FLAGS
@@ -109,7 +119,7 @@ bool drainPumpOn = false;
 float lastWaterDistanceCm = -1.0f;
 bool hasValidWaterDistance = false;
 
-unsigned long DeviceID = 100;
+unsigned long DeviceID = 300; 
 String clientID = "ESP32_" + String(DeviceID);
 
 // ---------------- Helper Functions ----------------
@@ -121,7 +131,6 @@ void validateWaterThresholds() {
   if (waterLevelStopThreshold >= waterLevelThreshold) {
     waterLevelStopThreshold = waterLevelThreshold - 0.5f;
   }
-
   if (waterLevelStopThreshold < 0.1f) {
     waterLevelStopThreshold = 0.1f;
   }
@@ -131,7 +140,6 @@ void setPumpStates(bool fillOn, bool drainOn, const String& source) {
   if (fillPumpOn == fillOn && drainPumpOn == drainOn) {
     return;
   }
-
   digitalWrite(pumpInPin, fillOn ? LOW : HIGH);
   digitalWrite(pumpOutPin, drainOn ? LOW : HIGH);
   fillPumpOn = fillOn;
@@ -194,7 +202,6 @@ void publishSensor(String parameter, float value) {
   Serial.println("[MQTT] Sent: " + payload);
 }
 
-// 🚨 ALERT FUNCTION
 void publishAlert(String parameter, String alertType, float value) {
   String topic = "alert/" + String(DeviceID) + "/" + parameter; 
   String payload = "{\"alert\":\"" + alertType + "\",\"value\":" + String(value) + "}";
@@ -208,13 +215,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   for (unsigned int i = 0; i < length; i++) message += (char)payload[i];
   String topicStr = String(topic);
 
-  // --- 📡 DYNAMIC SETTINGS LISTENER ---
   if (topicStr == setThresholdTopic("water_level")) {
     waterLevelThreshold = message.toFloat();
     validateWaterThresholds();
     preferences.begin("settings", false);
-    preferences.putFloat("water_thresh", waterLevelThreshold);
-    preferences.putFloat("water_stop_thresh", waterLevelStopThreshold);
+    preferences.putFloat("w_level", waterLevelThreshold);
+    preferences.putFloat("w_stop", waterLevelStopThreshold);
     preferences.end();
     Serial.println("[CONFIG] Water Level updated: " + String(waterLevelThreshold) + ", Stop: " + String(waterLevelStopThreshold));
   }
@@ -222,7 +228,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     waterLevelStopThreshold = message.toFloat();
     validateWaterThresholds();
     preferences.begin("settings", false);
-    preferences.putFloat("water_stop_thresh", waterLevelStopThreshold);
+    preferences.putFloat("w_stop", waterLevelStopThreshold);
     preferences.end();
     Serial.println("[CONFIG] Water Stop updated: " + String(waterLevelStopThreshold));
   }
@@ -254,8 +260,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     preferences.end();
     Serial.println("[CONFIG] Max TDS updated: " + String(tdsMax));
   }
-  // ------------------------------------
-  
   else if (message == "feed" && !servoActive) {
     myServo.attach(servoPin, 500, 2400);
     myServo.write(180); 
@@ -274,8 +278,6 @@ boolean reconnect() {
   Serial.print("[MQTT] Attempting secure connection...");
   if (client.connect(clientID.c_str(), mqtt_user, mqtt_password)) {
     Serial.println("connected!");
-    
-    // Subscribe to commands and all config topics
     client.subscribe(commandTopic().c_str());
     client.subscribe(setThresholdTopic("water_level").c_str());
     client.subscribe(setThresholdTopic("water_stop").c_str());
@@ -283,7 +285,6 @@ boolean reconnect() {
     client.subscribe(setThresholdTopic("temp_max").c_str());
     client.subscribe(setThresholdTopic("tds_min").c_str());
     client.subscribe(setThresholdTopic("tds_max").c_str());
-    
     return true;
   }
   Serial.print("failed, rc=");
@@ -312,28 +313,24 @@ void setup() {
   drainPumpOn = false;
   pinMode(TDS_PIN, INPUT);
 
-  // --- 💾 LOAD SAVED SETTINGS FROM FLASH MEMORY ---
   preferences.begin("settings", true);
-  waterLevelThreshold = preferences.getFloat("water_thresh", 5.0);
-  waterLevelStopThreshold = preferences.getFloat("water_stop_thresh", 4.0);
+  waterLevelThreshold = preferences.getFloat("w_level", 5.0);
+  waterLevelStopThreshold = preferences.getFloat("w_stop", 4.0);
   tempMin = preferences.getFloat("temp_min", 24.0);
   tempMax = preferences.getFloat("temp_max", 28.0);
   tdsMin = preferences.getFloat("tds_min", 70.0);
   tdsMax = preferences.getFloat("tds_max", 500.0);
   preferences.end();
   validateWaterThresholds();
-  // ------------------------------------------------
 
   ESP32PWM::allocateTimer(0);
   myServo.setPeriodHertz(50);
 
-  // 🟢 ANTI-CRASH SHIELD: Explicitly set Station mode
   WiFi.mode(WIFI_STA); 
 
   WiFiManager wm;
   wm.autoConnect(("ESP32_GUARD_" + String(DeviceID)).c_str());
 
-  // --- TLS CRITICAL: NTP Sync ---
   configTime(19800, 0, "pool.ntp.org", "time.nist.gov"); 
   Serial.print("Syncing Time");
   while (time(nullptr) < 1000000) { 
@@ -342,7 +339,6 @@ void setup() {
   }
   Serial.println(" Ready!");
 
-  // --- TLS: Set Certificate ---
   espClient.setCACert(root_ca);
 
   sensors.begin();
@@ -352,7 +348,6 @@ void setup() {
 
 // ---------------- Main Loop -----------------------
 void loop() {
-  // 🟢 ANTI-CRASH SHIELD: Wait for Wi-Fi recovery
   if (WiFi.status() != WL_CONNECTED) {
       Serial.println("[WIFI] Disconnected. Waiting for auto-reconnect...");
       delay(1000);
@@ -378,57 +373,78 @@ void loop() {
 
   unsigned long now = millis();
   
-  // 🌡️ TEMPERATURE SENSOR & ALERTS
-  if (now - lastTempTime > TEMP_INTERVAL) {
-    lastTempTime = now;
+  // 🌡️ TEMPERATURE SENSOR (Fast Poll & Edge Detect)
+  if (now - lastTempRead > POLL_INTERVAL) {
+    lastTempRead = now;
     sensors.requestTemperatures();
     float currentTemp = sensors.getTempCByIndex(0);
     
     if(currentTemp != DEVICE_DISCONNECTED_C) {
-      if (client.connected()) publishSensor("temperature", currentTemp);
-      tempPumpDemand = (currentTemp < tempMin) || (currentTemp > tempMax);
-      
+      bool isAlertNow = false;
+      String alertType = "";
+
       if (currentTemp < tempMin) {
-          tempAlert = true;
-          if (client.connected()) publishAlert("temperature", "LOW", currentTemp);
+          isAlertNow = true;
+          alertType = "LOW";
       } else if (currentTemp > tempMax) {
-          tempAlert = true;
-          if (client.connected()) publishAlert("temperature", "HIGH", currentTemp);
-      } else {
-          tempAlert = false; 
+          isAlertNow = true;
+          alertType = "HIGH";
       }
 
+      // Publish if it's a NEW alert OR the 10-second routine timer fired
+      if ((isAlertNow && !tempAlert) || (now - lastTempPub > PUBLISH_INTERVAL)) {
+          if (client.connected()) publishSensor("temperature", currentTemp);
+          lastTempPub = now; // Reset routine timer
+          
+          if (isAlertNow && !tempAlert) { // Send immediate alert only once per boundary crossing
+              if (client.connected()) publishAlert("temperature", alertType, currentTemp);
+          }
+      }
+
+      tempAlert = isAlertNow;
+      tempPumpDemand = isAlertNow;
       applyPumpControl();
     }
   }
 
-  // 🌊 WATER LEVEL SENSOR & ALERTS
-  if (now - lastWaterTime > WATER_INTERVAL) {
-    lastWaterTime = now;
+  // 🌊 WATER LEVEL SENSOR (Fast Poll & Edge Detect)
+  if (now - lastWaterRead > POLL_INTERVAL) {
+    lastWaterRead = now;
     float currentDist = readWaterDistanceCm();
     
     if (currentDist > 0) {
       lastWaterDistanceCm = currentDist;
       hasValidWaterDistance = true;
-      if (client.connected()) publishSensor("waterlevel", currentDist);
-      
+
+      bool isAlertNow = false;
+      String alertType = "";
+
       if (currentDist >= waterLevelThreshold) {
-         waterAlert = true;
-         if (client.connected()) publishAlert("waterlevel", "LOW", currentDist);
+          isAlertNow = true;
+          alertType = "LOW";
       } else if (currentDist <= waterLevelStopThreshold) {
-        waterAlert = true;
-        if (client.connected()) publishAlert("waterlevel", "HIGH", currentDist);
-      } else {
-         waterAlert = false; 
+          isAlertNow = true;
+          alertType = "HIGH";
       }
 
+      // Publish if it's a NEW alert OR the 10-second routine timer fired
+      if ((isAlertNow && !waterAlert) || (now - lastWaterPub > PUBLISH_INTERVAL)) {
+          if (client.connected()) publishSensor("waterlevel", currentDist);
+          lastWaterPub = now;
+          
+          if (isAlertNow && !waterAlert) {
+              if (client.connected()) publishAlert("waterlevel", alertType, currentDist);
+          }
+      }
+
+      waterAlert = isAlertNow;
       applyPumpControl();
     }
   }
 
-  // 🧪 TDS SENSOR & ALERTS (Custom Native Math)
-  if (now - lastTdsTime > TDS_INTERVAL) {
-    lastTdsTime = now;
+  // 🧪 TDS SENSOR (Fast Poll & Edge Detect)
+  if (now - lastTdsRead > POLL_INTERVAL) {
+    lastTdsRead = now;
 
     float rawAdc = 0;
     for(int i = 0; i < 10; i++) {
@@ -445,34 +461,34 @@ void loop() {
 
     float compensationCoefficient = 1.0 + 0.02 * (tempC - 25.0);
     float compensationVoltage = voltage / compensationCoefficient;
-
     float tdsValue = (133.42 * pow(compensationVoltage, 3) - 255.86 * pow(compensationVoltage, 2) + 857.39 * compensationVoltage) * 0.5;
 
     if (tdsValue < 0) tdsValue = 0;
 
-    if (client.connected()) {
-      publishSensor("tds", tdsValue);
-    }
-    
-    tdsPumpDemand = (tdsValue < tdsMin) || (tdsValue > tdsMax);
+    bool isAlertNow = false;
+    String alertType = "";
 
     if (tdsValue < tdsMin) {
-        tdsAlert = true;
-        if (client.connected()) publishAlert("tds", "LOW", tdsValue);
+        isAlertNow = true;
+        alertType = "LOW";
     } else if (tdsValue > tdsMax) {
-        tdsAlert = true;
-        if (client.connected()) publishAlert("tds", "HIGH", tdsValue);
-    } else {
-        tdsAlert = false; 
-    } 
+        isAlertNow = true;
+        alertType = "HIGH";
+    }
 
+    // Publish if it's a NEW alert OR the 10-second routine timer fired
+    if ((isAlertNow && !tdsAlert) || (now - lastTdsPub > PUBLISH_INTERVAL)) {
+        if (client.connected()) publishSensor("tds", tdsValue);
+        lastTdsPub = now;
+        
+        if (isAlertNow && !tdsAlert) {
+            if (client.connected()) publishAlert("tds", alertType, tdsValue);
+        }
+    }
+
+    tdsAlert = isAlertNow;
+    tdsPumpDemand = isAlertNow;
     applyPumpControl();
-
-    // Serial.print("[TDS Raw ADC] ");
-    // Serial.print(rawAdc);
-    // Serial.print("  |  [Calculated TDS] ");
-    // Serial.print(tdsValue);
-    // Serial.println(" ppm");
   }
 
   // 🚦 UNIFIED MASTER LED LOGIC
