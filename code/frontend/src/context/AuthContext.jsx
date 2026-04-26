@@ -5,7 +5,6 @@ import { connectSocket, disconnectSocket } from '../services/socket';
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'token';
 const ROLE_KEY = 'role';
-const USER_KEY = 'auth_user';
 
 function normalizeUserFromAuthResponse(data, fallback = {}) {
   if (data?.user) {
@@ -24,23 +23,6 @@ function normalizeUserFromAuthResponse(data, fallback = {}) {
   };
 }
 
-function parseJwtPayload(token) {
-  try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(base64));
-  } catch {
-    return null;
-  }
-}
-
-function isTokenExpired(token) {
-  const payload = parseJwtPayload(token);
-  if (!payload?.exp) return false;
-  return payload.exp * 1000 <= Date.now();
-}
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +30,6 @@ export function AuthProvider({ children }) {
   const loadUser = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
     const storedRole = localStorage.getItem(ROLE_KEY);
-    const storedUserRaw = localStorage.getItem(USER_KEY);
     if (!token) {
       setLoading(false);
       return;
@@ -74,22 +55,14 @@ export function AuthProvider({ children }) {
 
     try {
       const data = await authApi.getMe();
-      const nextUser = normalizeUserFromAuthResponse(data, { ...(storedUser || {}), role: storedRole });
+      const nextUser = normalizeUserFromAuthResponse(data, { role: storedRole });
       setUser(nextUser);
       if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
       connectSocket();
     } catch {
-      if (storedUser) {
-        setUser(storedUser);
-        if (storedUser.role) localStorage.setItem(ROLE_KEY, storedUser.role);
-        connectSocket();
-      } else {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(ROLE_KEY);
-        localStorage.removeItem(USER_KEY);
-        setUser(null);
-      }
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(ROLE_KEY);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -117,22 +90,13 @@ export function AuthProvider({ children }) {
     }
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     setUser(nextUser);
     connectSocket();
   };
 
   const register = async (data) => {
     const authData = await authApi.register(data);
-
-    // Email verification required — backend returns no token yet.
-    // Return the response so the UI can show the "check your inbox" screen.
-    if (authData?.emailVerified === false) {
-      return authData; // { message, emailVerified: false, user }
-    }
-
-    // No real email / @local.guard fallback — backend returns a token immediately.
-    if (!authData?.token) throw new Error('Registration failed: unexpected response from server.');
+    if (!authData?.token) throw new Error('Registration succeeded but token is missing.');
     localStorage.setItem(TOKEN_KEY, authData.token);
 
     const nextUser = normalizeUserFromAuthResponse(authData, {
@@ -142,7 +106,6 @@ export function AuthProvider({ children }) {
     });
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     setUser(nextUser);
     connectSocket();
     return authData;
@@ -159,7 +122,6 @@ export function AuthProvider({ children }) {
     });
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     setUser(nextUser);
     connectSocket();
   };
@@ -173,7 +135,6 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
-    localStorage.removeItem(USER_KEY);
     setUser(null);
     disconnectSocket();
   };

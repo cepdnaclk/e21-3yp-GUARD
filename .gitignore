@@ -2,7 +2,3 @@ node_modules
 *.db
 *.log
 *.env
-.vscode/settings.json
-.vscode/settings.json
-.vscode/settings.json
-/code/backend/scratch
