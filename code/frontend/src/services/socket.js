@@ -4,7 +4,7 @@ let socket = null;
 
 export function connectSocket() {
   if (socket) return socket;
-  socket = io('http://localhost:5000', { transports: ['websocket', 'polling'] });
+  socket = io('/', { transports: ['websocket', 'polling'] });
   return socket;
 }
 

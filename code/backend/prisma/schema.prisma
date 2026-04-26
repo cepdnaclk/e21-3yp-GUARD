@@ -1,111 +1,108 @@
-datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
-}
+// G.U.A.R.D — Prisma Schema
+// General Unit for Aquatic Risk Detection
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// 1. We added SUPER_ADMIN for you (The Creators)
-enum Role {
-  SUPER_ADMIN
-  ADMIN
-  USER
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// ─────────────────────────────────────────────────
+// Users — supports both username/password and Google OAuth
+// ─────────────────────────────────────────────────
 model User {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          Int      @id @default(autoincrement()) @map("user_id")
   username    String   @unique
-  email       String   @unique
-  password    String
-  role        Role     @default(USER)
-  
-  // Extra Profile Info
-  fullName    String
+  password    String?  // bcrypt hash — null for Google-only users
+  googleId    String?  @unique @map("google_id") // null for password-only users
+  fullName    String   @map("full_name")
+  email       String?
+  phoneNumber String?  @map("phone_number")
   address     String?
-  phoneNumber String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  // ==========================================
-  // ✉️ EMAIL VERIFICATION
-  // ==========================================
-  emailVerified           Boolean  @default(false)
-  verificationToken       String?  @unique
-  verificationTokenExpiry DateTime?
+  devices Device[]
 
-  // ==========================================
-  // 🏢 HIERARCHY: ADMIN -> USERS
-  // ==========================================
-  // If this user is a worker, who is their boss?
-  adminId     String?  @db.ObjectId
-  admin       User?    @relation("AdminToWorkers", fields: [adminId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  
-  // If this user IS an Admin, here is the list of workers under them
-  workers     User[]   @relation("AdminToWorkers")
-
-  // ==========================================
-  // 🐠 TANK RELATIONS
-  // ==========================================
-  // Tanks this Admin OWNS and CREATED (1-to-Many)
-  ownedTanks      Tank[]   @relation("AdminOwnedTanks")
-
-  // Tanks this User is ASSIGNED to work on (MongoDB Many-to-Many)
-  assignedTankIds String[] @db.ObjectId
-  assignedTanks   Tank[]   @relation("WorkerAssignedTanks", fields: [assignedTankIds], references: [id])
+  @@map("users")
 }
 
-model Tank {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  tankId       String   @unique // e.g., "GUARD-001"
-  name         String
-  
-  // ==========================================
-  // 👑 OWNERSHIP & ACCESS CONTROL
-  // ==========================================
-  // 1. The Admin who owns/created this tank
-  adminId      String   @db.ObjectId
-  admin        User     @relation("AdminOwnedTanks", fields: [adminId], references: [id])
+// ─────────────────────────────────────────────────
+// Devices — tanks / IoT devices (ESP32)
+// ─────────────────────────────────────────────────
+model Device {
+  deviceId   Int      @id @map("device_id")
+  userId     Int      @map("user_id")
+  deviceName String?  @map("device_name")
+  location   String?
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  // 2. The Workers who have permission to view/manage this tank
-  workerIds    String[] @db.ObjectId
-  workers      User[]   @relation("WorkerAssignedTanks", fields: [workerIds], references: [id])
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sensorReadings SensorReading[]
+  alerts         Alert[]
 
-  // Safe Ranges (Admin Controlled)
-  tempMin      Float    @default(24.0)
-  tempMax      Float    @default(28.0)
-  phMin        Float    @default(6.5)
-  phMax        Float    @default(8.5)
-  tdsMin       Float    @default(200.0)
-  tdsMax       Float    @default(600.0)
-  turbidityMax Float    @default(20.0)
-  
-  // Latest State
-  lastTemp       Float?
-  lastPh         Float?
-  lastTds        Float?
-  lastTurb       Float?
-  lastWaterLevel Float?  
-  status         String   @default("offline")
-  
-  // Relations & Metadata
-  updatedAt    DateTime @updatedAt
-  createdAt    DateTime @default(now())
-  alerts       Alert[]
+  @@map("devices")
 }
 
+// ─────────────────────────────────────────────────
+// SensorType — definitions for each sensor kind
+// ─────────────────────────────────────────────────
+model SensorType {
+  id         Int    @id @default(autoincrement()) @map("sensor_id")
+  sensorName String @map("sensor_name")
+  frequency  String // e.g. "hourly", "twice_daily", "weekly"
+
+  sensorReadings SensorReading[]
+
+  @@map("sensor_types")
+}
+
+// ─────────────────────────────────────────────────
+// SensorReadings — normalized time-series data
+// ─────────────────────────────────────────────────
+model SensorReading {
+  id          Int      @id @default(autoincrement()) @map("reading_id")
+  deviceId    Int      @map("device_id")
+  sensorId    Int      @map("sensor_id")
+  value       Float
+  readingTime DateTime @map("reading_time")
+
+  device     Device     @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  sensorType SensorType @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, readingTime])
+  @@index([sensorId, readingTime])
+  @@map("sensor_readings")
+}
+
+// ─────────────────────────────────────────────────
+// AlertType — categories for triggered alerts
+// ─────────────────────────────────────────────────
+enum AlertType {
+  TEMP_HIGH
+  TEMP_LOW
+  PH_HIGH
+  PH_LOW
+  TURBIDITY_HIGH
+  WATER_LEVEL_LOW
+}
+
+// ─────────────────────────────────────────────────
+// Alerts — abnormal condition records
+// ─────────────────────────────────────────────────
 model Alert {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  
-  // Link to the tank
-  tankId    String?  // human-readable tank ID (e.g., GUARD-101); nullable for legacy records
-  tank      Tank     @relation(fields: [tankInternalId], references: [id])
-  tankInternalId String @db.ObjectId @map("tank_internal_id")
-
-  type      String   // e.g., "temperature", "ph"
-  message   String   // e.g., "CRITICAL HIGH"
+  id        String    @id @default(uuid())
+  deviceId  Int       @map("device_id")
+  type      AlertType
+  message   String
   value     Float
-  
-  resolved  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now()) @map("created_at")
+  resolved  Boolean   @default(false)
+
+  device Device @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+
+  @@index([deviceId, resolved])
+  @@map("alerts")
 }

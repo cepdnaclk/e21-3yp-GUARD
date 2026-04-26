@@ -9,7 +9,6 @@ import DeviceDetail from './pages/DeviceDetail';
 import SensorHistory from './pages/SensorHistory';
 import Alerts from './pages/Alerts';
 import Profile from './pages/Profile';
-import Users from './pages/Users';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();

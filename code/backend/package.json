@@ -1,39 +1,38 @@
 {
-  "name": "water-iot-backend",
+  "name": "guard-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "src/index.js",
+  "description": "G.U.A.R.D - General Unit for Aquatic Risk Detection - Backend Service",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "seed": "node seed.js",
-    "seedUserData": "node \"sample data/seedUserData.js\"",
-    "seedSensorData": "node \"sample data/seedSensorData.js\"",
-    "seed:analytics": "node seed-analytics.js",
-    "db:init": "docker exec dockercomposeformongodbandinf-mongodb-1 mongosh --eval \"try { rs.initiate(); } catch(e) { print('Already initialized'); } cfg = rs.conf(); cfg.members[0].host = 'localhost:27017'; rs.reconfig(cfg, {force: true}); print('✅ Replica Set Ready!');\"",
-    "db:prep": "net stop MongoDB && npm run db:init"
+    "start": "node src/server.js",
+    "predev": "npx kill-port 3000 --silent || true",
+    "dev": "nodemon src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
   "dependencies": {
-    "@influxdata/influxdb-client": "^1.35.0",
-    "@prisma/client": "^6.15.0",
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-validator": "^7.3.2",
-    "google-auth-library": "^9.15.1",
-    "jsonwebtoken": "^9.0.3",
-    "mqtt": "^5.15.1",
-    "nodemailer": "^8.0.5",
-    "prisma": "^6.15.0",
-    "socket.io": "^4.8.3"
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-validator": "^7.2.0",
+    "google-auth-library": "^9.14.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "mqtt": "^5.10.0",
+    "nodemailer": "^8.0.1",
+    "prisma": "^5.22.0",
+    "socket.io": "^4.7.5",
+    "winston": "^3.13.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.4"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }
