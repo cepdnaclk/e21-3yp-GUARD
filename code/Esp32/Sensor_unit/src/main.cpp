@@ -17,8 +17,8 @@
 #define RGB_LED_PIN 48   
 #define NUMPIXELS 1      
 const int servoPin = 13;
-const int pumpInPin = 18;
-const int pumpOutPin = 17;
+const int pumpInPin = 9;
+const int pumpOutPin = 10;
 #define TRIGGER_PIN 5
 #define ECHO_PIN 15
 
@@ -213,8 +213,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
     waterLevelThreshold = message.toFloat();
     validateWaterThresholds();
     preferences.begin("settings", false);
-    preferences.putFloat("water_thresh", waterLevelThreshold);
-    preferences.putFloat("water_stop_thresh", waterLevelStopThreshold);
+    preferences.putFloat("w_level", waterLevelThreshold);
+    preferences.putFloat("w_stop", waterLevelStopThreshold);
     preferences.end();
     Serial.println("[CONFIG] Water Level updated: " + String(waterLevelThreshold) + ", Stop: " + String(waterLevelStopThreshold));
   }
@@ -222,7 +222,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     waterLevelStopThreshold = message.toFloat();
     validateWaterThresholds();
     preferences.begin("settings", false);
-    preferences.putFloat("water_stop_thresh", waterLevelStopThreshold);
+    preferences.putFloat("w_stop", waterLevelStopThreshold);
     preferences.end();
     Serial.println("[CONFIG] Water Stop updated: " + String(waterLevelStopThreshold));
   }
@@ -314,8 +314,8 @@ void setup() {
 
   // --- 💾 LOAD SAVED SETTINGS FROM FLASH MEMORY ---
   preferences.begin("settings", true);
-  waterLevelThreshold = preferences.getFloat("water_thresh", 5.0);
-  waterLevelStopThreshold = preferences.getFloat("water_stop_thresh", 4.0);
+  waterLevelThreshold = preferences.getFloat("w_level", 5.0);
+  waterLevelStopThreshold = preferences.getFloat("w_stop", 4.0);
   tempMin = preferences.getFloat("temp_min", 24.0);
   tempMax = preferences.getFloat("temp_max", 28.0);
   tdsMin = preferences.getFloat("tds_min", 70.0);
