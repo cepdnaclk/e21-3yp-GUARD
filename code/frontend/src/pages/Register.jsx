@@ -1,18 +1,74 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
 import guardLogo from '../assets/guard-logo.png';
 import '../styles/auth.css';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '108391237039-0jg9nf8pjn48vi5bqi8bbth2kfe03vtm.apps.googleusercontent.com';
+
 export default function Register() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const [form, setForm] = useState({
     username: '', password: '', fullName: '', email: '', phoneNumber: '', address: '',
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const googleBtnRef = useRef(null);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !googleBtnRef.current) return;
+
+    const scriptId = 'google-identity-services';
+
+    const renderGoogleButton = () => {
+      if (!window.google?.accounts?.id || !googleBtnRef.current) return;
+
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          if (!response?.credential) {
+            setError('Google sign up failed. Please try again.');
+            return;
+          }
+
+          setError('');
+          setBusy(true);
+          try {
+            await googleLogin(response.credential);
+          } catch (err) {
+            setError(err.message || 'Google sign up failed.');
+          } finally {
+            setBusy(false);
+          }
+        },
+      });
+
+      googleBtnRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: 'outline',
+        size: 'large',
+        text: 'signup_with',
+        shape: 'pill',
+        width: 320,
+      });
+    };
+
+    const existingScript = document.getElementById(scriptId);
+    if (existingScript) {
+      renderGoogleButton();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = renderGoogleButton;
+    document.head.appendChild(script);
+  }, [googleLogin]);
 
   // After successful registration with email verification required
   const [pendingEmail, setPendingEmail] = useState(null);
@@ -26,16 +82,20 @@ export default function Register() {
     setError('');
     setBusy(true);
     try {
-      const body = { username: form.username, password: form.password, fullName: form.fullName };
-      if (form.email) body.email = form.email;
-      if (form.phoneNumber) body.phoneNumber = form.phoneNumber;
-      if (form.address) body.address = form.address;
+      const body = {
+        username: form.username.trim(),
+        password: form.password,
+        fullName: form.fullName.trim(),
+      };
+      if (form.email.trim()) body.email = form.email.trim();
+      if (form.phoneNumber.trim()) body.phoneNumber = form.phoneNumber.trim();
+      if (form.address.trim()) body.address = form.address.trim();
 
       const result = await register(body);
 
       // Backend requires email verification — show the check-inbox screen
       if (result?.emailVerified === false) {
-        setPendingEmail(form.email);
+        setPendingEmail(form.email.trim());
         return;
       }
 
@@ -52,7 +112,7 @@ export default function Register() {
     setResendMsg('');
     setResendBusy(true);
     try {
-      const res = await authApi.resendVerification(pendingEmail);
+      const res = await authApi.resendVerification(form.username, pendingEmail);
       setResendMsg(res?.message || 'Verification email sent!');
     } catch (err) {
       setResendMsg(err.message || 'Failed to resend. Please try again.');
@@ -156,6 +216,9 @@ export default function Register() {
             {busy ? 'Creating...' : 'Create Account'}
           </button>
         </form>
+
+        <div style={{ margin: '1rem 0', textAlign: 'center', color: '#888' }}>or</div>
+        <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }} />
 
         <p className="auth-footer">
           Already have an account? <Link to="/login">Sign In</Link>

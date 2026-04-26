@@ -213,22 +213,32 @@ export const verifyEmail = async (req, res) => {
 
 // ─── Resend Verification Email ────────────────────────────────────────────────
 export const resendVerificationEmail = async (req, res) => {
-  const { email } = req.body;
+  const { username, email } = req.body;
 
   if (!email) {
     return res.status(400).json({ error: "Email is required." });
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Find user by username if provided, otherwise find by email (for backward compatibility or direct calls)
+    let user;
+    if (username) {
+      user = await prisma.user.findUnique({ where: { username } });
+      
+      if (user && user.email !== email) {
+        return res.status(400).json({ error: "The provided email does not match the email registered for this account." });
+      }
+    } else {
+      user = await prisma.user.findUnique({ where: { email } });
+    }
 
     if (!user) {
-      // Respond generically to avoid user enumeration
-      return res.status(200).json({ message: "If that email exists in our system, a verification link has been sent." });
+      // Respond generically if user not found
+      return res.status(200).json({ message: "If that email exists in our system for this account, a verification link has been sent." });
     }
 
     if (user.emailVerified) {
-      return res.status(400).json({ error: "This email is already verified." });
+      return res.status(400).json({ error: "This account is already verified." });
     }
 
     const newToken = crypto.randomBytes(32).toString("hex");
@@ -267,25 +277,46 @@ export const createAdminBySuperAdmin = async (req, res) => {
       return res.status(409).json({ error: "Username or email already exists." });
     }
 
+    const resolvedEmail = email;
+    const isRealEmail = !resolvedEmail.endsWith("@local.guard");
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Admin accounts created by SUPER_ADMIN are trusted — mark them verified
+    // Generate a verification token (valid for 24 hours)
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
+
     const user = await prisma.user.create({
       data: {
         username,
-        email,
+        email: resolvedEmail,
         password: hashedPassword,
         role: "ADMIN",
         fullName,
         address,
         phoneNumber,
-        emailVerified: true, // Admin accounts are pre-verified by SUPER_ADMIN
+        // If it's a real email, require verification. Otherwise (@local.guard), it's pre-verified.
+        emailVerified: !isRealEmail,
+        verificationToken: isRealEmail ? verificationToken : null,
+        verificationTokenExpiry: isRealEmail ? verificationTokenExpiry : null,
       },
     });
 
+    // Send verification email only if a real email was provided
+    if (isRealEmail) {
+      try {
+        await sendVerificationEmail(resolvedEmail, fullName, verificationToken);
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError.message);
+      }
+    }
+
     return res.status(201).json({
-      message: "Admin account created.",
+      message: isRealEmail 
+        ? "Admin account created. A verification email has been sent." 
+        : "Admin account created successfully.",
       userId: user.id,
+      emailVerified: user.emailVerified,
     });
   } catch (error) {
     console.error("Create admin error:", error);
@@ -308,26 +339,47 @@ export const createUserByAdmin = async (req, res) => {
       return res.status(409).json({ error: "Username or email already exists." });
     }
 
+    const resolvedEmail = email;
+    const isRealEmail = !resolvedEmail.endsWith("@local.guard");
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Users created directly by an ADMIN are trusted — mark them verified
+    // Generate a verification token (valid for 24 hours)
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
+
     const user = await prisma.user.create({
       data: {
         username,
-        email,
+        email: resolvedEmail,
         password: hashedPassword,
         role: "USER",
         fullName,
         address,
         phoneNumber,
         adminId,
-        emailVerified: true, // Admin-created accounts are pre-verified
+        // If it's a real email, require verification. Otherwise (@local.guard), it's pre-verified.
+        emailVerified: !isRealEmail,
+        verificationToken: isRealEmail ? verificationToken : null,
+        verificationTokenExpiry: isRealEmail ? verificationTokenExpiry : null,
       },
     });
 
+    // Send verification email only if a real email was provided
+    if (isRealEmail) {
+      try {
+        await sendVerificationEmail(resolvedEmail, fullName, verificationToken);
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError.message);
+      }
+    }
+
     return res.status(201).json({
-      message: "User account created under admin.",
+      message: isRealEmail 
+        ? "User account created. A verification email has been sent to the user." 
+        : "User account created under admin.",
       userId: user.id,
+      emailVerified: user.emailVerified,
     });
   } catch (error) {
     console.error("Create user error:", error);
@@ -402,4 +454,239 @@ export const googleLogin = async (req, res) => {
     console.error("Google auth error:", error.message);
     return res.status(401).json({ error: "Invalid Google token." });
   }
+};
+
+// ─── Get Workers (ADMIN only) ────────────────────────────────────────────────
+export const getWorkersByAdmin = async (req, res) => {
+  const adminId = req.user.userId;
+
+  try {
+    const workers = await prisma.user.findMany({
+      where: { adminId, role: "USER" },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+      },
+    });
+
+    return res.json(workers);
+  } catch (error) {
+    console.error("Get workers error:", error);
+    return res.status(500).json({ error: "Failed to fetch workers." });
+  }
+};
+
+// ─── Get Current User Profile (Token Required) ────────────────────────────────
+export const getMe = async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        address: true,
+        phoneNumber: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    console.error("Get me error:", error);
+    return res.status(500).json({ error: "Failed to fetch profile." });
+  }
+};
+
+//get all users created by an admin (for admin dashboard)
+export const getUsersByAdmin = async (req, res) => {
+  try {
+    // only ADMIN should use this
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Access denied- only for Admins" });
+    }
+
+    const workers = await prisma.user.findMany({
+      where: {
+        adminId: req.user.userId, //key part
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        createdAt: true,
+        assignedTankIds: true,
+      }, orderBy: {
+        id: "desc",
+      },
+    });
+
+    res.status(200).json(workers);
+  } catch (error) {
+    console.error("Fetch workers error:", error);
+    res.status(500).json({ error: "Failed to fetch workers" });
+  }
+};
+
+// Get all admins (for SUPER_ADMIN dashboard)
+export const getAdminsBySuperAdmin = async (req, res) => {
+  try {
+    if (req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Access denied - only for Super Admins" });
+    }
+
+    // Admins are not linked to SUPER_ADMIN via adminId in the schema.
+    // Simply fetch all users with role ADMIN.
+    const admins = await prisma.user.findMany({
+      where: {
+        role: "ADMIN",
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        createdAt: true,
+        phoneNumber: true,
+        address: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json(admins);
+  } catch (error) {
+    console.error("Fetch admins error:", error);
+    return res.status(500).json({ error: "Failed to fetch admins" });
+  }
+};
+
+// Delete an admin (for SUPER_ADMIN only)
+export const deleteAdminBySuperAdmin = async (req, res) => {
+  const { adminId } = req.params;
+  try {
+    if (req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Access denied - only for Super Admins" });
+    }
+
+    const target = await prisma.user.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!target) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    // Safety: only allow deleting ADMIN accounts, not other SUPER_ADMINs or USERs
+    if (target.role !== "ADMIN") {
+      return res.status(400).json({ error: "Target user is not an ADMIN" });
+    }
+
+    await prisma.user.delete({
+      where: { id: adminId },
+    });
+
+    return res.status(200).json({
+      message: "Admin deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete admin error:", error);
+    return res.status(500).json({ error: "Failed to delete admin" });
+  }
+};
+
+// Delete a user (for ADMIN only)
+export const deleteUserByAdmin = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    if (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Admin can only delete users they created
+    if (req.user.role === "ADMIN" && targetUser.adminId !== req.user.userId) {
+      return res.status(403).json({ error: "You can only delete your own users" });
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return res.status(500).json({ error: "Failed to delete user" });
+  }
+};
+
+// Update own profile (any authenticated user)
+export const updateProfile = async (req, res) => {
+    const { userId } = req.user;
+    const { fullName, email, phoneNumber, address, username } = req.body;
+
+    try {
+        const current = await prisma.user.findUnique({ where: { id: userId } });
+        if (!current) {
+            return res.status(404).json({ error: "User not found." });
+        }
+
+        // If username is changing, ensure it is still unique
+        if (username && username !== current.username) {
+            const taken = await prisma.user.findUnique({ where: { username } });
+            if (taken) return res.status(409).json({ error: "Username already taken." });
+        }
+
+        // If email is changing, ensure it is still unique
+        if (email && email !== current.email) {
+            const taken = await prisma.user.findUnique({ where: { email } });
+            if (taken) return res.status(409).json({ error: "Email already in use." });
+        }
+
+        const updated = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                ...(username ? { username } : {}),
+                ...(fullName ? { fullName } : {}),
+                ...(email ? { email } : {}),
+                ...(phoneNumber !== undefined ? { phoneNumber } : {}),
+                ...(address !== undefined ? { address } : {}),
+            },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                fullName: true,
+                phoneNumber: true,
+                address: true,
+                role: true,
+                createdAt: true,
+            },
+        });
+
+        return res.status(200).json({ message: "Profile updated successfully.", user: updated });
+    } catch (error) {
+        console.error("Update profile error:", error);
+        return res.status(500).json({ error: "Failed to update profile." });
+    }
 };

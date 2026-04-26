@@ -13,10 +13,15 @@ export default function Login() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [unverifiedEmail, setUnverifiedEmail] = useState(null); // set when login blocked
+  const [unverifiedUser, setUnverifiedUser] = useState(null); // set when login blocked
   const [resendMsg, setResendMsg] = useState('');
   const [resendBusy, setResendBusy] = useState(false);
   const googleBtnRef = useRef(null);
+  const googleLoginRef = useRef(googleLogin);
+
+  useEffect(() => {
+    googleLoginRef.current = googleLogin;
+  }, [googleLogin]);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleBtnRef.current) return;
@@ -37,7 +42,7 @@ export default function Login() {
           setError('');
           setBusy(true);
           try {
-            await googleLogin(response.credential);
+            await googleLoginRef.current(response.credential);
           } catch (err) {
             setError(err.message || 'Google sign in failed.');
           } finally {
@@ -69,20 +74,23 @@ export default function Login() {
     script.defer = true;
     script.onload = renderGoogleButton;
     document.head.appendChild(script);
-  }, [googleLogin]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setUnverifiedEmail(null);
+    setUnverifiedUser(null);
     setResendMsg('');
     setBusy(true);
     try {
-      await login(form);
+      await login({
+        username: form.username.trim(),
+        password: form.password,
+      });
     } catch (err) {
       // Backend returns this exact message when email is not verified
       if (err.message && err.message.toLowerCase().includes('email not verified')) {
-        setUnverifiedEmail(form.username); // store username; resend uses email field
+        setUnverifiedUser(form.username); // store username for resend
         setError('');
       } else {
         setError(err.message);
@@ -101,7 +109,7 @@ export default function Login() {
       // Show a prompt to enter the email if we only have the username.
       const email = window.prompt('Enter the email address you registered with:');
       if (!email) { setResendBusy(false); return; }
-      const res = await authApi.resendVerification(email);
+      const res = await authApi.resendVerification(unverifiedUser, email);
       setResendMsg(res?.message || 'Verification email sent!');
     } catch (err) {
       setResendMsg(err.message || 'Failed to resend. Try again.');
@@ -124,7 +132,7 @@ export default function Login() {
 
         {error && <p className="error-msg">{error}</p>}
 
-        {unverifiedEmail && (
+        {unverifiedUser && (
           <div style={{
             background: '#fff7ed',
             border: '1px solid #fed7aa',
