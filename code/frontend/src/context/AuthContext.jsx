@@ -34,6 +34,25 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
+
+    if (isTokenExpired(token)) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(ROLE_KEY);
+      localStorage.removeItem(USER_KEY);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    let storedUser = null;
+    if (storedUserRaw) {
+      try {
+        storedUser = JSON.parse(storedUserRaw);
+      } catch {
+        storedUser = null;
+      }
+    }
+
     try {
       const data = await authApi.getMe();
       const nextUser = normalizeUserFromAuthResponse(data, { role: storedRole });
@@ -89,6 +108,7 @@ export function AuthProvider({ children }) {
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
     setUser(nextUser);
     connectSocket();
+    return authData;
   };
 
   const googleLogin = async (idToken) => {
