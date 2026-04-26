@@ -13,3 +13,5 @@ code/backend/scratch/cleanup_alerts.js
 code/backend/scratch/dump_alerts.js
 code/backend/scratch/test_unassign.js
 GUARD.code-workspace
+code/backend/src/services/Hivemq.md
+/code/backend/scratch

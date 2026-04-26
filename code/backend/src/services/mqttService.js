@@ -123,10 +123,26 @@ export const shutdownMqtt = () => {
     }
 };
 
+// Cache to prevent duplicate alerts within a short window (2 seconds)
+const recentAlerts = new Map();
+
 /**
  * Process an alert: persist to DB, then notify users by email.
  */
 export const processAlert = async (tankId, parameter, alertType, sensorValue) => {
+    // Generate a unique key for this alert
+    const alertKey = `${tankId}:${parameter}:${alertType}:${sensorValue}`;
+    
+    // If we've seen this exact alert in the last 2 seconds, ignore it
+    if (recentAlerts.has(alertKey)) {
+        console.log(`🛡️  Duplicate alert suppressed for ${tankId}: ${parameter}`);
+        return;
+    }
+    
+    // Record this alert in the cache
+    recentAlerts.set(alertKey, Date.now());
+    setTimeout(() => recentAlerts.delete(alertKey), 2000);
+
     console.log(`🚨 ALERT for Tank ${tankId}: ${parameter} ${alertType} (${sensorValue})`);
 
     const tank = await prisma.tank.findUnique({
@@ -166,11 +182,11 @@ export const processAlert = async (tankId, parameter, alertType, sensorValue) =>
         console.error('❌ Failed to save alert to DB:', dbError.message);
     }
 
-    // Send emails concurrently
-    const emails = [
+    // Send emails concurrently (ensure unique emails using Set)
+    const emails = [...new Set([
         tank.admin.email,
         ...tank.workers.map((w) => w.email),
-    ].filter(Boolean);
+    ].filter(Boolean))];
 
     await Promise.allSettled(
         emails.map((email) =>
