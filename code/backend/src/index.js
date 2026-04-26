@@ -2,35 +2,91 @@ import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import authRoutes from './routes/authRoutes.js';
-import tankRoutes from './routes/tankRoutes.js';     // ADDED THIS IMPORT
-import sensorRoutes from './routes/sensorRoutes.js'; // ADDED THIS IMPORT
+import tankRoutes from './routes/tankRoutes.js';
+import sensorRoutes from './routes/sensorRoutes.js';
+import alertRoutes from './routes/alertRoutes.js';
 import prisma from './lib/prisma.js'; 
-import { initMqtt } from './services/mqttService.js';
+import { writeApi } from './lib/influx.js';
+import { initMqtt, shutdownMqtt } from './services/mqttService.js';
+import { Server } from 'socket.io';
 
 const app = express();
-app.use(cors());
+let io;
+
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim());
+
+app.use(cors({
+  origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
+}));
 app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/tanks', tankRoutes);     // ADDED THIS ROUTE
-app.use('/api/sensors', sensorRoutes); // ADDED THIS ROUTE
+app.use('/api/tanks', tankRoutes);
+app.use('/api/sensors', sensorRoutes);
+app.use('/api/alerts', alertRoutes);
 
 app.get('/', (req, res) => res.send('Water IoT Backend is running!'));
 
-const PORT = process.env.PORT || 5000; // Added fallback port just in case
+// Catch-all for undefined routes
+app.use((req, res) => {
+    console.log(`🔍 404 - ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ error: `Route ${req.method} ${req.originalUrl} not found.` });
+});
 
-// UPDATE THE LISTEN BLOCK
-app.listen(PORT, async () => {
+const PORT = process.env.PORT || 5000;
+
+const server = app.listen(PORT, async () => {
     console.log(`🚀 Server ready at http://localhost:${PORT}`);
     
-    // Check Database Connection
+    // Initialize Socket.io
+    io = new Server(server, {
+        cors: {
+            origin: corsOrigins,
+            methods: ["GET", "POST"]
+        }
+    });
+
+    io.on('connection', (socket) => {
+        console.log(`🔌 New client connected: ${socket.id}`);
+        socket.on('disconnect', () => {
+            console.log(`🔌 Client disconnected: ${socket.id}`);
+        });
+    });
+
     try {
         await prisma.$connect();
-        initMqtt(); // 2. START THE MQTT LISTENER
+        initMqtt();
         console.log('✅ MongoDB securely connected via Prisma!');
     } catch (error) {
         console.error('❌ Database connection failed:', error.message);
-        process.exit(1); // Stop the server if the database is dead
+        process.exit(1);
     }
 });
+
+// Graceful shutdown — close connections cleanly on SIGTERM/SIGINT
+const shutdown = async (signal) => {
+    console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
+    
+    shutdownMqtt();
+    
+    try {
+        await writeApi.close();
+        console.log('✅ InfluxDB write buffer flushed.');
+    } catch { /* ignore */ }
+    
+    await prisma.$disconnect();
+    console.log('✅ Prisma disconnected.');
+    
+    server.close(() => {
+        console.log('✅ HTTP server closed.');
+        process.exit(0);
+    });
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+export { io };

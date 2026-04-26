@@ -296,6 +296,7 @@ boolean reconnect() {
 void setup() {
   Serial.begin(115200); 
   
+  // Initialize Hardware
   pixels.begin();
   pixels.setBrightness(50);
   pixels.clear();

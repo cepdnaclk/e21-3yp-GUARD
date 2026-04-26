@@ -1,7 +1,26 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { deviceApi, alertApi, sensorApi } from '../services/api';
+import { deviceApi, sensorApi } from '../services/api';
 import '../styles/dashboard.css';
+
+function buildAlertsFromDeviceState(devices, sensorData) {
+  const alerts = [];
+
+  for (const device of devices) {
+    const readings = sensorData[device.deviceId] || [];
+    const hasReadings = readings.length > 0;
+
+    if (!hasReadings || device.status !== 'online') {
+      alerts.push({
+        id: `${device.deviceId}-offline`,
+        type: `${device.deviceName || `Tank ${device.deviceId}`} appears offline`,
+        resolved: false,
+      });
+    }
+  }
+
+  return alerts;
+}
 
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
@@ -14,13 +33,8 @@ export default function Dashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [devs, allAlerts] = await Promise.all([
-          deviceApi.list(),
-          alertApi.list(),
-        ]);
+        const devs = await deviceApi.list();
         setDevices(devs);
-        setRecentAlerts(allAlerts.slice(0, 6));
-        setUnresolvedCount(allAlerts.filter((a) => !a.resolved).length);
 
         const results = await Promise.all(
           devs.map(async (d) => {
@@ -32,7 +46,12 @@ export default function Dashboard() {
             }
           })
         );
-        setSensorData(Object.fromEntries(results));
+        const nextSensorData = Object.fromEntries(results);
+        setSensorData(nextSensorData);
+
+        const allAlerts = buildAlertsFromDeviceState(devs, nextSensorData);
+        setRecentAlerts(allAlerts.slice(0, 6));
+        setUnresolvedCount(allAlerts.filter((a) => !a.resolved).length);
       } catch { /* ignore */ }
       setLoading(false);
     }
@@ -55,6 +74,7 @@ export default function Dashboard() {
 
       {/* Search Bar */}
       <div className="dash-search-wrap">
+        <h1 className="dash-title">Dashboard</h1>
         <input
           className="dash-search"
           type="text"

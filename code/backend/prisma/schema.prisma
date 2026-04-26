@@ -91,4 +91,21 @@ model Tank {
   // Relations & Metadata
   updatedAt    DateTime @updatedAt
   createdAt    DateTime @default(now())
+  alerts       Alert[]
+}
+
+model Alert {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Link to the tank
+  tankId    String?  // human-readable tank ID (e.g., GUARD-101); nullable for legacy records
+  tank      Tank     @relation(fields: [tankInternalId], references: [id])
+  tankInternalId String @db.ObjectId @map("tank_internal_id")
+
+  type      String   // e.g., "temperature", "ph"
+  message   String   // e.g., "CRITICAL HIGH"
+  value     Float
+  
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

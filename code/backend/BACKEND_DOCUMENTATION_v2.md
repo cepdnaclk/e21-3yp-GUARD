@@ -256,11 +256,10 @@ Success response example:
 }
 ```
 
-Common errors:
-- 400 required fields missing
-- 403 forbidden
-- 409 username or email already exists
-- 500 failed to create admin account
+Notes:
+- username, email, password, fullName are required.
+- **Email Verification**: Admin accounts created by SUPER_ADMIN now require email verification. A link is sent to the provided email, and the account remains locked until verified.
+- Returns 409 if username or email already exists.
 
 ### 5.5 Create User (ADMIN only)
 
@@ -295,7 +294,7 @@ Success response example:
 
 Notes:
 - adminId is set automatically using logged-in ADMIN token.
-- Users created by ADMIN via this endpoint are automatically email-verified.
+- **Email Verification**: User accounts created by ADMIN now require email verification. A link is sent to the provided email, and the account remains locked until verified.
 
 ### 5.6 Verify Email (Public)
 
@@ -341,8 +340,9 @@ Success response:
 
 Notes:
 - Issues a fresh 24-hour token and invalidates the old one.
-- Returns the same message whether or not the email exists (prevents user enumeration).
-- Returns 400 if the account is already verified.
+- **Security Check**: Now requires `username` and `email`. The backend verifies that the provided email matches the one registered for that username.
+- Returns 400 if the account is already verified or if the email/username pair is incorrect.
+- Returns generic success message if the user is not found to prevent enumeration.
 
 ## 6. Tank APIs
 
@@ -638,11 +638,24 @@ Expected payload format:
 ```
 
 Current behavior:
-- value is parsed and stored
-- payload time is ignored
-- Mongo latest tank state is updated (if the tank exists)
-- If the tank is not registered in MongoDB, the message is gracefully ignored without throwing an error
-- Influx measurement water_quality is updated
+- value is parsed and stored.
+- Mongo latest tank state is updated (if the tank exists).
+- If the tank is not registered in MongoDB, the message is gracefully ignored.
+- Influx measurement `water_quality` is updated.
+
+## 8.1 MQTT Alerts Ingestion
+
+Subscribed topic pattern:
+- `alert/+/+`
+
+Expected topic format:
+- `alert/{tankId}/{sensorType}`
+
+Behavior:
+- When an alert is received, the backend looks up the tank owner (Admin) and all assigned Workers.
+- A high-priority email notification is sent to all these recipients.
+- The alert is broadcast via WebSocket to connected clients.
+- If the tank is not registered, the alert is ignored.
 
 ## 9. MQTT Actuation
 

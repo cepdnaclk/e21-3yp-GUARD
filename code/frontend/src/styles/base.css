@@ -76,6 +76,30 @@ a:hover { text-decoration: underline; }
 .btn-outline:hover { background: var(--bg); }
 .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
 
+.action-pill-btn {
+  background: #1e293b;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: 0 6px 14px rgba(14, 165, 165, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  width: auto;
+}
+
+.action-pill-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(14, 165, 165, 0.34);
+  filter: brightness(1.03);
+}
+
+.action-pill-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
 /* ========== Main Content Shell ========== */
 .main-content { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; }
 .page-content { padding: 1.5rem; flex: 1; }

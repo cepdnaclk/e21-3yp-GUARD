@@ -10,3 +10,33 @@
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+.tank-chart-card {
+  margin-bottom: 1rem;
+}
+
+.tank-chart-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.tank-chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.worker-assign-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-danger {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.btn-danger:hover {
+  background: #ef4444;
+  color: white;
+}

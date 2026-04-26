@@ -1,41 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getSocket } from '../services/socket';
 import guardLogo from '../assets/guard-logo.png';
 import '../styles/layout.css';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard' },
   { to: '/alerts', label: 'Notifications' },
-  { to: '/sensors/history', label: 'Analytics' },
+  { to: '/analytics', label: 'Analytics' },
   { to: '/devices', label: 'Devices' },
 ];
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const navigate = useNavigate();
-  const [toasts, setToasts] = useState([]);
 
-  const handleAlert = useCallback((alert) => {
-    const toast = { ...alert, _id: Date.now() + Math.random() };
-    setToasts((prev) => [toast, ...prev].slice(0, 5));
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t._id !== toast._id));
-    }, 8000);
-  }, []);
-
-  useEffect(() => {
-    const socket = getSocket();
-    if (socket) {
-      socket.on('alert', handleAlert);
-      return () => socket.off('alert', handleAlert);
-    }
-  }, [handleAlert]);
-
-  const dismissToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t._id !== id));
-  };
+  const navItems = role === 'SUPER_ADMIN'
+    ? [{ to: '/users', label: 'Users' }] // only Users
+    : role === 'ADMIN'
+    ? [...NAV_ITEMS, { to: '/users', label: 'Users' }] // all pages
+    : NAV_ITEMS.filter(item => item.to !== '/users'); // USER → everything except Users
 
   const initials = user?.fullName
     ? user.fullName.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -50,7 +33,7 @@ export default function Layout() {
           <span>G.U.A.R.D</span>
         </div>
         <div className="topnav-links">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -77,18 +60,6 @@ export default function Layout() {
           <Outlet />
         </div>
       </div>
-
-      {/* Toast Notifications */}
-      {toasts.length > 0 && (
-        <div className="toast-container">
-          {toasts.map((t) => (
-            <div key={t._id} className="toast" onClick={() => dismissToast(t._id)} style={{ cursor: 'pointer' }}>
-              <div className="toast-title">🚨 {t.type}</div>
-              <div className="toast-body">{t.message} — Device {t.deviceUid}</div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
