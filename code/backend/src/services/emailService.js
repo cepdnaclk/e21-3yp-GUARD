@@ -1,58 +1,27 @@
 import nodemailer from "nodemailer";
-import os from "os";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, // true for 465, false for other ports (TLS via STARTTLS)
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
 
-/**
- * Returns the best LAN IPv4 address for the host machine, skipping virtual
- * adapters (VMware, Hyper-V, WSL, loopback) so a phone on the same Wi-Fi
- * can actually reach the dev server.
- * TEMP: used so verification links work from a phone on the same network.
- */
-const getLocalIp = () => {
-  const ifaces = os.networkInterfaces();
-  const SKIP = /vmware|vmnet|hyper-v|vethernet|wsl|loopback/i;
-  let fallback = "localhost";
-
-  for (const [name, addrs] of Object.entries(ifaces)) {
-    if (SKIP.test(name)) continue;
-    for (const iface of addrs) {
-      if (iface.family === "IPv4" && !iface.internal) {
-        return iface.address; // first real adapter (Wi-Fi / Ethernet)
-      }
-    }
-    // remember any non-internal IPv4 as fallback even if adapter name looks odd
-    for (const iface of addrs) {
-      if (iface.family === "IPv4" && !iface.internal && fallback === "localhost") {
-        fallback = iface.address;
-      }
-    }
-  }
-  return fallback;
-};
 
 /**
- * Send an email-verification link to a newly registered user.
+ * Send a 6-digit email-verification code to a newly registered user.
  * @param {string} toEmail   - Recipient email address
  * @param {string} fullName  - Recipient's display name
- * @param {string} token     - The raw verification token (will be URL-encoded)
+ * @param {string} code      - The 6-digit verification code
  */
-export const sendVerificationEmail = async (toEmail, fullName, token) => {
-  const baseUrl = process.env.FRONTEND_URL || `http://${getLocalIp()}:5173`;
-  const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
-
+export const sendVerificationEmail = async (toEmail, fullName, code) => {
   const mailOptions = {
     from: `"G.U.A.R.D System" <${process.env.SMTP_USER}>`,
     to: toEmail,
-    subject: "Verify your G.U.A.R.D account",
+    subject: "Your G.U.A.R.D Email Verification Code",
     html: `
       <!DOCTYPE html>
       <html>
@@ -65,22 +34,20 @@ export const sendVerificationEmail = async (toEmail, fullName, token) => {
             .header h1 { color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 2px; }
             .body { padding: 32px; color: #333333; }
             .body p { line-height: 1.6; }
-            .btn { display: inline-block; margin: 24px 0; padding: 14px 32px; background: #1a73e8; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold; }
+            .code-box { background: #f4f4f4; border: 2px dashed #1a73e8; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1a73e8; }
             .footer { background: #f4f4f4; padding: 16px 32px; font-size: 12px; color: #888888; text-align: center; }
-            .link-fallback { word-break: break-all; color: #1a73e8; font-size: 13px; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>G.U.A.R.D</h1>
+              <h1>Email Verification</h1>
             </div>
             <div class="body">
               <p>Hi <strong>${fullName}</strong>,</p>
-              <p>Thank you for registering with G.U.A.R.D. Please click the button below to verify your email address. This link will expire in <strong>24 hours</strong>.</p>
-              <a href="${verifyUrl}" class="btn">Verify Email</a>
-              <p>If the button doesn't work, copy and paste this link into your browser:</p>
-              <p class="link-fallback">${verifyUrl}</p>
+              <p>Thank you for registering with G.U.A.R.D. Use the verification code below to activate your account:</p>
+              <div class="code-box">${code}</div>
+              <p>This code will expire in <strong>24 hours</strong>. Do not share it with anyone.</p>
               <p>If you did not create an account, you can safely ignore this email.</p>
             </div>
             <div class="footer">

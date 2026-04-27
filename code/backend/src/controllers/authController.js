@@ -92,7 +92,7 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate a verification token (valid for 24 hours)
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
 
     const user = await prisma.user.create({
@@ -165,33 +165,37 @@ export const register = async (req, res) => {
 
 // ─── Verify Email ─────────────────────────────────────────────────────────────
 export const verifyEmail = async (req, res) => {
-  const { token } = req.query;
+  const { username, code } = req.body;
 
-  if (!token) {
-    return res.status(400).json({ error: "Verification token is required." });
+  if (!username || !code) {
+    return res.status(400).json({ error: "Username and verification code are required." });
   }
 
   try {
     const user = await prisma.user.findUnique({
-      where: { verificationToken: token },
+      where: { username },
     });
 
     if (!user) {
-      return res.status(400).json({ error: "Invalid or expired verification token." });
+      return res.status(400).json({ error: "User not found." });
     }
 
     if (user.emailVerified) {
       return res.status(200).json({ message: "Email is already verified. You can log in." });
     }
 
+    if (!user.verificationToken || user.verificationToken !== code) {
+      return res.status(400).json({ error: "Invalid verification code." });
+    }
+
     if (user.verificationTokenExpiry && user.verificationTokenExpiry < new Date()) {
       return res.status(400).json({
-        error: "Verification token has expired. Please request a new verification email.",
+        error: "Verification code has expired. Please request a new one.",
         expired: true,
       });
     }
 
-    // Mark as verified and clear the token
+    // Mark as verified and clear the code
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -210,6 +214,7 @@ export const verifyEmail = async (req, res) => {
     return res.status(500).json({ error: "Email verification error." });
   }
 };
+
 
 // ─── Resend Verification Email ────────────────────────────────────────────────
 export const resendVerificationEmail = async (req, res) => {
@@ -241,7 +246,7 @@ export const resendVerificationEmail = async (req, res) => {
       return res.status(400).json({ error: "This account is already verified." });
     }
 
-    const newToken = crypto.randomBytes(32).toString("hex");
+    const newToken = Math.floor(100000 + Math.random() * 900000).toString();
     const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await prisma.user.update({
@@ -283,7 +288,7 @@ export const createAdminBySuperAdmin = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate a verification token (valid for 24 hours)
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
 
     const user = await prisma.user.create({
@@ -345,7 +350,7 @@ export const createUserByAdmin = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate a verification token (valid for 24 hours)
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
 
     const user = await prisma.user.create({
