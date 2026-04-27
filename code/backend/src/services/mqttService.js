@@ -28,7 +28,7 @@ export const initMqtt = () => {
     const client = mqtt.connect(brokerUrl, {
         username: process.env.MQTT_USERNAME || process.env.MQTT_USER,
         password: process.env.MQTT_PASSWORD,
-        clientId: 'GUARD_Backend',       // fixed ID — broker replaces old session
+        clientId: `GUARD_Backend_${Math.random().toString(16).slice(2, 8)}`, // Unique ID to prevent conflict
         clean: true,                      // discard any stale subscriptions
         rejectUnauthorized: true,
     });
