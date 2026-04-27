@@ -17,6 +17,12 @@ const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map(o => o.trim());
 
+// Request logger
+app.use((req, res, next) => {
+  console.log(`📡 ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(cors({
   origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
 }));
@@ -66,20 +72,16 @@ const server = app.listen(PORT, async () => {
     }
 });
 
-// Graceful shutdown — close connections cleanly on SIGTERM/SIGINT
+// Graceful shutdown
 const shutdown = async (signal) => {
     console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
-    
     shutdownMqtt();
-    
     try {
         await writeApi.close();
         console.log('✅ InfluxDB write buffer flushed.');
     } catch { /* ignore */ }
-    
     await prisma.$disconnect();
     console.log('✅ Prisma disconnected.');
-    
     server.close(() => {
         console.log('✅ HTTP server closed.');
         process.exit(0);
