@@ -41,8 +41,13 @@ export const initMqtt = () => {
         });
     });
 
-    client.on('message', async (topic, message) => {
+    client.on('message', async (topic, message, packet) => {
         const [prefix, tankId, sensorType] = topic.split('/');
+
+        // Ignore retained messages for alerts to prevent re-processing old events on restart
+        if (packet.retain && prefix === 'alert') {
+            return;
+        }
 
         try {
             const payload = JSON.parse(message.toString());

@@ -1,10 +1,9 @@
 import nodemailer from "nodemailer";
-import os from "os";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, // true for 465, false for other ports (TLS via STARTTLS)
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -12,38 +11,17 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
- * Returns the best LAN IPv4 address for the host machine, skipping virtual
- * adapters (VMware, Hyper-V, WSL, loopback) so a phone on the same Wi-Fi
- * can actually reach the dev server.
- * TEMP: used so verification links work from a phone on the same network.
+ * Send a 6-digit email-verification code to a newly registered user.
+ * @param {string} toEmail   - Recipient email address
+ * @param {string} fullName  - Recipient's display name
+ * @param {string} code      - The 6-digit verification code
  */
-const getLocalIp = () => {
-  const ifaces = os.networkInterfaces();
-  const SKIP = /vmware|vmnet|hyper-v|vethernet|wsl|loopback/i;
-  let fallback = "localhost";
-
-  for (const [name, addrs] of Object.entries(ifaces)) {
-    if (SKIP.test(name)) continue;
-    for (const iface of addrs) {
-      if (iface.family === "IPv4" && !iface.internal) {
-        return iface.address; // first real adapter (Wi-Fi / Ethernet)
-      }
-    }
-    // remember any non-internal IPv4 as fallback even if adapter name looks odd
-    for (const iface of addrs) {
-      if (iface.family === "IPv4" && !iface.internal && fallback === "localhost") {
-        fallback = iface.address;
-      }
-    }
-  }
-  return fallback;
-};
 
 export const sendVerificationEmail = async (toEmail, fullName, code) => {
   const mailOptions = {
     from: `"G.U.A.R.D System" <${process.env.SMTP_USER}>`,
     to: toEmail,
-    subject: "Verify your G.U.A.R.D account",
+    subject: "Your G.U.A.R.D Email Verification Code",
     html: `
       <!DOCTYPE html>
       <html>

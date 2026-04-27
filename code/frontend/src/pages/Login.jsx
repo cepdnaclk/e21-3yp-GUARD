@@ -24,6 +24,11 @@ export default function Login() {
   const [forgotError, setForgotError] = useState('');
   const [forgotMsg, setForgotMsg] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+  
+  // New Email Verification State (for 6-digit code)
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState('');
 
   const googleBtnRef = useRef(null);
   const googleLoginRef = useRef(googleLogin);
@@ -32,30 +37,38 @@ export default function Login() {
     googleLoginRef.current = googleLogin;
   }, [googleLogin]);
 
+  // Ref to prevent multiple initializations of Google Identity Services
+  const googleInitialized = useRef(false);
+
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleBtnRef.current || forgotStep !== 0) return;
 
     const scriptId = 'google-identity-services';
     const renderGoogleButton = () => {
       if (!window.google?.accounts?.id || !googleBtnRef.current) return;
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: async (response) => {
-          if (!response?.credential) {
-            setError('Google sign in failed. Please try again.');
-            return;
-          }
-          setError('');
-          setBusy(true);
-          try {
-            await googleLoginRef.current(response.credential);
-          } catch (err) {
-            setError(err.message || 'Google sign in failed.');
-          } finally {
-            setBusy(false);
-          }
-        },
-      });
+      
+      if (!googleInitialized.current) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (!response?.credential) {
+              setError('Google sign in failed. Please try again.');
+              return;
+            }
+            setError('');
+            setBusy(true);
+            try {
+              await googleLoginRef.current(response.credential);
+            } catch (err) {
+              setError(err.message || 'Google sign in failed.');
+            } finally {
+              setBusy(false);
+            }
+          },
+        });
+        googleInitialized.current = true;
+      }
+      
       googleBtnRef.current.innerHTML = '';
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill', width: 320,
@@ -109,6 +122,23 @@ export default function Login() {
     }
   };
 
+  const handleVerifyEmail = async (e) => {
+    if (e) e.preventDefault();
+    setVerifyMsg('');
+    setError('');
+    setVerifying(true);
+    try {
+      await authApi.verifyEmail(unverifiedUser, verifyCode);
+      setVerifyMsg('Email verified successfully! You can now sign in.');
+      setUnverifiedUser(null);
+      setVerifyCode('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const handleResend = async () => {
     setResendMsg('');
     setResendBusy(true);
@@ -116,9 +146,9 @@ export default function Login() {
       const email = window.prompt('Enter the email address you registered with:');
       if (!email) { setResendBusy(false); return; }
       const res = await authApi.resendVerification(unverifiedUser, email);
-      setResendMsg(res?.message || 'Verification email sent!');
+      setResendMsg(res?.message || 'Verification code sent!');
     } catch (err) {
-      setResendMsg(err.message || 'Failed to resend. Try again.');
+      setResendMsg(err.message || 'Failed to resend. Please check the email address.');
     } finally {
       setResendBusy(false);
     }
@@ -300,22 +330,58 @@ export default function Login() {
           <p className="subtitle">Sign in to G.U.A.R.D Dashboard</p>
 
           {error && <p className="error-msg">{error}</p>}
-          {resendMsg && <p className="profile-success-msg">{resendMsg}</p>}
+          {verifyMsg && <p className="profile-success-msg">{verifyMsg}</p>}
 
           {unverifiedUser && (
             <div style={{
               background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px',
-              padding: '0.85rem 1rem', marginBottom: '1rem', fontSize: '0.88rem', color: '#9a3412',
+              padding: '1rem', marginBottom: '1rem', fontSize: '0.88rem', color: '#9a3412',
             }}>
-              <strong>📧 Email not verified.</strong> Please enter your verification code to continue.
-              <div style={{ marginTop: '0.5rem' }}>
-                <button
-                  onClick={() => navigate('/verify-email', { state: { username: unverifiedUser } })}
-                  style={{ background: '#0e567f', border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: '0.88rem', padding: '0.5rem 1rem', borderRadius: '6px' }}
-                >
-                  Enter Verification Code
-                </button>
-              </div>
+              <strong>📧 Email not verified.</strong> Enter the 6-digit code sent to your email to activate your account.
+              
+              {resendMsg && (
+                <p style={{ 
+                  marginTop: '0.5rem', 
+                  color: resendMsg.toLowerCase().includes('fail') || resendMsg.toLowerCase().includes('match') ? '#b91c1c' : '#15803d',
+                  fontWeight: 500
+                }}>
+                  {resendMsg}
+                </p>
+              )}
+              
+              <form onSubmit={handleVerifyEmail} style={{ marginTop: '0.75rem' }}>
+                <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                  <input
+                    type="text"
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="6-digit code"
+                    maxLength="6"
+                    className="form-control"
+                    style={{ textAlign: 'center', letterSpacing: '2px', fontWeight: 'bold' }}
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={verifying || verifyCode.length !== 6}
+                    style={{ flex: 2, padding: '0.4rem', fontSize: '0.85rem' }}
+                  >
+                    {verifying ? 'Verifying...' : 'Verify Code'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendBusy}
+                    className="btn btn-outline"
+                    style={{ flex: 1, padding: '0.4rem', fontSize: '0.85rem' }}
+                  >
+                    {resendBusy ? '...' : 'Resend'}
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 

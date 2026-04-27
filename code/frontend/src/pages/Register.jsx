@@ -17,6 +17,8 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
   const googleBtnRef = useRef(null);
 
+  const googleInitialized = useRef(false);
+
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleBtnRef.current) return;
 
@@ -25,25 +27,28 @@ export default function Register() {
     const renderGoogleButton = () => {
       if (!window.google?.accounts?.id || !googleBtnRef.current) return;
 
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: async (response) => {
-          if (!response?.credential) {
-            setError('Google sign up failed. Please try again.');
-            return;
-          }
+      if (!googleInitialized.current) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (!response?.credential) {
+              setError('Google sign up failed. Please try again.');
+              return;
+            }
 
-          setError('');
-          setBusy(true);
-          try {
-            await googleLogin(response.credential);
-          } catch (err) {
-            setError(err.message || 'Google sign up failed.');
-          } finally {
-            setBusy(false);
-          }
-        },
-      });
+            setError('');
+            setBusy(true);
+            try {
+              await googleLogin(response.credential);
+            } catch (err) {
+              setError(err.message || 'Google sign up failed.');
+            } finally {
+              setBusy(false);
+            }
+          },
+        });
+        googleInitialized.current = true;
+      }
 
       googleBtnRef.current.innerHTML = '';
       window.google.accounts.id.renderButton(googleBtnRef.current, {
@@ -112,6 +117,125 @@ export default function Register() {
       setBusy(false);
     }
   };
+
+  const handleResend = async () => {
+    setResendMsg('');
+    setResendBusy(true);
+    try {
+      const res = await authApi.resendVerification(form.username, pendingEmail);
+      setResendMsg(res?.message || 'Verification code sent!');
+    } catch (err) {
+      setResendMsg(err.message || 'Failed to resend. Please try again.');
+    } finally {
+      setResendBusy(false);
+    }
+  };
+
+  /* ─── Check-inbox / Verification screen ─── */
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifySuccess, setVerifySuccess] = useState(false);
+
+  const handleVerifyCode = async (e) => {
+    if (e) e.preventDefault();
+    setError('');
+    setVerifying(true);
+    try {
+      await authApi.verifyEmail(form.username, verificationCode);
+      setVerifySuccess(true);
+      setTimeout(() => navigate('/login'), 3000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  if (pendingEmail) {
+    return (
+      <div className="auth-page login-page">
+        <div className="auth-brand">
+          <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
+          <span>G.U.A.R.D</span>
+        </div>
+
+        <div className="auth-card login-card" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '0.75rem' }}>
+            {verifySuccess ? '✅' : '✉️'}
+          </div>
+
+          <h1 style={{ color: '#0e3454', marginBottom: '0.4rem' }}>
+            {verifySuccess ? 'Verified!' : 'Check your inbox'}
+          </h1>
+          
+          {verifySuccess ? (
+            <p style={{ color: '#3b6586', marginBottom: '1.5rem' }}>
+              Your email has been verified. Redirecting you to login...
+            </p>
+          ) : (
+            <>
+              <p style={{ color: '#3b6586', marginBottom: '1.5rem', fontSize: '0.92rem' }}>
+                We sent a <strong>6-digit verification code</strong> to <strong>{pendingEmail}</strong>.
+                Please enter it below to activate your account.
+              </p>
+
+              {error && <p className="error-msg" style={{ marginBottom: '1rem' }}>{error}</p>}
+              {resendMsg && (
+                <p style={{
+                  background: resendMsg.toLowerCase().includes('fail') || resendMsg.toLowerCase().includes('error')
+                    ? '#fee2e2' : '#dcfce7',
+                  color: resendMsg.toLowerCase().includes('fail') || resendMsg.toLowerCase().includes('error')
+                    ? '#991b1b' : '#166534',
+                  padding: '0.6rem 1rem',
+                  borderRadius: '8px',
+                  fontSize: '0.86rem',
+                  marginBottom: '1rem',
+                }}>
+                  {resendMsg}
+                </p>
+              )}
+
+              <form onSubmit={handleVerifyCode} style={{ marginBottom: '1.5rem' }}>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 6-digit code"
+                    maxLength="6"
+                    className="form-control"
+                    style={{ textAlign: 'center', fontSize: '1.2rem', letterSpacing: '4px', fontWeight: 'bold' }}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={verifying || verificationCode.length !== 6}
+                  style={{ width: '100%', background: '#0b3658', borderRadius: '10px' }}
+                >
+                  {verifying ? 'Verifying...' : 'Verify & Continue'}
+                </button>
+              </form>
+
+              <button
+                className="btn-link"
+                onClick={handleResend}
+                disabled={resendBusy}
+                style={{ marginBottom: '0.75rem', display: 'block', margin: '0 auto' }}
+              >
+                {resendBusy ? 'Sending…' : 'Didn\'t get the code? Resend'}
+              </button>
+            </>
+          )}
+
+          <p className="auth-footer" style={{ marginTop: '1rem' }}>
+            <Link to="/login">Back to Sign In</Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   /* ─── Registration form ─── */
   return (

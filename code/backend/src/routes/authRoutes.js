@@ -28,7 +28,7 @@ router.post("/login", login);
 router.post("/register", register);
 router.post("/google", googleLogin);
 
-// Email verification (code enters via POST body)
+// Email verification via POST (expects username and code in body)
 router.post("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerificationEmail);
 

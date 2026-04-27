@@ -193,7 +193,7 @@ export const verifyEmail = async (req, res) => {
       });
     }
 
-    // Mark as verified and clear the token
+    // Mark as verified and clear the code
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -212,6 +212,7 @@ export const verifyEmail = async (req, res) => {
     return res.status(500).json({ error: "Email verification error." });
   }
 };
+
 
 // ─── Resend Verification Email ────────────────────────────────────────────────
 export const resendVerificationEmail = async (req, res) => {
@@ -829,4 +830,4 @@ export const forgotPasswordReset = async (req, res) => {
     console.error("Forgot password reset error:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
-};
+};
