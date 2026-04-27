@@ -89,4 +89,13 @@ const shutdown = async (signal) => {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
+// nodemon sends SIGUSR2 to restart — clean up MQTT so old clients don't linger
+process.once('SIGUSR2', async () => {
+    console.log('\n🔄 nodemon restart — cleaning up MQTT...');
+    shutdownMqtt();
+    try { await writeApi.close(); } catch { /* ignore */ }
+    await prisma.$disconnect();
+    process.kill(process.pid, 'SIGUSR2');
+});
+
 export { io };

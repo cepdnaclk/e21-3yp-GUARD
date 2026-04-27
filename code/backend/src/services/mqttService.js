@@ -17,12 +17,19 @@ const SENSOR_MAP = {
 };
 
 export const initMqtt = () => {
-    const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+    // Disconnect any previous client (handles nodemon restarts on Windows)
+    if (mqttClient) {
+        mqttClient.end(true);
+        mqttClient = null;
+    }
+
+    const brokerUrl = process.env.MQTT_BROKER_URL;
     
     const client = mqtt.connect(brokerUrl, {
         username: process.env.MQTT_USERNAME || process.env.MQTT_USER,
         password: process.env.MQTT_PASSWORD,
-        clientId: `GUARD_Backend_${Math.random().toString(16).slice(3)}`,
+        clientId: 'GUARD_Backend',       // fixed ID — broker replaces old session
+        clean: true,                      // discard any stale subscriptions
         rejectUnauthorized: true,
     });
     mqttClient = client;
@@ -34,8 +41,13 @@ export const initMqtt = () => {
         });
     });
 
-    client.on('message', async (topic, message) => {
+    client.on('message', async (topic, message, packet) => {
         const [prefix, tankId, sensorType] = topic.split('/');
+
+        // Ignore retained messages for alerts to prevent re-processing old events on restart
+        if (packet.retain && prefix === 'alert') {
+            return;
+        }
 
         try {
             const payload = JSON.parse(message.toString());
@@ -67,10 +79,20 @@ export const initMqtt = () => {
 
             // Single DB call: update returns error if tank doesn't exist
             try {
-                await prisma.tank.update({
+                const updatedTank = await prisma.tank.update({
                     where: { tankId },
                     data: { [mongoField]: sensorValue, status: 'online' },
                 });
+
+                // Real-time update via Socket.io
+                if (io) {
+                    io.emit('sensor_data', { 
+                        tankId, 
+                        sensorType, 
+                        value: sensorValue,
+                        timestamp: updatedTank.updatedAt
+                    });
+                }
             } catch (updateErr) {
                 // P2025 = Record not found — tank is not registered
                 if (updateErr.code === 'P2025') {
@@ -84,16 +106,6 @@ export const initMqtt = () => {
                 .tag('tankId', tankId)
                 .floatField(influxField, sensorValue);
             writeApi.writePoint(point);
-
-            // Real-time update via Socket.io
-            if (io) {
-                io.emit('sensor_data', { 
-                    tankId, 
-                    sensorType, 
-                    value: sensorValue,
-                    timestamp: new Date().toISOString()
-                });
-            }
 
         } catch (error) {
             console.error(`❌ MQTT Error for ${tankId}:`, error.message);
@@ -130,18 +142,18 @@ const recentAlerts = new Map();
  * Process an alert: persist to DB, then notify users by email.
  */
 export const processAlert = async (tankId, parameter, alertType, sensorValue) => {
-    // Generate a unique key for this alert
-    const alertKey = `${tankId}:${parameter}:${alertType}:${sensorValue}`;
+    // Generate a unique key for this alert (ignoring small value fluctuations)
+    const alertKey = `${tankId}:${parameter}:${alertType}`;
     
-    // If we've seen this exact alert in the last 2 seconds, ignore it
+    // If we've seen this alert type for this tank in the last 10 seconds, ignore it
     if (recentAlerts.has(alertKey)) {
         console.log(`🛡️  Duplicate alert suppressed for ${tankId}: ${parameter}`);
         return;
     }
     
-    // Record this alert in the cache
+    // Record this alert in the cache (10 second window)
     recentAlerts.set(alertKey, Date.now());
-    setTimeout(() => recentAlerts.delete(alertKey), 2000);
+    setTimeout(() => recentAlerts.delete(alertKey), 10000);
 
     console.log(`🚨 ALERT for Tank ${tankId}: ${parameter} ${alertType} (${sensorValue})`);
 
@@ -182,19 +194,26 @@ export const processAlert = async (tankId, parameter, alertType, sensorValue) =>
         console.error('❌ Failed to save alert to DB:', dbError.message);
     }
 
-    // Send emails concurrently (ensure unique emails using Set)
+    // Don't send emails if the device isn't registered yet or has no admin
+    if (!tank.isRegistered || !tank.admin) {
+        console.log(`ℹ️ Suppressing alert emails for unregistered device: ${tankId}`);
+        return;
+    }
+
+    // Send emails concurrently (ensure unique emails case-insensitively)
     const emails = [...new Set([
-        tank.admin.email,
-        ...tank.workers.map((w) => w.email),
+        tank.admin.email.toLowerCase(),
+        ...tank.workers.map((w) => w.email?.toLowerCase()),
     ].filter(Boolean))];
 
-    await Promise.allSettled(
-        emails.map((email) =>
-            sendAlertEmail(email, tank.name, `${parameter} ${alertType}`, sensorValue)
-        )
-    );
-
-    console.log(`📧 Alert emails sent to ${emails.length} recipient(s)`);
+    if (emails.length > 0) {
+        await Promise.allSettled(
+            emails.map((email) =>
+                sendAlertEmail(email, tank.name, `${parameter} ${alertType}`, sensorValue)
+            )
+        );
+        console.log(`📧 Alert emails sent to ${emails.length} recipient(s): ${emails.join(', ')}`);
+    }
 };
 
 export const publishActuatorCommand = (topic, payload) => {

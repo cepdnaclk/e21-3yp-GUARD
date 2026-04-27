@@ -28,8 +28,8 @@ router.post("/login", login);
 router.post("/register", register);
 router.post("/google", googleLogin);
 
-// Email verification (token arrives as a query-string param)
-router.get("/verify-email", verifyEmail);
+// Email verification via POST (expects username and code in body)
+router.post("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerificationEmail);
 
 // Forgot Password Flow
