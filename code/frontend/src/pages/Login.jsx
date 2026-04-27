@@ -307,13 +307,13 @@ export default function Login() {
               background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px',
               padding: '0.85rem 1rem', marginBottom: '1rem', fontSize: '0.88rem', color: '#9a3412',
             }}>
-              <strong>📧 Email not verified.</strong> Please check your inbox and click the verification link before signing in.
-              <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <strong>📧 Email not verified.</strong> Please enter your verification code to continue.
+              <div style={{ marginTop: '0.5rem' }}>
                 <button
-                  onClick={handleResend} disabled={resendBusy}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0e567f', fontWeight: 600, fontSize: '0.88rem', padding: 0 }}
+                  onClick={() => navigate('/verify-email', { state: { username: unverifiedUser } })}
+                  style={{ background: '#0e567f', border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: '0.88rem', padding: '0.5rem 1rem', borderRadius: '6px' }}
                 >
-                  {resendBusy ? 'Sending…' : '↻ Resend verification email'}
+                  Enter Verification Code
                 </button>
               </div>
             </div>

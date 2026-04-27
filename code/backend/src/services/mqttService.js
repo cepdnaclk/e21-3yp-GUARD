@@ -23,7 +23,7 @@ export const initMqtt = () => {
         mqttClient = null;
     }
 
-    const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+    const brokerUrl = process.env.MQTT_BROKER_URL;
     
     const client = mqtt.connect(brokerUrl, {
         username: process.env.MQTT_USERNAME || process.env.MQTT_USER,
@@ -74,10 +74,20 @@ export const initMqtt = () => {
 
             // Single DB call: update returns error if tank doesn't exist
             try {
-                await prisma.tank.update({
+                const updatedTank = await prisma.tank.update({
                     where: { tankId },
                     data: { [mongoField]: sensorValue, status: 'online' },
                 });
+
+                // Real-time update via Socket.io
+                if (io) {
+                    io.emit('sensor_data', { 
+                        tankId, 
+                        sensorType, 
+                        value: sensorValue,
+                        timestamp: updatedTank.updatedAt
+                    });
+                }
             } catch (updateErr) {
                 // P2025 = Record not found — tank is not registered
                 if (updateErr.code === 'P2025') {
@@ -91,16 +101,6 @@ export const initMqtt = () => {
                 .tag('tankId', tankId)
                 .floatField(influxField, sensorValue);
             writeApi.writePoint(point);
-
-            // Real-time update via Socket.io
-            if (io) {
-                io.emit('sensor_data', { 
-                    tankId, 
-                    sensorType, 
-                    value: sensorValue,
-                    timestamp: new Date().toISOString()
-                });
-            }
 
         } catch (error) {
             console.error(`❌ MQTT Error for ${tankId}:`, error.message);

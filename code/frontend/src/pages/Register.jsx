@@ -93,9 +93,14 @@ export default function Register() {
 
       const result = await register(body);
 
-      // Backend requires email verification — show the check-inbox screen
+      // Backend requires email verification
       if (result?.emailVerified === false) {
-        setPendingEmail(form.email.trim());
+        navigate('/verify-email', { 
+          state: { 
+            username: form.username.trim(), 
+            email: form.email.trim() 
+          } 
+        });
         return;
       }
 
@@ -107,70 +112,6 @@ export default function Register() {
       setBusy(false);
     }
   };
-
-  const handleResend = async () => {
-    setResendMsg('');
-    setResendBusy(true);
-    try {
-      const res = await authApi.resendVerification(form.username, pendingEmail);
-      setResendMsg(res?.message || 'Verification email sent!');
-    } catch (err) {
-      setResendMsg(err.message || 'Failed to resend. Please try again.');
-    } finally {
-      setResendBusy(false);
-    }
-  };
-
-  /* ─── Check-inbox screen ─── */
-  if (pendingEmail) {
-    return (
-      <div className="auth-page login-page">
-        <div className="auth-brand">
-          <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
-          <span>G.U.A.R.D</span>
-        </div>
-
-        <div className="auth-card login-card" style={{ textAlign: 'center' }}>
-          {/* Email icon */}
-          <div style={{ fontSize: '3.5rem', marginBottom: '0.75rem' }}>✉️</div>
-
-          <h1 style={{ color: '#0e3454', marginBottom: '0.4rem' }}>Check your inbox</h1>
-          <p style={{ color: '#3b6586', marginBottom: '1.5rem', fontSize: '0.92rem' }}>
-            We sent a verification link to <strong>{pendingEmail}</strong>.
-            Click the link in that email to activate your account.
-          </p>
-
-          {resendMsg && (
-            <p style={{
-              background: resendMsg.toLowerCase().includes('fail') || resendMsg.toLowerCase().includes('error')
-                ? '#fee2e2' : '#dcfce7',
-              color: resendMsg.toLowerCase().includes('fail') || resendMsg.toLowerCase().includes('error')
-                ? '#991b1b' : '#166534',
-              padding: '0.6rem 1rem',
-              borderRadius: '8px',
-              fontSize: '0.86rem',
-              marginBottom: '1rem',
-            }}>
-              {resendMsg}
-            </p>
-          )}
-
-          <button
-            className="btn btn-primary"
-            onClick={handleResend}
-            disabled={resendBusy}
-            style={{ width: '100%', marginBottom: '0.75rem', background: '#0b3658', borderRadius: '10px' }}
-          >
-            {resendBusy ? 'Sending…' : 'Resend verification email'}
-          </button>
-
-          <p className="auth-footer">
-            Already verified? <Link to="/login">Sign In</Link>
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   /* ─── Registration form ─── */
   return (
