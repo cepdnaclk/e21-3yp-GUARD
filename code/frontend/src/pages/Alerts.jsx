@@ -52,6 +52,8 @@ export default function Alerts() {
 
   useEffect(() => {
     loadAlerts();
+    const timer = setInterval(loadAlerts, 30000); // Auto-refresh every 30s
+    return () => clearInterval(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFilterChange = (field) => (e) => {

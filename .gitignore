@@ -6,3 +6,9 @@ node_modules
 .vscode/settings.json
 .vscode/settings.json
 /code/backend/scratch
+kill_all.bat
+kill_all.ps1
+start_all.bat
+start_all.ps1
+code/gap_analysis.md.resolved
+code/gap_analysis.md

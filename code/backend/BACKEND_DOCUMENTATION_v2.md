@@ -710,8 +710,9 @@ Service:
 Current connection:
 - HiveMQ Cloud via MQTT over TLS (mqtts)
 - URL, User, and Password from environment variables (`MQTT_BROKER_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD`)
-- Connects with `rejectUnauthorized: true` to enforce strict SSL/TLS verification
-- Uses a fixed `clientId: 'GUARD_Backend'` with `clean: true` to ensure that broker sessions are correctly replaced on restart, preventing duplicate message processing.
+- Uses a random `clientId` to allow multiple test instances if needed, but uses **QoS 1 subscriptions** to ensure the broker tracks delivery and prevents message loss.
+- Subscription format: `client.subscribe({ 'topic': { qos: 1 } })`
+- Cleans session on restart (`clean: true`).
 
 Subscribed topic pattern:
 - sensor/+/+
@@ -753,8 +754,10 @@ Behavior:
 - When an alert is received, the backend looks up the tank owner (Admin) and all assigned Workers.
 - A high-priority email notification is sent to all these recipients.
 - **Deduplication Logic**:
-  - **Suppression Window**: Alerts are suppressed for **10 seconds** per `tankId + sensorType + alertType` to prevent flooding from a single event or MQTT retries.
-  - **Recipient Deduplication**: Emails are deduplicated case-insensitively (e.g., `User@gmail.com` and `user@gmail.com` are treated as the same) before sending.
+  - **Suppression Window**: Alerts are suppressed for **60 seconds** per `tankId + sensorType + alertType` in-memory to prevent flooding from immediate sensor spikes.
+  - **DB-Level Verification**: Before creating a new alert record or sending an email, the backend queries MongoDB for any **existing unresolved alerts** of the same type for that tank. If one exists, the new alert is suppressed.
+  - **Normalization**: Sensor types (e.g., pH, TDS) are normalized to lowercase before comparison to ensure consistency.
+  - **Recipient Deduplication**: Emails are deduplicated case-insensitively before sending.
 - **Safety**: Alerts for unregistered inventory devices are logged to the database but do **not** trigger emails (as no owner is assigned).
 - The alert is broadcast via WebSocket to connected clients.
 - If the tank is not found in the database, the alert is ignored.
@@ -801,6 +804,11 @@ Complete startup guide for all services. Run each step in order.
 | MQTT Broker| HiveMQ Cloud            | 8883 | Hosted remotely       |
 | Backend    | Node.js / Express       | 5000 | npm run dev           |
 | Frontend   | Vite / React            | 5173 | npm run dev           |
+
+### Quick Management (Recommended)
+You can manage all local services using these scripts in the project root:
+- `start_all.bat` / `start_all.ps1`: Starts both Backend and Frontend in separate windows.
+- `kill_all.bat` / `kill_all.ps1`: Forcefully kills all Node.js processes and clears ports.
 
 ---
 

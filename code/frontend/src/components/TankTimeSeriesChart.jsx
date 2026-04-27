@@ -30,7 +30,7 @@ function formatTooltipValue(value, name) {
   return [value, name];
 }
 
-export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000 }) {
+export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, isOnline = true }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -115,7 +115,12 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000 })
       <div className="card-header">
         <h3>Tank Sensor Trends</h3>
         <span className="tank-chart-meta">
-          Auto refresh: {Math.round(autoRefreshMs / 1000)}s{refreshing ? ' (updating...)' : ''}
+          {isOnline ? (
+            <span className="badge badge-success">Online</span>
+          ) : (
+            <span className="badge badge-danger">Disconnected</span>
+          )}
+          &nbsp; Auto refresh: {Math.round(autoRefreshMs / 1000)}s{refreshing ? ' (updating...)' : ''}
         </span>
       </div>
 
@@ -151,14 +156,14 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000 })
               <Legend />
               {SERIES.map((series) => (
                 <Line
-                  key={series.key}
-                  type="monotone"
-                  dataKey={series.key}
-                  name={`${series.label}${series.unit ? ` (${series.unit})` : ''}`}
-                  stroke={series.color}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
+                   key={series.key}
+                   type="monotone"
+                   dataKey={series.key}
+                   name={`${series.label}${series.unit ? ` (${series.unit})` : ''}`}
+                   stroke={series.color}
+                   strokeWidth={2}
+                   dot={false}
+                   connectNulls={false}
                 />
               ))}
             </LineChart>

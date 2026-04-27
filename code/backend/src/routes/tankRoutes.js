@@ -10,6 +10,7 @@ import {
   deleteTankByAdmin,
 } from "../controllers/tankController.js";
 import { sendActuatorCommand } from "../controllers/actuatorController.js";
+import { updateThresholds, getThresholds } from "../controllers/thresholdController.js";
 import {
   verifyToken,
   requireRole,
@@ -62,6 +63,10 @@ router.post(
   validateRequest,
   sendActuatorCommand
 );
+
+// Threshold routes
+router.get("/:tankId/thresholds", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getThresholds);
+router.patch("/:tankId/thresholds", verifyToken, requireAnyRole(["ADMIN", "SUPER_ADMIN"]), updateThresholds);
 
 router.get("/", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getAllTanks);
 router.get("/:tankId/status", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getTankStatus);

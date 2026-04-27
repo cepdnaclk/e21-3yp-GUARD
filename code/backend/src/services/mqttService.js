@@ -36,8 +36,12 @@ export const initMqtt = () => {
 
     client.on('connect', () => {
         console.log(`☁️  MQTT connected to ${brokerUrl}`);
-        client.subscribe(['sensor/+/+', 'alert/+/+'], (err) => {
-            if (!err) console.log('✅ Listening for sensor and alert topics...');
+        // Subscribe at QoS 1 so the broker tracks delivery and won't re-send duplicates
+        client.subscribe({ 
+            'sensor/+/+': { qos: 1 }, 
+            'alert/+/+': { qos: 1 } 
+        }, (err) => { 
+            if (!err) console.log('✅ Listening for sensor and alert topics...'); 
         });
     });
 
@@ -76,12 +80,17 @@ export const initMqtt = () => {
             }
 
             const [mongoField, influxField] = mapping;
+            const readingTime = payload.time ? new Date(payload.time) : new Date();
 
             // Single DB call: update returns error if tank doesn't exist
             try {
                 const updatedTank = await prisma.tank.update({
                     where: { tankId },
-                    data: { [mongoField]: sensorValue, status: 'online' },
+                    data: { 
+                        [mongoField]: sensorValue, 
+                        status: 'online',
+                        lastReadingTime: readingTime 
+                    },
                 });
 
                 // Real-time update via Socket.io
@@ -90,7 +99,7 @@ export const initMqtt = () => {
                         tankId, 
                         sensorType, 
                         value: sensorValue,
-                        timestamp: updatedTank.updatedAt
+                        timestamp: payload.time || updatedTank.updatedAt
                     });
                 }
             } catch (updateErr) {
@@ -101,10 +110,11 @@ export const initMqtt = () => {
                 throw updateErr;
             }
 
-            // Write to InfluxDB (batched — flush handled by writeApi config)
+            // Write to InfluxDB with the actual reading time
             const point = new Point('water_quality')
                 .tag('tankId', tankId)
-                .floatField(influxField, sensorValue);
+                .floatField(influxField, sensorValue)
+                .timestamp(readingTime);
             writeApi.writePoint(point);
 
         } catch (error) {
@@ -142,20 +152,20 @@ const recentAlerts = new Map();
  * Process an alert: persist to DB, then notify users by email.
  */
 export const processAlert = async (tankId, parameter, alertType, sensorValue) => {
-    // Generate a unique key for this alert (ignoring small value fluctuations)
-    const alertKey = `${tankId}:${parameter}:${alertType}`;
+    // Normalize parameter to lowercase for consistent storage and dedup
+    const normalizedParam = parameter.toLowerCase();
+    const alertKey = `${tankId}:${normalizedParam}:${alertType}`;
     
     // If we've seen this alert type for this tank in the last 10 seconds, ignore it
     if (recentAlerts.has(alertKey)) {
-        console.log(`🛡️  Duplicate alert suppressed for ${tankId}: ${parameter}`);
+        console.log(`🛡️  [STEP 1] In-memory duplicate suppressed for ${tankId}: ${normalizedParam}`);
         return;
     }
     
-    // Record this alert in the cache (10 second window)
     recentAlerts.set(alertKey, Date.now());
-    setTimeout(() => recentAlerts.delete(alertKey), 10000);
+    setTimeout(() => recentAlerts.delete(alertKey), 60000); // 60-second dedup window
 
-    console.log(`🚨 ALERT for Tank ${tankId}: ${parameter} ${alertType} (${sensorValue})`);
+    console.log(`🚨 [STEP 2] Processing ALERT for Tank ${tankId}: ${normalizedParam} ${alertType} (${sensorValue})`);
 
     const tank = await prisma.tank.findUnique({
         where: { tankId },
@@ -166,22 +176,39 @@ export const processAlert = async (tankId, parameter, alertType, sensorValue) =>
     });
 
     if (!tank) {
-        console.warn(`⚠️ Alert for unregistered Tank: ${tankId}`);
+        console.warn(`⚠️ [STEP 3] Alert for unregistered Tank: ${tankId}`);
         return;
     }
+    console.log(`✅ [STEP 3] Tank found: ${tank.name} (registered=${tank.isRegistered})`);
 
-    // Save alert to DB
+    // Check if an unresolved alert of the same type already exists
     try {
+        const existingAlert = await prisma.alert.findFirst({
+            where: {
+                tankId,
+                type: normalizedParam,
+                message: alertType,
+                resolved: false,
+            },
+        });
+
+        if (existingAlert) {
+            console.log(`🛡️  [STEP 4] Unresolved DB alert already exists (id=${existingAlert.id}). Suppressing duplicate.`);
+            return;
+        }
+
+        console.log(`✅ [STEP 4] No duplicate found. Writing new alert to DB...`);
         const alertData = {
             tankId,
             tankInternalId: tank.id,
-            type: parameter,
+            type: normalizedParam,
             message: alertType,
             value: sensorValue ?? 0,
             resolved: false,
         };
 
         const newAlert = await prisma.alert.create({ data: alertData });
+        console.log(`✅ [STEP 5] Alert saved to DB with id=${newAlert.id}`);
         
         // Real-time notification via Socket.io
         if (io) {
@@ -189,30 +216,34 @@ export const processAlert = async (tankId, parameter, alertType, sensorValue) =>
                 ...newAlert,
                 tankName: tank.name
             });
+            console.log(`✅ [STEP 5] Socket.io event emitted.`);
+        } else {
+            console.warn(`⚠️ [STEP 5] io is null — Socket.io not initialized yet.`);
         }
     } catch (dbError) {
-        console.error('❌ Failed to save alert to DB:', dbError.message);
-    }
-
-    // Don't send emails if the device isn't registered yet or has no admin
-    if (!tank.isRegistered || !tank.admin) {
-        console.log(`ℹ️ Suppressing alert emails for unregistered device: ${tankId}`);
+        console.error('❌ [STEP 5] Failed to save alert to DB:', dbError.message, dbError.stack);
         return;
     }
 
-    // Send emails concurrently (ensure unique emails case-insensitively)
+    // Don't send emails if the device isn't registered or has no admin
+    if (!tank.isRegistered || !tank.admin) {
+        console.log(`ℹ️ [STEP 6] Suppressing alert emails for unregistered device: ${tankId}`);
+        return;
+    }
+
     const emails = [...new Set([
         tank.admin.email.toLowerCase(),
         ...tank.workers.map((w) => w.email?.toLowerCase()),
     ].filter(Boolean))];
 
+    console.log(`📧 [STEP 6] Sending emails to: ${emails.join(', ')}`);
     if (emails.length > 0) {
         await Promise.allSettled(
             emails.map((email) =>
-                sendAlertEmail(email, tank.name, `${parameter} ${alertType}`, sensorValue)
+                sendAlertEmail(email, tank.name, `${normalizedParam} ${alertType}`, sensorValue)
             )
         );
-        console.log(`📧 Alert emails sent to ${emails.length} recipient(s): ${emails.join(', ')}`);
+        console.log(`✅ [STEP 6] Alert emails sent to ${emails.length} recipient(s).`);
     }
 };
 

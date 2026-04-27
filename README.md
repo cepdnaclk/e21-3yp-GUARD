@@ -147,18 +147,12 @@ e21-3yp-GUARD/
 | ----------- | ------------------- | ------- | -------------------------------- |
 | Runtime     | Node.js             | 22 LTS  | JavaScript server runtime        |
 | Framework   | Express             | 4.x     | HTTP server & routing            |
-| ORM         | Prisma              | 5.x     | Database access & migrations     |
-| Database    | PostgreSQL          | 16+     | Persistent storage               |
-| MQTT client | MQTT.js             | 5.x     | Subscribe to ESP32 sensor data   |
-| MQTT broker | Mosquitto           | 2.x     | Message broker (self-hosted)     |
-| Auth        | google-auth-library | 9.x     | Verify Google ID tokens          |
-| Auth        | jsonwebtoken        | 9.x     | Issue & verify JWTs (HS256, 1d)  |
-| Crypto      | bcryptjs            | 2.x     | Hash device secrets (cost 10)    |
-| WebSocket   | socket.io           | 4.x     | Real-time alert push to frontend |
-| Email       | nodemailer          | 8.x     | Optional alert email dispatch    |
-| Logging     | winston             | 3.x     | Structured JSON logging          |
-| Security    | helmet              | 7.x     | HTTP security headers            |
-| Validation  | express-validator   | 7.x     | Request body validation          |
+| ORM         | Prisma              | 6.x     | Database access (MongoDB)        |
+| State DB    | MongoDB             | 7+      | Real-time state & User data      |
+| History DB  | InfluxDB            | 2.x     | High-frequency time-series data  |
+| MQTT client | MQTT.js             | 5.x     | Ingestion & Hardware Sync        |
+| MQTT broker | HiveMQ Cloud        | —       | Managed MQTT Broker              |
+| WebSocket   | socket.io           | 4.x     | Real-time dashboard updates      |
 
 ### Frontend _(to be built)_
 
@@ -520,7 +514,10 @@ All thresholds are configurable via `.env` — no code change required.
 | `TURBIDITY_HIGH`  | `turbidity > TURBIDITY_MAX`     | **50 NTU**        | `TURBIDITY_MAX`   |
 | `WATER_LEVEL_LOW` | `water_level < WATER_LEVEL_MIN` | **20 %**          | `WATER_LEVEL_MIN` |
 
-**Deduplication:** A new alert row is only inserted if no unresolved alert of the same type already exists for that device. This prevents repeated readings from flooding the alerts table. The duplicate check is cleared once an alert is resolved via `POST /alerts/resolve`.
+- [x] **Alert Deduplication**: Implemented DB-level checks to prevent alert flooding.
+- [x] **Real-time Refresh**: Added 30s polling to Dashboard and Alerts pages.
+- [x] **Management Scripts**: Added `start_all` and `kill_all` helpers.
+- [x] **MQTT QoS**: Upgraded subscriptions to QoS 1 for reliable delivery.
 
 ---
 
@@ -528,11 +525,11 @@ All thresholds are configurable via `.env` — no code change required.
 
 | Service             | Port     | Protocol | Notes                   |
 | ------------------- | -------- | -------- | ----------------------- |
-| Backend REST API    | **3000** | HTTP     | Express server          |
-| Backend WebSocket   | **3000** | WS       | socket.io on same port  |
-| MQTT Broker         | **1883** | MQTT     | Mosquitto               |
-| PostgreSQL          | **5432** | TCP      |                         |
-| Prisma Studio (dev) | **5555** | HTTP     | `npm run prisma:studio` |
+| Backend API         | **5000** | HTTP     | Express server          |
+| Backend WebSocket   | **5000** | WS       | socket.io on same port  |
+| MQTT Broker         | **8883** | MQTTS    | HiveMQ Cloud            |
+| MongoDB             | **27017**| TCP      | State & Metadata        |
+| InfluxDB            | **8086** | HTTP     | Time-series History     |
 | Frontend (Vite dev) | **5173** | HTTP     | React app               |
 
 ---
@@ -698,7 +695,7 @@ npm run dev          # starts on http://localhost:5173
 
 1. **APIs & Services → OAuth consent screen**
 2. Select **External** → fill in app name, support email, developer contact
-3. Add scopes: `openid`, `email`, `profile`
+3. Add scopes: `openid`, `email`,, `profile`
 
 ### 3 — Create credentials
 
@@ -719,6 +716,26 @@ GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
 ```
 
 > The backend needs only the Client ID. The Client Secret is not used (the backend verifies ID tokens, not authorization codes).
+
+### 🛠️ Developer Scripts
+The following scripts are available in the root directory to manage the full-stack environment:
+
+| Script | Purpose |
+| :--- | :--- |
+| `start_all.bat` | Starts both Frontend and Backend in separate windows (Double-click). |
+| `kill_all.bat` | Kills all Node.js processes and clears ports (Double-click). |
+| `start_all.ps1` | PowerShell version of the start script. |
+| `kill_all.ps1` | PowerShell version of the kill script. |
+
+---
+
+## 🚨 Alerting & Notification Logic
+The system uses a robust multi-layer approach to ensure critical alerts are delivered exactly once.
+
+1. **MQTT Ingestion (QoS 1):** Backend subscribes at QoS 1 to ensure at-least-once delivery from the broker.
+2. **In-Memory Throttle:** A 60-second in-memory cache prevents immediate duplicate processing of identical sensor spikes.
+3. **DB-Level Deduplication:** The backend checks for existing *unresolved* alerts of the same type for a tank. A new record (and email) is only generated if no active alert is currently open.
+4. **Real-time UI:** The Dashboard and Alerts pages poll every 30 seconds to show the latest status without manual refreshes.
 
 ---
 

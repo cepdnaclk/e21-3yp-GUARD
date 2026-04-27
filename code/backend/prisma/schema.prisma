@@ -31,7 +31,7 @@ model User {
   // ✉️ EMAIL VERIFICATION & PASSWORD RESET
   // ==========================================
   emailVerified           Boolean  @default(false)
-  verificationToken       String?  @unique
+  verificationToken       String?  
   verificationTokenExpiry DateTime?
   resetPasswordToken      String?  
   resetPasswordExpiry     DateTime?
@@ -75,7 +75,7 @@ model Tank {
   workerIds    String[] @db.ObjectId
   workers      User[]   @relation("WorkerAssignedTanks", fields: [workerIds], references: [id])
 
-  // Safe Ranges (Admin Controlled)
+  // Safe Ranges (Admin Controlled, synced to ESP32 via MQTT)
   tempMin      Float    @default(24.0)
   tempMax      Float    @default(28.0)
   phMin        Float    @default(6.5)
@@ -83,6 +83,9 @@ model Tank {
   tdsMin       Float    @default(200.0)
   tdsMax       Float    @default(600.0)
   turbidityMax Float    @default(20.0)
+  // Water level thresholds (ESP32 specific: sensor distance in cm or %)
+  waterLevelThreshold Float @default(80.0)  // LOW alert: tank is low
+  waterStopThreshold  Float @default(10.0)  // HIGH alert: tank is full/overfill
   
   // Latest State
   lastTemp       Float?
@@ -90,6 +93,7 @@ model Tank {
   lastTds        Float?
   lastTurb       Float?
   lastWaterLevel Float?  
+  lastReadingTime DateTime?
   status         String   @default("offline")
   
   // Relations & Metadata
@@ -112,4 +116,13 @@ model Alert {
   
   resolved  Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model DeviceCommand {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  tankId     String   // human-readable tank ID (e.g., GUARD-101)
+  command    String   // feed | pump_on | pump_off
+  issuedBy   String   // user ID who issued the command
+  issuedAt   DateTime @default(now())
+  status     String   @default("sent") // sent | failed
 }

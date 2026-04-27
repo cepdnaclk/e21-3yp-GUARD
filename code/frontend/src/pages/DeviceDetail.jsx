@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { deviceApi, sensorApi, authApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import TankTimeSeriesChart from '../components/TankTimeSeriesChart';
+import ThresholdsPanel from '../components/ThresholdsPanel';
 import '../styles/device-detail.css';
 
 const SENSOR_UNITS = {
@@ -80,6 +81,8 @@ export default function DeviceDetail() {
 
   useEffect(() => {
     loadData();
+    const timer = setInterval(loadData, 30000);
+    return () => clearInterval(timer);
   }, [id, role]);
 
   const handleAssign = async (userId) => {
@@ -113,11 +116,18 @@ export default function DeviceDetail() {
   return (
     <>
       <div className="device-detail-header">
-        <div>
-          <h3>Device #{device.deviceId}</h3>
-          <p className="device-detail-name">
-            {device.deviceName || 'Unnamed'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div>
+            <h3>Device #{device.deviceId}</h3>
+            <p className="device-detail-name">
+              {device.deviceName || 'Unnamed'}
+            </p>
+          </div>
+          {(() => {
+            const lastTime = device.currentStats?.lastReadingTime;
+            const isRecentlyUpdated = lastTime && (new Date() - new Date(lastTime)) < 30000;
+            return <span className={`tank-status-dot ${isRecentlyUpdated ? 'active' : 'offline'}`} />;
+          })()}
         </div>
         <Link to="/devices" className="btn btn-outline btn-sm">Back to Devices</Link>
       </div>
@@ -150,7 +160,20 @@ export default function DeviceDetail() {
       </div>
 
       {/* Time Series Chart */}
-      <TankTimeSeriesChart deviceId={id} autoRefreshMs={30000} />
+      {(() => {
+        const lastTime = device.currentStats?.lastReadingTime;
+        const isOnline = lastTime && (new Date() - new Date(lastTime)) < 30000;
+        return <TankTimeSeriesChart deviceId={id} autoRefreshMs={30000} isOnline={isOnline} />;
+      })()}
+      
+      {/* Sensor Thresholds (ADMIN only) */}
+      {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+        <ThresholdsPanel 
+          tankId={id} 
+          initialThresholds={device.thresholds} 
+          onUpdate={loadData} 
+        />
+      )}
 
       {/* Worker Assignment (ADMIN only) */}
       {role === 'ADMIN' && (

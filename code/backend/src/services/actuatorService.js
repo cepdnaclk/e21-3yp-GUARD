@@ -28,5 +28,21 @@ export const publishTankActuatorCommand = async (tankId, command, user) => {
 
   await publishActuatorCommand(topic, payload);
 
+  // Audit log: record every command sent to the device
+  try {
+    await prisma.deviceCommand.create({
+      data: {
+        tankId,
+        command,
+        issuedBy: user.userId,
+        status: "sent",
+      },
+    });
+  } catch (logErr) {
+    console.warn(`⚠️ Failed to log command to DB: ${logErr.message}`);
+    // Non-fatal — command was already sent
+  }
+
   return { topic, payload };
 };
+

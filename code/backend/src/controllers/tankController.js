@@ -228,13 +228,25 @@ export const getTankStatus = async (req, res) => {
       tankId: tank.tankId,
       status: tank.status,
       updatedAt: tank.updatedAt,
-      workers: tank.workers, // Include worker details
+      workers: tank.workers,
       currentStats: {
         temp: tank.lastTemp,
         pH: tank.lastPh,
         tds: tank.lastTds,
         turbidity: tank.lastTurb,
         waterLevel: tank.lastWaterLevel,
+        lastReadingTime: tank.lastReadingTime,
+      },
+      thresholds: {
+        tempMin:             tank.tempMin,
+        tempMax:             tank.tempMax,
+        phMin:               tank.phMin,
+        phMax:               tank.phMax,
+        tdsMin:              tank.tdsMin,
+        tdsMax:              tank.tdsMax,
+        turbidityMax:        tank.turbidityMax,
+        waterLevelThreshold: tank.waterLevelThreshold,
+        waterStopThreshold:  tank.waterStopThreshold,
       },
     });
   } catch (error) {

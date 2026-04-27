@@ -46,6 +46,7 @@ function toDeviceFromTank(tank) {
       tds: tank.lastTds,
       turbidity: tank.lastTurb,
       waterLevel: tank.lastWaterLevel,
+      lastReadingTime: tank.lastReadingTime,
     },
   };
 }
@@ -189,8 +190,15 @@ export const deviceApi = {
       status: status.status,
       workers: status.workers || [],
       currentStats: status.currentStats || {},
+      thresholds: status.thresholds || {},
     };
   },
+
+  // PATCH /api/tanks/:tankId/thresholds
+  updateThresholds: (tankId, thresholds) => request(`/tanks/${tankId}/thresholds`, {
+    method: 'PATCH',
+    body: JSON.stringify(thresholds),
+  }),
 };
 
 export const sensorApi = {
@@ -215,7 +223,7 @@ export const sensorApi = {
         sensorId: key,
         sensorType: { sensorName },
         value,
-        readingTime: updatedAt || new Date().toISOString(),
+        readingTime: currentStats.lastReadingTime || updatedAt || new Date().toISOString(),
       });
     }
 

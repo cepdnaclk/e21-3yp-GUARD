@@ -97,7 +97,6 @@ export const getTankHistory = async (req, res) => {
         |> filter(fn: (r) => r._measurement == "water_quality")
         |> filter(fn: (r) => r.tankId == "${safeTankId}")
         |> aggregateWindow(every: 5m, fn: last, createEmpty: true)
-        |> fill(usePrevious: true)
         |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
     `;
 
