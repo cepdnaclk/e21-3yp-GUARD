@@ -10,13 +10,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
 /**
  * Send a 6-digit email-verification code to a newly registered user.
  * @param {string} toEmail   - Recipient email address
  * @param {string} fullName  - Recipient's display name
  * @param {string} code      - The 6-digit verification code
  */
+
 export const sendVerificationEmail = async (toEmail, fullName, code) => {
   const mailOptions = {
     from: `"G.U.A.R.D System" <${process.env.SMTP_USER}>`,
@@ -34,7 +34,7 @@ export const sendVerificationEmail = async (toEmail, fullName, code) => {
             .header h1 { color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 2px; }
             .body { padding: 32px; color: #333333; }
             .body p { line-height: 1.6; }
-            .code-box { background: #f4f4f4; border: 2px dashed #1a73e8; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1a73e8; }
+            .code-box { background: #f4f4f4; border: 2px dashed #1a73e8; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #1a73e8; }
             .footer { background: #f4f4f4; padding: 16px 32px; font-size: 12px; color: #888888; text-align: center; }
           </style>
         </head>
@@ -45,9 +45,9 @@ export const sendVerificationEmail = async (toEmail, fullName, code) => {
             </div>
             <div class="body">
               <p>Hi <strong>${fullName}</strong>,</p>
-              <p>Thank you for registering with G.U.A.R.D. Use the verification code below to activate your account:</p>
+              <p>Thank you for registering with G.U.A.R.D. Please use the following 6-digit verification code to complete your registration:</p>
               <div class="code-box">${code}</div>
-              <p>This code will expire in <strong>24 hours</strong>. Do not share it with anyone.</p>
+              <p>This code will expire in <strong>24 hours</strong>.</p>
               <p>If you did not create an account, you can safely ignore this email.</p>
             </div>
             <div class="footer">

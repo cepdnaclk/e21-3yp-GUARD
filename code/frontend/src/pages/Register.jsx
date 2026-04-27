@@ -98,9 +98,14 @@ export default function Register() {
 
       const result = await register(body);
 
-      // Backend requires email verification — show the check-inbox screen
+      // Backend requires email verification
       if (result?.emailVerified === false) {
-        setPendingEmail(form.email.trim());
+        navigate('/verify-email', { 
+          state: { 
+            username: form.username.trim(), 
+            email: form.email.trim() 
+          } 
+        });
         return;
       }
 

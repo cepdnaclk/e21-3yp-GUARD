@@ -199,7 +199,8 @@ export const sensorApi = {
 
   // Reads the current tank status and converts it into a simple sensor list.
   latest: async (deviceId) => {
-    const { currentStats = {} } = await request(`/tanks/${deviceId}/status`);
+    const status = await request(`/tanks/${deviceId}/status`);
+    const { currentStats = {}, updatedAt } = status;
     const latestReadings = [];
 
     for (const [key, sensorName] of SENSOR_FIELDS) {
@@ -214,7 +215,7 @@ export const sensorApi = {
         sensorId: key,
         sensorType: { sensorName },
         value,
-        readingTime: new Date().toISOString(),
+        readingTime: updatedAt || new Date().toISOString(),
       });
     }
 
