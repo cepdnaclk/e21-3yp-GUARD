@@ -79,7 +79,7 @@ export const authApi = {
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   googleLogin: (idToken) => request('/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
-  verifyEmail: (token) => request(`/auth/verify-email?token=${encodeURIComponent(token)}`),
+  verifyEmail: (username, code) => request('/auth/verify-email', { method: 'POST', body: JSON.stringify({ username, code }) }),
   resendVerification: (username, email) => request('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ username, email }) }),
   getMe: () => request('/auth/me'),
   updateProfile: (body) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
@@ -199,7 +199,8 @@ export const sensorApi = {
 
   // Reads the current tank status and converts it into a simple sensor list.
   latest: async (deviceId) => {
-    const { currentStats = {} } = await request(`/tanks/${deviceId}/status`);
+    const status = await request(`/tanks/${deviceId}/status`);
+    const { currentStats = {}, updatedAt } = status;
     const latestReadings = [];
 
     for (const [key, sensorName] of SENSOR_FIELDS) {
@@ -214,7 +215,7 @@ export const sensorApi = {
         sensorId: key,
         sensorType: { sensorName },
         value,
-        readingTime: new Date().toISOString(),
+        readingTime: updatedAt || new Date().toISOString(),
       });
     }
 

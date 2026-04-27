@@ -227,6 +227,7 @@ export const getTankStatus = async (req, res) => {
       name: tank.name,
       tankId: tank.tankId,
       status: tank.status,
+      updatedAt: tank.updatedAt,
       workers: tank.workers, // Include worker details
       currentStats: {
         temp: tank.lastTemp,

@@ -711,6 +711,7 @@ Current connection:
 - HiveMQ Cloud via MQTT over TLS (mqtts)
 - URL, User, and Password from environment variables (`MQTT_BROKER_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD`)
 - Connects with `rejectUnauthorized: true` to enforce strict SSL/TLS verification
+- Uses a fixed `clientId: 'GUARD_Backend'` with `clean: true` to ensure that broker sessions are correctly replaced on restart, preventing duplicate message processing.
 
 Subscribed topic pattern:
 - sensor/+/+
@@ -751,8 +752,12 @@ Expected topic format:
 Behavior:
 - When an alert is received, the backend looks up the tank owner (Admin) and all assigned Workers.
 - A high-priority email notification is sent to all these recipients.
+- **Deduplication Logic**:
+  - **Suppression Window**: Alerts are suppressed for **10 seconds** per `tankId + sensorType + alertType` to prevent flooding from a single event or MQTT retries.
+  - **Recipient Deduplication**: Emails are deduplicated case-insensitively (e.g., `User@gmail.com` and `user@gmail.com` are treated as the same) before sending.
+- **Safety**: Alerts for unregistered inventory devices are logged to the database but do **not** trigger emails (as no owner is assigned).
 - The alert is broadcast via WebSocket to connected clients.
-- If the tank is not registered, the alert is ignored.
+- If the tank is not found in the database, the alert is ignored.
 
 ## 9. MQTT Actuation
 

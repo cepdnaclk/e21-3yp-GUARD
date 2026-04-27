@@ -90,9 +90,7 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate a verification token (valid for 24 hours)
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
 
     const user = await prisma.user.create({
@@ -106,7 +104,7 @@ export const register = async (req, res) => {
         phoneNumber,
         // If no real email was provided, mark as already verified (no email to verify)
         emailVerified: !isRealEmail,
-        verificationToken: isRealEmail ? verificationToken : null,
+        verificationToken: isRealEmail ? verificationCode : null,
         verificationTokenExpiry: isRealEmail ? verificationTokenExpiry : null,
       },
     });
@@ -165,33 +163,37 @@ export const register = async (req, res) => {
 
 // ─── Verify Email ─────────────────────────────────────────────────────────────
 export const verifyEmail = async (req, res) => {
-  const { token } = req.query;
+  const { username, code } = req.body;
 
-  if (!token) {
-    return res.status(400).json({ error: "Verification token is required." });
+  if (!username || !code) {
+    return res.status(400).json({ error: "Username and verification code are required." });
   }
 
   try {
     const user = await prisma.user.findUnique({
-      where: { verificationToken: token },
+      where: { username },
     });
 
     if (!user) {
-      return res.status(400).json({ error: "Invalid or expired verification token." });
+      return res.status(400).json({ error: "User not found." });
     }
 
     if (user.emailVerified) {
       return res.status(200).json({ message: "Email is already verified. You can log in." });
     }
 
+    if (!user.verificationToken || user.verificationToken !== code) {
+      return res.status(400).json({ error: "Invalid verification code." });
+    }
+
     if (user.verificationTokenExpiry && user.verificationTokenExpiry < new Date()) {
       return res.status(400).json({
-        error: "Verification token has expired. Please request a new verification email.",
+        error: "Verification code has expired. Please request a new one.",
         expired: true,
       });
     }
 
-    // Mark as verified and clear the token
+    // Mark as verified and clear the code
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -210,6 +212,7 @@ export const verifyEmail = async (req, res) => {
     return res.status(500).json({ error: "Email verification error." });
   }
 };
+
 
 // ─── Resend Verification Email ────────────────────────────────────────────────
 export const resendVerificationEmail = async (req, res) => {
@@ -241,18 +244,18 @@ export const resendVerificationEmail = async (req, res) => {
       return res.status(400).json({ error: "This account is already verified." });
     }
 
-    const newToken = crypto.randomBytes(32).toString("hex");
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        verificationToken: newToken,
+        verificationToken: verificationCode,
         verificationTokenExpiry: newExpiry,
       },
     });
 
-    await sendVerificationEmail(user.email, user.fullName, newToken);
+    await sendVerificationEmail(user.email, user.fullName, verificationCode);
 
     return res.status(200).json({
       message: "Verification email resent. Please check your inbox.",
@@ -281,10 +284,8 @@ export const createAdminBySuperAdmin = async (req, res) => {
     const isRealEmail = !resolvedEmail.endsWith("@local.guard");
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate a verification token (valid for 24 hours)
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const user = await prisma.user.create({
       data: {
@@ -295,9 +296,8 @@ export const createAdminBySuperAdmin = async (req, res) => {
         fullName,
         address,
         phoneNumber,
-        // If it's a real email, require verification. Otherwise (@local.guard), it's pre-verified.
         emailVerified: !isRealEmail,
-        verificationToken: isRealEmail ? verificationToken : null,
+        verificationToken: isRealEmail ? verificationCode : null,
         verificationTokenExpiry: isRealEmail ? verificationTokenExpiry : null,
       },
     });
@@ -343,10 +343,8 @@ export const createUserByAdmin = async (req, res) => {
     const isRealEmail = !resolvedEmail.endsWith("@local.guard");
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate a verification token (valid for 24 hours)
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const user = await prisma.user.create({
       data: {
@@ -358,9 +356,8 @@ export const createUserByAdmin = async (req, res) => {
         address,
         phoneNumber,
         adminId,
-        // If it's a real email, require verification. Otherwise (@local.guard), it's pre-verified.
         emailVerified: !isRealEmail,
-        verificationToken: isRealEmail ? verificationToken : null,
+        verificationToken: isRealEmail ? verificationCode : null,
         verificationTokenExpiry: isRealEmail ? verificationTokenExpiry : null,
       },
     });
@@ -833,4 +830,4 @@ export const forgotPasswordReset = async (req, res) => {
     console.error("Forgot password reset error:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
-};
+};
