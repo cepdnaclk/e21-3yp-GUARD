@@ -145,27 +145,70 @@ export const shutdownMqtt = () => {
     }
 };
 
-// Cache to prevent duplicate alerts within a short window (2 seconds)
-const recentAlerts = new Map();
+// ── Alert processing lock ────────────────────────────────────────────
+// Key: alertKey string → Value: Promise that resolves when processing is done.
+// This prevents the TOCTOU race where two concurrent calls both pass the checks.
+const alertLocks = new Map();
+
+// Cooldown cache: Maps `tankId:parameter` to { value, timestamp }
+// Rule: Same value = 15 min block. Different value = 5 min block.
+const categoryCooldowns = new Map();
 
 /**
  * Process an alert: persist to DB, then notify users by email.
+ * Uses a promise-based lock to guarantee only ONE concurrent execution per alert key.
  */
 export const processAlert = async (tankId, parameter, alertType, sensorValue) => {
-    // Normalize parameter to lowercase for consistent storage and dedup
     const normalizedParam = parameter.toLowerCase();
-    const alertKey = `${tankId}:${normalizedParam}:${alertType}`;
-    
-    // If we've seen this alert type for this tank in the last 10 seconds, ignore it
-    if (recentAlerts.has(alertKey)) {
-        console.log(`🛡️  [STEP 1] In-memory duplicate suppressed for ${tankId}: ${normalizedParam}`);
-        return;
-    }
-    
-    recentAlerts.set(alertKey, Date.now());
-    setTimeout(() => recentAlerts.delete(alertKey), 60000); // 60-second dedup window
+    const categoryKey = `${tankId}:${normalizedParam}`;
 
-    console.log(`🚨 [STEP 2] Processing ALERT for Tank ${tankId}: ${normalizedParam} ${alertType} (${sensorValue})`);
+    // ── GATE 1: Cooldown check (synchronous, instant) ────────────────
+    const now = Date.now();
+    const lastAlert = categoryCooldowns.get(categoryKey);
+
+    if (lastAlert) {
+        const timeSince = now - lastAlert.timestamp;
+        const isSameValue = (lastAlert.value === sensorValue);
+        const blockDuration = isSameValue ? 15 * 60 * 1000 : 5 * 60 * 1000; // 15 mins or 5 mins
+
+        if (timeSince < blockDuration) {
+            console.log(`🛡️  [GATE 1] Cooldown active for ${categoryKey} (SameValue=${isSameValue}, Blocked for ${blockDuration/60000}m) — suppressed.`);
+            return;
+        }
+    }
+
+    // ── GATE 2: Lock check — if another call is already processing, wait for it
+    //    then return (the first caller will handle everything).
+    if (alertLocks.has(categoryKey)) {
+        console.log(`🛡️  [GATE 2] Lock active — waiting then skipping ${categoryKey}`);
+        try { await alertLocks.get(categoryKey); } catch { /* ignore */ }
+        return; // The first call already handled DB + email.
+    }
+
+    // ── Acquire the lock SYNCHRONOUSLY before any await ──────────────
+    let releaseLock;
+    const lockPromise = new Promise((resolve) => { releaseLock = resolve; });
+    alertLocks.set(categoryKey, lockPromise);
+
+    // Set cooldown immediately so any future calls within the block window are instant-rejected
+    categoryCooldowns.set(categoryKey, { value: sensorValue, timestamp: now });
+
+    try {
+        await _processAlertImpl(tankId, normalizedParam, alertType, sensorValue);
+    } catch (err) {
+        console.error(`❌ processAlert top-level error for ${categoryKey}:`, err.message);
+    } finally {
+        // Release the lock so any waiters can exit
+        releaseLock();
+        alertLocks.delete(categoryKey);
+    }
+};
+
+/**
+ * Internal implementation — only ever called by one caller at a time per categoryKey.
+ */
+async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue) {
+    console.log(`🚨 Processing ALERT for ${tankId}: ${normalizedParam} ${alertType} (${sensorValue})`);
 
     const tank = await prisma.tank.findUnique({
         where: { tankId },
@@ -176,58 +219,35 @@ export const processAlert = async (tankId, parameter, alertType, sensorValue) =>
     });
 
     if (!tank) {
-        console.warn(`⚠️ [STEP 3] Alert for unregistered Tank: ${tankId}`);
+        console.warn(`⚠️ Tank not found: ${tankId}`);
         return;
     }
-    console.log(`✅ [STEP 3] Tank found: ${tank.name} (registered=${tank.isRegistered})`);
+    console.log(`✅ Tank found: ${tank.name} (registered=${tank.isRegistered})`);
 
-    // Check if an unresolved alert of the same type already exists
-    try {
-        const existingAlert = await prisma.alert.findFirst({
-            where: {
-                tankId,
-                type: normalizedParam,
-                message: alertType,
-                resolved: false,
-            },
-        });
+    // We no longer block via DB 'resolved: false' check, so the DB updates
+    // periodically according to the 5/15 minute cooldowns.
 
-        if (existingAlert) {
-            console.log(`🛡️  [STEP 4] Unresolved DB alert already exists (id=${existingAlert.id}). Suppressing duplicate.`);
-            return;
-        }
-
-        console.log(`✅ [STEP 4] No duplicate found. Writing new alert to DB...`);
-        const alertData = {
+    // ── Create new alert record ──────────────────────────────────────
+    const newAlert = await prisma.alert.create({
+        data: {
             tankId,
             tankInternalId: tank.id,
             type: normalizedParam,
             message: alertType,
             value: sensorValue ?? 0,
             resolved: false,
-        };
+        },
+    });
+    console.log(`✅ Alert saved to DB (id=${newAlert.id})`);
 
-        const newAlert = await prisma.alert.create({ data: alertData });
-        console.log(`✅ [STEP 5] Alert saved to DB with id=${newAlert.id}`);
-        
-        // Real-time notification via Socket.io
-        if (io) {
-            io.emit('alert_new', {
-                ...newAlert,
-                tankName: tank.name
-            });
-            console.log(`✅ [STEP 5] Socket.io event emitted.`);
-        } else {
-            console.warn(`⚠️ [STEP 5] io is null — Socket.io not initialized yet.`);
-        }
-    } catch (dbError) {
-        console.error('❌ [STEP 5] Failed to save alert to DB:', dbError.message, dbError.stack);
-        return;
+    // Real-time notification via Socket.io
+    if (io) {
+        io.emit('alert_new', { ...newAlert, tankName: tank.name });
     }
 
-    // Don't send emails if the device isn't registered or has no admin
+    // ── Send emails ──────────────────────────────────────────────────
     if (!tank.isRegistered || !tank.admin) {
-        console.log(`ℹ️ [STEP 6] Suppressing alert emails for unregistered device: ${tankId}`);
+        console.log(`ℹ️ Suppressing emails for unregistered device: ${tankId}`);
         return;
     }
 
@@ -236,16 +256,16 @@ export const processAlert = async (tankId, parameter, alertType, sensorValue) =>
         ...tank.workers.map((w) => w.email?.toLowerCase()),
     ].filter(Boolean))];
 
-    console.log(`📧 [STEP 6] Sending emails to: ${emails.join(', ')}`);
     if (emails.length > 0) {
+        console.log(`📧 Sending emails to: ${emails.join(', ')}`);
         await Promise.allSettled(
             emails.map((email) =>
                 sendAlertEmail(email, tank.name, `${normalizedParam} ${alertType}`, sensorValue)
             )
         );
-        console.log(`✅ [STEP 6] Alert emails sent to ${emails.length} recipient(s).`);
+        console.log(`✅ ${emails.length} email(s) sent.`);
     }
-};
+}
 
 export const publishActuatorCommand = (topic, payload) => {
     if (!mqttClient || !mqttClient.connected) {
