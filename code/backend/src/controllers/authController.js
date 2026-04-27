@@ -14,7 +14,13 @@ const ensureUniqueUser = async (username, email) => {
       OR: [{ username }, { email }],
     },
   });
-  return !existing;
+  
+  if (!existing) return { unique: true };
+  
+  if (existing.username === username) {
+    return { unique: false, field: "username", message: "This username is already taken." };
+  }
+  return { unique: false, field: "email", message: "This email address is already registered." };
 };
 
 const buildFallbackEmail = (username) => `${username}@local.guard`;
@@ -84,9 +90,9 @@ export const register = async (req, res) => {
   const isRealEmail = !resolvedEmail.endsWith("@local.guard");
 
   try {
-    const isUnique = await ensureUniqueUser(username, resolvedEmail);
-    if (!isUnique) {
-      return res.status(409).json({ error: "Username or email already exists." });
+    const check = await ensureUniqueUser(username, resolvedEmail);
+    if (!check.unique) {
+      return res.status(409).json({ error: check.message });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -112,7 +118,7 @@ export const register = async (req, res) => {
     // Send verification email only if a real email was provided
     if (isRealEmail) {
       try {
-        await sendVerificationEmail(resolvedEmail, fullName, verificationToken);
+        await sendVerificationEmail(resolvedEmail, fullName, verificationCode);
       } catch (emailError) {
         console.error("Failed to send verification email:", emailError.message);
         // Don't block registration if email sending fails — user can request resend
@@ -275,9 +281,9 @@ export const createAdminBySuperAdmin = async (req, res) => {
   }
 
   try {
-    const isUnique = await ensureUniqueUser(username, email);
-    if (!isUnique) {
-      return res.status(409).json({ error: "Username or email already exists." });
+    const check = await ensureUniqueUser(username, email);
+    if (!check.unique) {
+      return res.status(409).json({ error: check.message });
     }
 
     const resolvedEmail = email;
@@ -305,7 +311,7 @@ export const createAdminBySuperAdmin = async (req, res) => {
     // Send verification email only if a real email was provided
     if (isRealEmail) {
       try {
-        await sendVerificationEmail(resolvedEmail, fullName, verificationToken);
+        await sendVerificationEmail(resolvedEmail, fullName, verificationCode);
       } catch (emailError) {
         console.error("Failed to send verification email:", emailError.message);
       }
@@ -334,9 +340,9 @@ export const createUserByAdmin = async (req, res) => {
   }
 
   try {
-    const isUnique = await ensureUniqueUser(username, email);
-    if (!isUnique) {
-      return res.status(409).json({ error: "Username or email already exists." });
+    const check = await ensureUniqueUser(username, email);
+    if (!check.unique) {
+      return res.status(409).json({ error: check.message });
     }
 
     const resolvedEmail = email;
@@ -365,7 +371,7 @@ export const createUserByAdmin = async (req, res) => {
     // Send verification email only if a real email was provided
     if (isRealEmail) {
       try {
-        await sendVerificationEmail(resolvedEmail, fullName, verificationToken);
+        await sendVerificationEmail(resolvedEmail, fullName, verificationCode);
       } catch (emailError) {
         console.error("Failed to send verification email:", emailError.message);
       }
