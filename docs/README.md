@@ -10,98 +10,289 @@ title: Modular Aquarium Management System
 <a id="top"></a>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
   :root {
-    --guard-primary: #0f766e;
-    --guard-secondary: #0ea5a4;
-    --guard-accent: #0b4f7a;
-    --guard-bg-soft: #f0fdfa;
-    --guard-bg-mid: #e0f2fe;
-    --guard-text: #0f172a;
-    --guard-muted: #334155;
-    --guard-border: #99f6e4;
+    --g-cyan:   #00e5ff;
+    --g-teal:   #00b4d8;
+    --g-blue:   #0077b6;
+    --g-deep:   #03045e;
+    --g-dark:   #040d1a;
+    --g-card:   rgba(255,255,255,0.04);
+    --g-border: rgba(0,229,255,0.18);
+    --g-glow:   rgba(0,229,255,0.25);
+    --g-text:   #e0f7ff;
+    --g-muted:  #7ec8e3;
   }
 
-  .guard-hero {
-    background: linear-gradient(135deg, var(--guard-bg-soft) 0%, var(--guard-bg-mid) 100%);
-    border: 1px solid var(--guard-border);
-    border-radius: 14px;
-    padding: 18px 20px;
-    margin: 10px 0 14px 0;
+  html, body {
+    background: var(--g-dark) !important;
+    color: var(--g-text) !important;
+    font-family: 'Inter', 'Space Grotesk', sans-serif !important;
   }
 
-  .guard-hero h3 {
-    margin: 0 0 8px 0;
-    color: var(--guard-accent);
+  body {
+    background: linear-gradient(135deg, #040d1a 0%, #051829 40%, #040a22 100%) !important;
+    min-height: 100vh;
   }
 
-  .guard-hero p {
+  h1,h2,h3,h4,h5 { color: #e0f7ff !important; font-family: 'Space Grotesk', sans-serif !important; }
+  p, li, td, th { color: var(--g-text) !important; }
+  a { color: var(--g-cyan) !important; }
+
+  /* ── HERO ─────────────────────────────── */
+  .g-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    border: 1px solid var(--g-border);
+    background: linear-gradient(135deg, rgba(0,180,216,0.12) 0%, rgba(3,4,94,0.35) 100%);
+    backdrop-filter: blur(20px);
+    padding: 48px 40px;
+    margin: 24px 0;
+    box-shadow: 0 0 60px rgba(0,229,255,0.08), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .g-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 80% 20%, rgba(0,229,255,0.15) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 60% at 10% 80%, rgba(0,119,182,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .g-hero-orb {
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(0,229,255,0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: g-float 7s ease-in-out infinite;
+  }
+  .g-hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 32px;
+    align-items: center;
+    position: relative;
+  }
+  .g-kicker {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    font-weight: 700;
+    color: var(--g-cyan);
+    margin-bottom: 12px;
+    opacity: 0.9;
+  }
+  .g-hero-title {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 0 0 16px;
+    background: linear-gradient(135deg, #ffffff 0%, var(--g-cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .g-hero-sub {
+    color: var(--g-muted) !important;
+    line-height: 1.75;
+    font-size: 1.05rem;
     margin: 0;
-    color: var(--guard-muted);
-    line-height: 1.55;
   }
-
-  .guard-badges {
-    margin-top: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .guard-chip {
-    display: inline-block;
-    padding: 4px 10px;
+  .g-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .g-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px;
     border-radius: 999px;
-    border: 1px solid #67e8f9;
-    background: #ecfeff;
-    color: #155e75;
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 600; font-size: 0.9rem;
+    text-decoration: none !important;
+    transition: all 0.25s ease;
+    border: 1px solid var(--g-cyan);
+    background: linear-gradient(135deg, rgba(0,229,255,0.2) 0%, rgba(0,180,216,0.3) 100%);
+    color: #fff !important;
+    backdrop-filter: blur(8px);
+  }
+  .g-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,229,255,0.4);
+    background: linear-gradient(135deg, rgba(0,229,255,0.35) 0%, rgba(0,180,216,0.45) 100%);
+  }
+  .g-btn-ghost {
+    background: transparent;
+    border-color: rgba(0,229,255,0.4);
+    color: var(--g-cyan) !important;
   }
 
-  .quick-nav-grid {
+  /* ── STACK PANEL ─────────────────────── */
+  .g-panel {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--g-border);
+    border-radius: 18px;
+    padding: 22px;
+    backdrop-filter: blur(12px);
+  }
+  .g-panel-title { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 2px; color: var(--g-cyan) !important; margin-bottom: 14px; }
+  .g-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .g-chip {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.25);
+    color: var(--g-cyan) !important;
+    font-size: 0.78rem; font-weight: 600;
+  }
+  .g-metric {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px;
+    margin-top: 6px;
+    border-radius: 10px;
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.1);
+  }
+  .g-metric span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--g-muted) !important; }
+  .g-metric strong { font-size: 0.85rem; color: #fff !important; }
+
+  /* ── DIVIDER ─────────────────────────── */
+  .g-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--g-border), transparent);
+    border: none;
+    margin: 28px 0;
+  }
+
+  /* ── FEATURE CARDS ───────────────────── */
+  .g-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .g-card {
+    background: var(--g-card);
+    border: 1px solid var(--g-border);
+    border-radius: 16px;
+    padding: 22px 18px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .g-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--g-teal), var(--g-cyan));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .g-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,229,255,0.12); border-color: rgba(0,229,255,0.4); }
+  .g-card:hover::before { opacity: 1; }
+  .g-card-icon { font-size: 1.8rem; margin-bottom: 12px; display: block; }
+  .g-card h4 { margin: 0 0 8px; font-size: 1rem; font-weight: 700; color: #fff !important; }
+  .g-card p { margin: 0; font-size: 0.88rem; line-height: 1.6; color: var(--g-muted) !important; }
+
+  /* ── QUICK NAV ───────────────────────── */
+  .g-nav-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 10px;
-    margin: 10px 0 4px 0;
+    margin: 16px 0;
   }
-
-  .quick-nav-item {
+  .g-nav-item {
     display: block;
-    text-decoration: none;
-    background: #ffffff;
-    color: var(--guard-text);
-    border: 1px solid #bae6fd;
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-weight: 600;
+    text-decoration: none !important;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.15);
+    color: var(--g-text) !important;
+    font-weight: 600; font-size: 0.88rem;
+    transition: all 0.2s ease;
+  }
+  .g-nav-item:hover { background: rgba(0,229,255,0.12); border-color: var(--g-cyan); color: var(--g-cyan) !important; transform: translateY(-2px); }
+
+  /* ── BACK TO TOP ─────────────────────── */
+  .g-back { display: inline-flex; align-items: center; gap: 6px; color: var(--g-cyan) !important; font-weight: 600; font-size: 0.85rem; text-decoration: none !important; margin-top: 8px; }
+  .g-back:hover { opacity: 0.75; }
+
+  /* ── TABLES ──────────────────────────── */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { background: rgba(0,229,255,0.1); color: var(--g-cyan) !important; padding: 10px 14px; border: 1px solid var(--g-border); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+  td { padding: 10px 14px; border: 1px solid rgba(0,229,255,0.1); font-size: 0.9rem; }
+  tr:hover td { background: rgba(0,229,255,0.04); }
+
+  /* ── SECTIONS ────────────────────────── */
+  .g-section { padding: 8px 0; }
+  .g-section h2 { font-size: 1.5rem; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--g-border); margin-bottom: 18px; }
+
+  /* ── ANIMATIONS ──────────────────────── */
+  @keyframes g-float {
+    0%,100% { transform: translate(0,0); }
+    50%      { transform: translate(-16px, 12px); }
   }
 
-  .quick-nav-item:hover {
-    border-color: var(--guard-secondary);
-    color: var(--guard-primary);
-    transform: translateY(-1px);
-  }
-
-  .back-top {
-    display: inline-block;
-    margin-top: 6px;
-    font-weight: 600;
-    text-decoration: none;
-    color: var(--guard-primary);
+  @media(max-width:760px) {
+    .g-hero-grid { grid-template-columns: 1fr; }
+    .g-hero { padding: 32px 20px; }
   }
 </style>
 
-<div class="guard-hero">
-  <h3>Smart Monitoring for Healthier Aquariums</h3>
-  <p>Reliable, scalable, and affordable aquarium automation for small and medium fish vendors, powered by ESP32 sensing, secure MQTT messaging, and a realtime web dashboard.</p>
-  <div class="guard-badges">
-    <span class="guard-chip">ESP32</span>
-    <span class="guard-chip">Secure MQTT</span>
-    <span class="guard-chip">Node.js API</span>
-    <span class="guard-chip">React Dashboard</span>
-    <span class="guard-chip">MongoDB + InfluxDB</span>
-  </div>
+
+<div class="g-hero" markdown="0">
+<div class="g-hero-orb"></div>
+<div class="g-hero-grid">
+<div>
+<div class="g-kicker">🐟 IoT · Aquaculture · Automation</div>
+<h2 class="g-hero-title">Smart Monitoring for Healthier Aquariums</h2>
+<p class="g-hero-sub">Reliable, scalable, and affordable aquarium automation for small and medium fish vendors — powered by ESP32 sensing, secure MQTT messaging, and a realtime web dashboard.</p>
+<div class="g-actions">
+<a class="g-btn" href="#project-snapshot">⚡ Explore Overview</a>
+<a class="g-btn g-btn-ghost" href="#solution-architecture">🏗 View Architecture</a>
 </div>
+</div>
+<div class="g-panel">
+<div class="g-panel-title">Live Stack</div>
+<div class="g-chips">
+<span class="g-chip">ESP32</span>
+<span class="g-chip">Secure MQTT</span>
+<span class="g-chip">Node.js API</span>
+<span class="g-chip">React Dashboard</span>
+<span class="g-chip">MongoDB</span>
+<span class="g-chip">InfluxDB</span>
+</div>
+<div class="g-metric"><span>Telemetry</span><strong>Realtime streaming</strong></div>
+<div class="g-metric"><span>Automation</span><strong>Relay + rule engine</strong></div>
+<div class="g-metric"><span>Reliability</span><strong>Fail-safe thresholds</strong></div>
+</div>
+</div>
+</div>
+
+
+<hr class="g-divider" />
+
+<div class="g-cards" markdown="0">
+<div class="g-card">
+<span class="g-card-icon">🌡️</span>
+<h4>Sensor Fusion</h4>
+<p>Temperature, pH, ORP, EC, salinity, and water-level insight in one modular kit.</p>
+</div>
+<div class="g-card">
+<span class="g-card-icon">⚙️</span>
+<h4>Automated Control</h4>
+<p>Relay-driven pumps, heaters, and filtration triggered by safe thresholds.</p>
+</div>
+<div class="g-card">
+<span class="g-card-icon">📊</span>
+<h4>Realtime Dashboard</h4>
+<p>Live MQTT ingestion with Socket.IO updates and alert-ready feeds.</p>
+</div>
+<div class="g-card">
+<span class="g-card-icon">🏪</span>
+<h4>Vendor Ready</h4>
+<p>Low-cost, scalable, and built for the daily operations of small vendors.</p>
+</div>
+</div>
+
+<hr class="g-divider" />
 
 ---
 
@@ -147,17 +338,17 @@ The Modular Aquarium Management System is an IoT-based platform that continuousl
 14. [Links](#links)
 
 ### Quick Navigation
-<div class="quick-nav-grid">
-  <a class="quick-nav-item" href="#project-snapshot">Project Snapshot</a>
-  <a class="quick-nav-item" href="#solution-architecture">Solution Architecture</a>
-  <a class="quick-nav-item" href="#system-workflow">System Workflow</a>
-  <a class="quick-nav-item" href="#backend-services-and-api">Backend Services and API</a>
-  <a class="quick-nav-item" href="#firmware-logic-and-mqtt-protocol">Firmware and MQTT</a>
-  <a class="quick-nav-item" href="#data-storage-and-security">Data and Security</a>
-  <a class="quick-nav-item" href="#testing-and-validation">Testing and Validation</a>
-  <a class="quick-nav-item" href="#detailed-budget">Detailed Budget</a>
-  <a class="quick-nav-item" href="#impact-and-future-improvements">Future Improvements</a>
-  <a class="quick-nav-item" href="#links">Useful Links</a>
+<div class="g-nav-grid" markdown="0">
+<a class="g-nav-item" href="#project-snapshot">📌 Project Snapshot</a>
+<a class="g-nav-item" href="#solution-architecture">🏗 Solution Architecture</a>
+<a class="g-nav-item" href="#system-workflow">🔄 System Workflow</a>
+<a class="g-nav-item" href="#backend-services-and-api">🖥 Backend &amp; API</a>
+<a class="g-nav-item" href="#firmware-logic-and-mqtt-protocol">📡 Firmware &amp; MQTT</a>
+<a class="g-nav-item" href="#data-storage-and-security">🔒 Data &amp; Security</a>
+<a class="g-nav-item" href="#testing-and-validation">✅ Testing</a>
+<a class="g-nav-item" href="#detailed-budget">💰 Budget</a>
+<a class="g-nav-item" href="#impact-and-future-improvements">🚀 Future Plans</a>
+<a class="g-nav-item" href="#links">🔗 Useful Links</a>
 </div>
 
 ---
@@ -168,7 +359,7 @@ Maintaining safe water quality across multiple tanks is difficult when monitorin
 
 This project introduces a Modular Aquarium Management System that combines sensor monitoring, automation logic, and IoT connectivity to maintain stable tank conditions. The system continuously measures parameters such as temperature, pH, ORP, EC, salinity, and water level, then applies rule-based control to relevant actuators. The modular design allows the platform to start small and scale as required.
 
-<a class="back-top" href="#top">Back to Top</a>
+<a class="g-back" href="#top">↑ Back to Top</a>
 
 ---
 
