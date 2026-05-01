@@ -39,7 +39,7 @@
 
 .dash-main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   align-items: start;
   margin-bottom: 1.5rem;
@@ -55,21 +55,33 @@
   gap: 1.25rem;
 }
 
-.tank-card-link { text-decoration: none; display: block; }
-
 .tank-card {
   background: #0d1f2d;
   border-radius: 18px;
   padding: 1.25rem;
   width: 100%;
   max-width: none;
-  height: 16rem;
+  min-height: 16rem;
+  height: auto;
   color: #fff;
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-.tank-card:hover { transform: translateY(-2px); }
+.tank-card:hover { 
+  transform: translateY(-4px); 
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.tank-card-main-link {
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 
 .tank-card-header {
   display: flex;
@@ -104,34 +116,115 @@
 
 .sensor-tile-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  align-items: center;
 }
 
-.sensor-tile {
-  background: #0d1f2d;
-  border-radius: 10px;
-  border: #4a7fa0 solid 1.5px;
-  padding: 0.6rem 0.6rem;
-  text-align: center;
+.sensor-gauge-container {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem 0.4rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  height: 100%;
 }
 
-.sensor-tile-name {
+.sensor-gauge-svg {
+  width: 100%;
+  max-width: 90px;
+  height: auto;
+}
+
+.gauge-fill-transition {
+  transition: d 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
+}
+
+.gauge-info {
+  text-align: center;
+  margin-top: -10px;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.gauge-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.gauge-value-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+}
+
+.gauge-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.gauge-value.alert {
+  color: #f87171;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+}
+
+.gauge-unit {
+  font-size: 0.65rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.tank-card-alert-link {
+  text-decoration: none;
+  display: block;
+  margin-top: 1rem;
+}
+
+.tank-card-alert {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fca5a5;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.tank-card-alert:hover {
+  background: rgba(239, 68, 68, 0.25);
+  transform: scale(1.01);
+}
+
+.alert-icon {
   font-size: 1rem;
-  color: #fbfbfb;
-  text-transform: capitalize;
+}
+
+.alert-text {
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.sensor-tile-value {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #a8d0e9;
+.alert-time {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  white-space: nowrap;
 }
 
 .no-readings {
@@ -142,52 +235,7 @@
   padding: 0.75rem 0;
 }
 
-.dash-alerts-panel {
-  background: #fff;
-  border-radius: 12px;
-  border: 1.5px solid #b0cadd;
-  padding: 1rem;
-  min-height: 200px;
-}
 
-.alerts-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #0e3454;
-}
-
-.alerts-panel-header a {
-  font-size: 0.8rem;
-  color: #0e567f;
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.alerts-panel-header a:hover { text-decoration: underline; }
-
-.alerts-panel-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.alert-bar {
-  padding: 0.5rem 0.75rem;
-  border-radius: 7px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #fff;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.alert-bar.resolved { background: #22c55e; }
-.alert-bar.unresolved { background: #ef4444; }
 
 .dash-stats {
   display: grid;

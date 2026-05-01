@@ -24,9 +24,14 @@ Protected routes:
 - POST /api/auth/create-user
 - POST /api/tanks/register
 - POST /api/tanks/:tankId/assign-user
+- POST /api/tanks/:tankId/unassign-user
 - POST /api/tanks/:tankId/actuators
 - GET /api/tanks
 - GET /api/tanks/:tankId/status
+- GET /api/tanks/:tankId/thresholds
+- PATCH /api/tanks/:tankId/thresholds
+- GET /api/alerts
+- POST /api/alerts/resolve
 - GET /api/sensors/history/:tankId
 
 Route files:
@@ -624,18 +629,108 @@ Behavior:
 - Payload contains plain text command word (feed, pump_on, or pump_off)
 - Response returns 202 (Accepted) when command is queued successfully
 
-Related files:
-- src/routes/tankRoutes.js
-- src/controllers/actuatorController.js
-- src/services/actuatorService.js
-- src/services/mqttService.js
+### 6.9 Get Tank Thresholds (ADMIN, USER, or SUPER_ADMIN)
 
-## 7. Sensor APIs
+Endpoint:
+- GET /api/tanks/:tankId/thresholds
+
+Headers:
+- Authorization: Bearer <JWT_TOKEN>
+
+Response:
+```json
+{
+  "tempMin": 24,
+  "tempMax": 28,
+  "phMin": 6.5,
+  "phMax": 8.5,
+  "tdsMin": 200,
+  "tdsMax": 600,
+  "turbidityMax": 20,
+  "waterLevelThreshold": 80,
+  "waterStopThreshold": 10
+}
+```
+
+### 6.10 Update Tank Thresholds (ADMIN or SUPER_ADMIN)
+
+Endpoint:
+- PATCH /api/tanks/:tankId/thresholds
+
+Request Body:
+```json
+{
+  "tempMin": 25,
+  "tempMax": 30
+}
+```
+
+Behavior:
+- Updates only the provided fields in MongoDB.
+- Returns the full updated threshold object.
+
+---
+
+## 7. Alert APIs
+
+Controller:
+- src/controllers/alertController.js
+
+### 7.1 List Alerts (Protected)
+
+Endpoint:
+- GET /api/alerts
+
+Query Params:
+- `tankId`: Filter by human-readable tank ID (e.g., GUARD-101)
+- `resolved`: "true" | "false" | "all"
+
+Headers:
+- Authorization: Bearer <JWT_TOKEN>
+
+Response:
+```json
+[
+  {
+    "id": "...",
+    "type": "Temperature",
+    "message": "CRITICAL HIGH",
+    "value": 42.5,
+    "deviceId": "GUARD-101",
+    "createdAt": "...",
+    "resolved": false,
+    "tankName": "Main Tank"
+  }
+]
+```
+
+### 7.2 Resolve Alert (Protected)
+
+Endpoint:
+- POST /api/alerts/resolve
+
+Request Body:
+```json
+{
+  "alertId": "..."
+}
+```
+
+Response:
+```json
+{
+  "message": "Alert marked as resolved."
+}
+```
+
+---
+
+## 8. Sensor APIs
 
 Controller:
 - src/controllers/sensorController.js
 
-### 7.1 Log Sensor Data (Public)
+### 8.1 Log Sensor Data (Public)
 
 Endpoint:
 - POST /api/sensors/log
@@ -673,7 +768,7 @@ Failure example:
 }
 ```
 
-### 7.2 Get Tank History (Protected)
+### 8.2 Get Tank History (Protected)
 
 Endpoint:
 - GET /api/sensors/history/:tankId
@@ -702,7 +797,7 @@ Success response example:
 ]
 ```
 
-## 8. MQTT Ingestion
+## 9. MQTT Ingestion
 
 Service:
 - src/services/mqttService.js
@@ -714,11 +809,12 @@ Current connection:
 - Subscription format: `client.subscribe({ 'topic': { qos: 1 } })`
 - Cleans session on restart (`clean: true`).
 
-Subscribed topic pattern:
-- sensor/+/+
+Subscribed topic patterns:
+- `sensor/+/+` (Sensor telemetry)
+- `alert/+/+`  (Hardware-triggered alerts)
 
-Expected topic format:
-- sensor/{tankId}/{sensorType}
+Expected topic format (telemetry):
+- `sensor/{tankId}/{sensorType}`
 
 Supported sensorType values:
 - temperature
@@ -736,13 +832,15 @@ Expected payload format:
 }
 ```
 
+*Note: The backend also supports `timestamp` field or ISO strings, but the hardware-standard `time` format is preferred.*
+
 Current behavior:
 - value is parsed and stored.
 - Mongo latest tank state is updated (if the tank exists).
 - If the tank is not registered in MongoDB, the message is gracefully ignored.
 - Influx measurement `water_quality` is updated.
 
-## 8.1 MQTT Alerts Ingestion
+## 9.1 MQTT Alerts Ingestion
 
 Subscribed topic pattern:
 - `alert/+/+`
@@ -762,7 +860,16 @@ Behavior:
 - The alert is broadcast via WebSocket to connected clients.
 - If the tank is not found in the database, the alert is ignored.
 
-## 9. MQTT Actuation
+## 9.2 Alert Auto-Resolution
+
+The backend includes logic to automatically resolve active alerts when sensor readings return to safe ranges.
+
+**Logic**:
+- Every time a sensor reading is received (via MQTT), the backend checks if there is an **unresolved** alert of that type for the tank.
+- If the new reading is **within the safe range** defined in the tank's thresholds, the alert is automatically marked as `resolved: true`.
+- This ensures the dashboard "Alerts" panel stays clean without manual intervention once the physical issue is fixed.
+
+## 10. MQTT Actuation
 
 Service:
 - src/services/mqttService.js
@@ -785,7 +892,7 @@ Example:
 
 The backend publishes actuator commands when receiving requests to POST /api/tanks/:tankId/actuators with a JSON body containing the command field. The ESP32 connected to the MQTT broker receives the command on this topic and executes it.
 
-## 10. Running the System
+## 11. Running the System
 
 Complete startup guide for all services. Run each step in order.
 
@@ -812,61 +919,23 @@ You can manage all local services using these scripts in the project root:
 
 ---
 
-### Step 1 — Start MongoDB (Docker)
+### Step 1 — Start Infrastructure (Docker Compose)
 
-MongoDB must run as a replica set because Prisma uses transactions.
-
-```powershell
-# First time only — creates the named container
-docker run -d --name guard-mongo -p 27017:27017 mongo:7 --replSet rs0 --bind_ip_all
-
-# Wait ~3 seconds, then initialise the replica set
-docker exec guard-mongo mongosh --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]})"
-```
-
-Subsequent starts (container already exists):
+We use Docker Compose to manage MongoDB and InfluxDB in a single command. 
 
 ```powershell
-docker start guard-mongo
+cd "code/backend/docker compose for mongodb and inf"
+docker-compose up -d
 ```
 
-Verify:
+### Step 2 — Initialise MongoDB Replica Set
+
+MongoDB must run as a replica set because Prisma uses transactions. This only needs to be run once after the container is first created.
 
 ```powershell
-docker ps --filter name=guard-mongo
+cd code/backend
+npm run db:init
 ```
-
-Expected: `STATUS` shows `Up`.
-
----
-
-### Step 2 — Start InfluxDB (Docker)
-
-```powershell
-# First time only — creates the named container with pre-configured org/bucket/token
-docker run -d --name guard-influx -p 8086:8086 `
-  -e DOCKER_INFLUXDB_INIT_MODE=setup `
-  -e DOCKER_INFLUXDB_INIT_USERNAME=admin `
-  -e DOCKER_INFLUXDB_INIT_PASSWORD=Admin12345! `
-  -e DOCKER_INFLUXDB_INIT_ORG=G.U.A.R.D `
-  -e DOCKER_INFLUXDB_INIT_BUCKET=guard_sensors `
-  -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=<same-token-as-INFLUX_TOKEN-in-.env> `
-  influxdb:2.7
-```
-
-Subsequent starts:
-
-```powershell
-docker start guard-influx
-```
-
-Verify (browser or curl):
-
-```powershell
-Invoke-RestMethod http://localhost:8086/ping
-```
-
-Expected: HTTP 204 (no output, just no error).
 
 ---
 
@@ -891,7 +960,7 @@ JWT_EXPIRY=1d
 GOOGLE_CLIENT_ID=<your-google-client-id>
 
 MQTT_BROKER_URL=mqtts://71d3962284c44824be0bfe8cfedfedb7.s1.eu.hivemq.cloud:8883
-MQTT_USERNAME=Admin_Sub
+MQTT_USERNAME=thisen
 MQTT_PASSWORD=<broker-password>
 
 INFLUX_URL=http://localhost:8086
@@ -1028,12 +1097,11 @@ Run this at any time to see what is up:
 docker ps --format "{{.Names}} | {{.Status}} | {{.Ports}}"
 ```
 
-Expected (all three containers running):
+Expected (infrastructure containers running):
 
 ```
-mqtt_broker  | Up X minutes | 0.0.0.0:1883->1883/tcp, 0.0.0.0:9001->9001/tcp
-guard-influx | Up X hours   | 0.0.0.0:8086->8086/tcp
-guard-mongo  | Up X hours   | 0.0.0.0:27017->27017/tcp
+mongodb_container  | Up X hours   | 0.0.0.0:27017->27017/tcp
+influxdb_container | Up X hours   | 0.0.0.0:8086->8086/tcp
 ```
 
 ---
@@ -1041,8 +1109,9 @@ guard-mongo  | Up X hours   | 0.0.0.0:27017->27017/tcp
 ### Stopping All Services
 
 ```powershell
-# Stop Docker containers (data is preserved in named volumes)
-docker stop guard-mongo guard-influx mqtt_broker
+# Stop Docker containers
+cd "code/backend/docker compose for mongodb and inf"
+docker-compose stop
 
 # Stop backend / frontend — press Ctrl+C in each terminal
 ```
@@ -1075,7 +1144,7 @@ MongoDB is not running in replica set mode. Recreate `guard-mongo` with `--replS
 
 ---
 
-## 11. Seed and Utility Scripts
+## 12. Seed and Utility Scripts
 
 | Script                | Command                  | Purpose                                       |
 |-----------------------|--------------------------|-----------------------------------------------|
@@ -1083,10 +1152,13 @@ MongoDB is not running in replica set mode. Recreate `guard-mongo` with `--replS
 | Analytics seed        | `npm run seed:analytics` | Creates admin, users, tanks, Influx history   |
 | DB init (replica set) | `npm run db:init`        | Initialises rs0 inside Docker Mongo container |
 | Prisma Studio         | `npx prisma studio`      | Visual DB browser at http://localhost:5555    |
+| Sensor Simulator      | `node scratch/simulate_sensors.js` | Sends continuous random MQTT telemetry       |
+| Alert Trigger Test    | `node scratch/trigger_alert.js`    | Sends a single high-range value to trigger email |
+| Worker Check          | `node scratch/check_workers.js`    | Lists all users and their roles/admins        |
 
 ---
 
-## 12. Frontend Reference
+## 13. Frontend Reference
 
 Frontend root: `code/frontend`  
 Framework: Vite + React 19  
@@ -1134,7 +1206,7 @@ Frontend route /verify-email
 
 ---
 
-## 13. Mobile / LAN Testing
+## 14. Mobile / LAN Testing
 
 To open the verification email link on a phone while both devices are on the same Wi-Fi network.
 

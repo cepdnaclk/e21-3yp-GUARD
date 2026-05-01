@@ -1,14 +1,69 @@
 import { useState } from 'react';
 import { deviceApi } from '../services/api';
+import '../styles/thresholds.css';
+
+const CATEGORIES = [
+    { 
+        id: 'temp', 
+        name: 'Temperature', 
+        unit: '°C', 
+        minKey: 'tempMin', 
+        maxKey: 'tempMax', 
+        rangeMin: 0, 
+        rangeMax: 50, 
+        step: 0.1 
+    },
+    { 
+        id: 'ph', 
+        name: 'pH Level', 
+        unit: '', 
+        minKey: 'phMin', 
+        maxKey: 'phMax', 
+        rangeMin: 0, 
+        rangeMax: 14, 
+        step: 0.1 
+    },
+    { 
+        id: 'tds', 
+        name: 'TDS (Purity)', 
+        unit: 'ppm', 
+        minKey: 'tdsMin', 
+        maxKey: 'tdsMax', 
+        rangeMin: 0, 
+        rangeMax: 2000, 
+        step: 1 
+    },
+    { 
+        id: 'water', 
+        name: 'Water Depth', 
+        unit: 'cm', 
+        minKey: 'waterStopThreshold', 
+        maxKey: 'waterLevelThreshold', 
+        rangeMin: 0, 
+        rangeMax: 200, 
+        step: 1,
+        minLabel: 'High (Stop)',
+        maxLabel: 'Low (Dist)',
+        isInverted: true
+    },
+    { 
+        id: 'turb', 
+        name: 'Turbidity', 
+        unit: 'NTU', 
+        maxKey: 'turbidityMax', 
+        rangeMin: 0, 
+        rangeMax: 1000, 
+        step: 1 
+    },
+];
 
 export default function ThresholdsPanel({ tankId, initialThresholds, onUpdate }) {
   const [thresholds, setThresholds] = useState(initialThresholds || {});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setThresholds((prev) => ({ ...prev, [name]: value }));
+  const handleUpdate = (key, value) => {
+    setThresholds(prev => ({ ...prev, [key]: parseFloat(value) }));
   };
 
   const handleSave = async (e) => {
@@ -17,107 +72,97 @@ export default function ThresholdsPanel({ tankId, initialThresholds, onUpdate })
     setMessage({ text: '', type: '' });
 
     try {
-      // Convert all values to numbers before sending
-      const payload = {};
-      Object.entries(thresholds).forEach(([key, val]) => {
-        payload[key] = parseFloat(val);
-      });
-
-      await deviceApi.updateThresholds(tankId, payload);
-      setMessage({ text: 'Thresholds updated successfully!', type: 'success' });
+      await deviceApi.updateThresholds(tankId, thresholds);
+      setMessage({ text: 'Thresholds synced successfully!', type: 'success' });
       if (onUpdate) onUpdate();
+      setTimeout(() => setMessage({ text: '', type: '' }), 5000);
     } catch (err) {
-      setMessage({ text: err.message || 'Failed to update thresholds.', type: 'error' });
+      setMessage({ text: err.message || 'Failed to sync.', type: 'error' });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="card threshold-panel">
+    <div className="card threshold-card">
       <div className="card-header">
-        <h3>Sensor Thresholds</h3>
-        <p className="card-subtitle">Values synced to ESP32 for local monitoring</p>
+        <h3>System Thresholds</h3>
+        <p className="card-subtitle">Dual-range monitoring limits</p>
       </div>
       
-      <form onSubmit={handleSave} className="threshold-form">
-        <div className="threshold-grid">
-          <div className="threshold-group">
-            <label>Temperature Min (°C)</label>
-            <input 
-              type="number" step="0.1" name="tempMin" 
-              value={thresholds.tempMin || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
-          <div className="threshold-group">
-            <label>Temperature Max (°C)</label>
-            <input 
-              type="number" step="0.1" name="tempMax" 
-              value={thresholds.tempMax || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
+      <form onSubmit={handleSave}>
+        <div className="threshold-slider-grid">
+          {CATEGORIES.map((cat) => {
+            const hasMin = !!cat.minKey;
+            const hasMax = !!cat.maxKey;
+            
+            const minVal = hasMin ? (thresholds[cat.minKey] ?? cat.rangeMin) : null;
+            const maxVal = hasMax ? (thresholds[cat.maxKey] ?? cat.rangeMax) : null;
 
-          <div className="threshold-group">
-            <label>TDS Min (ppm)</label>
-            <input 
-              type="number" name="tdsMin" 
-              value={thresholds.tdsMin || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
-          <div className="threshold-group">
-            <label>TDS Max (ppm)</label>
-            <input 
-              type="number" name="tdsMax" 
-              value={thresholds.tdsMax || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
+            // Calculate percentage positions for the highlight track
+            const minPercent = hasMin ? ((minVal - cat.rangeMin) / (cat.rangeMax - cat.rangeMin)) * 100 : 0;
+            const maxPercent = hasMax ? ((maxVal - cat.rangeMin) / (cat.rangeMax - cat.rangeMin)) * 100 : 100;
 
-          <div className="threshold-group">
-            <label>pH Min</label>
-            <input 
-              type="number" step="0.1" name="phMin" 
-              value={thresholds.phMin || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
-          <div className="threshold-group">
-            <label>pH Max</label>
-            <input 
-              type="number" step="0.1" name="phMax" 
-              value={thresholds.phMax || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
+            return (
+              <div className={`threshold-category-box ${!hasMin ? 'single-slider' : ''}`} key={cat.id}>
+                <div className="category-header">
+                  <span className="category-title">{cat.name}</span>
+                  <div className="value-display">
+                    {hasMin && <span className="val-badge val-min">{cat.minLabel || 'Min'}: {minVal}{cat.unit}</span>}
+                    {hasMax && <span className="val-badge val-max">{cat.maxLabel || 'Max'}: {maxVal}{cat.unit}</span>}
+                  </div>
+                </div>
 
-          <div className="threshold-group">
-            <label>Turbidity Max (NTU)</label>
-            <input 
-              type="number" step="1" name="turbidityMax" 
-              value={thresholds.turbidityMax || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
+                <div className={`dual-slider-container ${cat.isInverted ? 'inverted' : ''}`}>
+                  <div className="slider-track" />
+                  <div 
+                    className="slider-range-highlight" 
+                    style={{ 
+                      left: `${minPercent}%`, 
+                      width: `${maxPercent - minPercent}%` 
+                    }} 
+                  />
+                  
+                  {hasMin && (
+                    <input 
+                      type="range"
+                      min={cat.rangeMin}
+                      max={cat.rangeMax}
+                      step={cat.step}
+                      value={minVal}
+                      onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (val >= maxVal) return; // Prevent crossover
+                          handleUpdate(cat.minKey, val);
+                      }}
+                      className="dual-range-input min-slider"
+                    />
+                  )}
 
-          <div className="threshold-group">
-            <label>Water Level Low (%)</label>
-            <input 
-              type="number" name="waterLevelThreshold" 
-              value={thresholds.waterLevelThreshold || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
-          <div className="threshold-group">
-            <label>Water Level High (%)</label>
-            <input 
-              type="number" name="waterStopThreshold" 
-              value={thresholds.waterStopThreshold || ''} onChange={handleChange} 
-              className="form-control"
-            />
-          </div>
+                  {hasMax && (
+                    <input 
+                      type="range"
+                      min={cat.rangeMin}
+                      max={cat.rangeMax}
+                      step={cat.step}
+                      value={maxVal}
+                      onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (hasMin && val <= minVal) return; // Prevent crossover
+                          handleUpdate(cat.maxKey, val);
+                      }}
+                      className="dual-range-input max-slider"
+                    />
+                  )}
+                </div>
+
+                <div className="range-labels">
+                    <span>{cat.isInverted ? cat.rangeMax : cat.rangeMin}{cat.unit}</span>
+                    <span>{cat.isInverted ? cat.rangeMin : cat.rangeMax}{cat.unit}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {message.text && (
@@ -128,7 +173,7 @@ export default function ThresholdsPanel({ tankId, initialThresholds, onUpdate })
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? 'Saving...' : 'Save & Sync to Device'}
+            {busy ? 'Processing...' : 'Apply & Sync to Device'}
           </button>
         </div>
       </form>

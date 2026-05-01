@@ -165,6 +165,33 @@ export default function SensorHistory() {
     setShowAnalytics(false);
   };
 
+  const downloadReport = () => {
+    if (readings.length === 0) return;
+
+    const headers = ['#', 'Sensor', 'Value', 'Reading Time'];
+    const csvRows = readings.map((r, i) => [
+      i + 1,
+      `"${r.sensorType?.sensorName || r.sensorId}"`,
+      r.value,
+      `"${new Date(r.readingTime).toLocaleString()}"`
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvRows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `sensor_report_${filters.deviceId}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const set = (field) => (e) => setFilters((prev) => ({ ...prev, [field]: e.target.value }));
   const chartData = transformReadingsToChartData(readings);
   const selectedLineConfig = filters.sensorId ? getLineConfig(filters.sensorId) : null;
@@ -224,6 +251,14 @@ export default function SensorHistory() {
             type="button"
           >
             Analytics
+          </button>
+          <button
+            className="btn btn-primary action-pill-btn download-btn"
+            onClick={downloadReport}
+            disabled={readings.length === 0}
+            type="button"
+          >
+            Download Report
           </button>
         </div>
       </div>

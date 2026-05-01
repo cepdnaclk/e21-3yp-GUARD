@@ -102,6 +102,10 @@ export const initMqtt = () => {
                         timestamp: payload.time || updatedTank.updatedAt
                     });
                 }
+
+                // NEW: Auto-resolve logic
+                await checkAndAutoResolve(updatedTank, sensorType, sensorValue);
+
             } catch (updateErr) {
                 // P2025 = Record not found — tank is not registered
                 if (updateErr.code === 'P2025') {
@@ -205,6 +209,16 @@ export const processAlert = async (tankId, parameter, alertType, sensorValue) =>
 };
 
 /**
+ * Clear the cooldown for a specific tank+category.
+ * Called when an alert is manually resolved to allow immediate re-triggering.
+ */
+export const clearAlertCooldown = (tankId, parameter) => {
+    const categoryKey = `${tankId}:${parameter.toLowerCase()}`;
+    categoryCooldowns.delete(categoryKey);
+    console.log(`♻️  Cooldown cleared for ${categoryKey}`);
+};
+
+/**
  * Internal implementation — only ever called by one caller at a time per categoryKey.
  */
 async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue) {
@@ -264,6 +278,57 @@ async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue
             )
         );
         console.log(`✅ ${emails.length} email(s) sent.`);
+    }
+}
+
+/**
+ * Automatically resolve active alerts if the reading returns to the safe zone.
+ */
+async function checkAndAutoResolve(tank, sensorType, value) {
+    let isSafe = true;
+    
+    // Threshold logic must match the ESP32 and alert triggering logic
+    if (sensorType === 'temperature') {
+        isSafe = value >= tank.tempMin && value <= tank.tempMax;
+    } else if (sensorType === 'ph') {
+        isSafe = value >= tank.phMin && value <= tank.phMax;
+    } else if (sensorType === 'tds') {
+        isSafe = value >= tank.tdsMin && value <= tank.tdsMax;
+    } else if (sensorType === 'turbidity') {
+        isSafe = value <= tank.turbidityMax;
+    } else if (sensorType === 'waterlevel') {
+        // High distance = Low water. 
+        // Safe if distance is BETWEEN Stop (High) and Level (Low) thresholds.
+        isSafe = value < tank.waterLevelThreshold && value > tank.waterStopThreshold;
+    }
+
+    if (isSafe) {
+        const unresolved = await prisma.alert.findMany({
+            where: {
+                tankId: tank.tankId,
+                type: sensorType,
+                resolved: false
+            }
+        });
+
+        if (unresolved.length > 0) {
+            console.log(`♻️  Auto-resolving ${unresolved.length} alert(s) for ${tank.tankId}/${sensorType}`);
+            
+            await prisma.alert.updateMany({
+                where: { id: { in: unresolved.map(a => a.id) } },
+                data: { resolved: true }
+            });
+
+            // Clear cooldown so it can alert again immediately if it goes back out of range
+            clearAlertCooldown(tank.tankId, sensorType);
+            
+            if (io) {
+                io.emit('alert_resolved_auto', { 
+                    tankId: tank.tankId, 
+                    sensorType 
+                });
+            }
+        }
     }
 }
 

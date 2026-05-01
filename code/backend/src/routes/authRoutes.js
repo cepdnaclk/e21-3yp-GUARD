@@ -1,4 +1,5 @@
 import express from "express";
+import { body, validationResult } from "express-validator";
 import {
   login,
   register,
@@ -23,8 +24,30 @@ import { verifyToken, requireRole, requireAnyRole } from "../middleware/authMidd
 
 const router = express.Router();
 
+const validateLogin = [
+  body("username")
+    .trim()
+    .notEmpty()
+    .withMessage("Username is required")
+    .isString()
+    .withMessage("Username must be a string")
+    .escape(),
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isString()
+    .withMessage("Password must be a string"),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+];
+
 // ── Public routes ────────────────────────────────────────────────────────────
-router.post("/login", login);
+router.post("/login", validateLogin, login);
 router.post("/register", register);
 router.post("/google", googleLogin);
 

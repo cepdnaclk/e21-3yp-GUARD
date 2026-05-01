@@ -13,15 +13,52 @@
 .sensor-history-chart-title {
   margin-bottom: 1rem;
   font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .sensor-history-empty-note {
   margin-top: 0.75rem;
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
 }
 
 .sensor-chart-wrap {
   width: 100%;
   min-height: 360px;
   overflow-x: auto;
+  padding: 1rem;
+}
+
+.download-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: none !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+.download-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+.download-btn:disabled {
+  background: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: 1rem;
+}
+
+.action-pill-btn {
+  height: 42px;
+  padding: 0 1.5rem;
 }
 

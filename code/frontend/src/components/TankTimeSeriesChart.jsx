@@ -18,11 +18,17 @@ const SERIES = [
   { key: 'waterLevel', label: 'Water Level', color: '#ef4444', unit: '%' },
 ];
 
-function formatTime(value) {
+function formatFullTime(value) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString();
+  return date.toLocaleString([], { 
+    month: 'short', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false 
+  });
 }
 
 function formatTooltipValue(value, name) {
@@ -69,7 +75,7 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, i
         const normalized = Array.isArray(data)
           ? data.map((item) => ({
               ...item,
-              timeLabel: formatTime(item.time),
+              // Keep original time for sorting/memos
             }))
           : [];
 
@@ -104,10 +110,24 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, i
   }, [deviceId, historyUrl, autoRefreshMs]);
 
   const chartData = useMemo(() => {
-    return rows.map((row) => ({
-      ...row,
-      time: row.timeLabel || formatTime(row.time),
-    }));
+    let lastDateStr = null;
+    return rows.map((row, index) => {
+      const d = new Date(row.time);
+      const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      
+      let displayTime = timeStr;
+      if (index === 0 || dateStr !== lastDateStr) {
+        displayTime = `${dateStr} ${timeStr}`;
+        lastDateStr = dateStr;
+      }
+
+      return {
+        ...row,
+        displayTime,
+        fullTime: formatFullTime(row.time),
+      };
+    });
   }, [rows]);
 
   return (
@@ -142,16 +162,22 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, i
             <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#d8e0eb" />
               <XAxis
-                dataKey="time"
-                tick={{ fill: '#64748b', fontSize: 12 }}
-                angle={-20}
+                dataKey="displayTime"
+                tick={{ fill: '#64748b', fontSize: 11 }}
+                angle={-30}
                 textAnchor="end"
-                height={60}
+                height={70}
+                interval="preserveStartEnd"
               />
               <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
               <Tooltip
                 formatter={formatTooltipValue}
-                labelFormatter={(label) => `Time: ${label}`}
+                labelFormatter={(label, payload) => {
+                  if (payload && payload[0]) {
+                    return `Time: ${payload[0].payload.fullTime}`;
+                  }
+                  return `Time: ${label}`;
+                }}
               />
               <Legend />
               {SERIES.map((series) => (

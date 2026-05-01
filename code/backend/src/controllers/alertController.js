@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js';
+import { clearAlertCooldown } from '../services/mqttService.js';
 
 export const getAlerts = async (req, res) => {
     const { userId, role } = req.user;
@@ -64,6 +65,10 @@ export const resolveAlert = async (req, res) => {
             where: { id: alertId },
             data: { resolved: true }
         });
+
+        // Brain: Clear the cooldown for this category so a new alert can trigger 
+        // if the condition still exists on the next sensor reading.
+        clearAlertCooldown(updated.tankId, updated.type);
 
         res.json({ message: 'Alert resolved successfully', alert: updated });
     } catch (error) {

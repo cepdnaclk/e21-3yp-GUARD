@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import { findAccessibleTank } from "../lib/tankAccess.js";
 import { publishThresholdsToDevice } from "../services/thresholdService.js";
+import { processAlert } from "../services/mqttService.js";
 
 // Allowed threshold keys and their MQTT topic suffix mapping (per spec §2.4)
 const THRESHOLD_MQTT_MAP = {
@@ -42,6 +43,17 @@ export const updateThresholds = async (req, res) => {
     updates[key] = num; // Normalize to float
   }
 
+  // Brain: Cross-validation to ensure min < max
+  if (updates.tempMin !== undefined && updates.tempMax !== undefined && updates.tempMin >= updates.tempMax) {
+      return res.status(400).json({ error: "Temperature Min must be less than Temperature Max." });
+  }
+  if (updates.phMin !== undefined && updates.phMax !== undefined && updates.phMin >= updates.phMax) {
+      return res.status(400).json({ error: "pH Min must be less than pH Max." });
+  }
+  if (updates.tdsMin !== undefined && updates.tdsMax !== undefined && updates.tdsMin >= updates.tdsMax) {
+      return res.status(400).json({ error: "TDS Min must be less than TDS Max." });
+  }
+
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({ error: "At least one threshold field must be provided." });
   }
@@ -77,6 +89,36 @@ export const updateThresholds = async (req, res) => {
         // Non-fatal: DB was already updated. Log but don't fail the request.
         console.warn(`⚠️ MQTT threshold publish failed for ${tankId}: ${mqttErr.message}`);
       }
+    }
+
+    // Brain: Proactive Alert Check. 
+    // If the NEW thresholds now exclude the CURRENT sensor values, trigger an alert immediately.
+    const checkProactiveAlert = async (param, value, min, max) => {
+        if (value === null || value === undefined) return;
+        if (min !== undefined && value < min) {
+            await processAlert(tankId, param, 'LOW', value);
+        } else if (max !== undefined && value > max) {
+            await processAlert(tankId, param, 'HIGH', value);
+        }
+    };
+
+    if (updates.tempMin !== undefined || updates.tempMax !== undefined) {
+        await checkProactiveAlert('temperature', updatedTank.lastTemp, updatedTank.tempMin, updatedTank.tempMax);
+    }
+    if (updates.phMin !== undefined || updates.phMax !== undefined) {
+        await checkProactiveAlert('ph', updatedTank.lastPh, updatedTank.phMin, updatedTank.phMax);
+    }
+    if (updates.tdsMin !== undefined || updates.tdsMax !== undefined) {
+        await checkProactiveAlert('tds', updatedTank.lastTds, updatedTank.tdsMin, updatedTank.tdsMax);
+    }
+    if (updates.turbidityMax !== undefined) {
+        await checkProactiveAlert('turbidity', updatedTank.lastTurb, undefined, updatedTank.turbidityMax);
+    }
+    if (updates.waterLevelThreshold !== undefined || updates.waterStopThreshold !== undefined) {
+        // Note: Water level logic is distance-based per spec
+        if (updatedTank.lastWaterLevel >= updatedTank.waterLevelThreshold) {
+            await processAlert(tankId, 'waterlevel', 'LOW', updatedTank.lastWaterLevel);
+        }
     }
 
     return res.status(200).json({

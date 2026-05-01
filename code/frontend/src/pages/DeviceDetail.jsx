@@ -4,6 +4,8 @@ import { deviceApi, sensorApi, authApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import TankTimeSeriesChart from '../components/TankTimeSeriesChart';
 import ThresholdsPanel from '../components/ThresholdsPanel';
+import ActuatorPanel from '../components/ActuatorPanel';
+import { getSocket } from '../services/socket';
 import '../styles/device-detail.css';
 
 const SENSOR_UNITS = {
@@ -53,6 +55,14 @@ export default function DeviceDetail() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lastSeen, setLastSeen] = useState(null);
+  const [now, setNow] = useState(new Date());
+
+  // Periodically update 'now' to trigger timeout re-evaluations
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Admin only: list of all workers to assign from
   const [allWorkers, setAllWorkers] = useState([]);
@@ -82,6 +92,32 @@ export default function DeviceDetail() {
   useEffect(() => {
     loadData();
     const timer = setInterval(loadData, 30000);
+
+    const socket = getSocket();
+    if (socket) {
+      const handleSensorData = (data) => {
+        if (data.tankId === id) {
+          setLastSeen(new Date());
+          setReadings(prev => {
+            const dType = data.sensorType.replace(/\s+/g, '').toLowerCase();
+            return prev.map(r => {
+              const rName = (r.sensorType?.sensorName || r.sensorTypeName || '').replace(/\s+/g, '').toLowerCase();
+              if (rName === dType) {
+                return { ...r, value: data.value, readingTime: data.timestamp };
+              }
+              return r;
+            });
+          });
+        }
+      };
+
+      socket.on('sensor_data', handleSensorData);
+      return () => {
+        clearInterval(timer);
+        socket.off('sensor_data', handleSensorData);
+      };
+    }
+
     return () => clearInterval(timer);
   }, [id, role]);
 
@@ -124,9 +160,11 @@ export default function DeviceDetail() {
             </p>
           </div>
           {(() => {
-            const lastTime = device.currentStats?.lastReadingTime;
-            const isRecentlyUpdated = lastTime && (new Date() - new Date(lastTime)) < 30000;
-            return <span className={`tank-status-dot ${isRecentlyUpdated ? 'active' : 'offline'}`} />;
+            const initialLastTime = device.currentStats?.lastReadingTime;
+            const effectiveLastTime = lastSeen || (initialLastTime ? new Date(initialLastTime) : null);
+            const isRecentlyUpdated = effectiveLastTime && (now - effectiveLastTime) < 30000;
+            const isActive = !!isRecentlyUpdated;
+            return <span className={`tank-status-dot ${isActive ? 'active' : 'offline'}`} title={effectiveLastTime ? `Last seen: ${effectiveLastTime.toLocaleTimeString()}` : 'No data'} />;
           })()}
         </div>
         <Link to="/devices" className="btn btn-outline btn-sm">Back to Devices</Link>
@@ -158,11 +196,15 @@ export default function DeviceDetail() {
           </div>
         )}
       </div>
-
+      
+      {/* Remote System Controls */}
+      <ActuatorPanel tankId={id} />
+      
       {/* Time Series Chart */}
       {(() => {
-        const lastTime = device.currentStats?.lastReadingTime;
-        const isOnline = lastTime && (new Date() - new Date(lastTime)) < 30000;
+        const initialLastTime = device.currentStats?.lastReadingTime;
+        const effectiveLastTime = lastSeen || (initialLastTime ? new Date(initialLastTime) : null);
+        const isOnline = effectiveLastTime && (now - effectiveLastTime) < 30000;
         return <TankTimeSeriesChart deviceId={id} autoRefreshMs={30000} isOnline={isOnline} />;
       })()}
       

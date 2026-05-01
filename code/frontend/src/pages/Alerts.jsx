@@ -1,36 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { deviceApi, alertApi } from '../services/api';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import '../styles/alerts.css';
 
 export default function Alerts() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialDeviceId = searchParams.get('device_id') || '';
+  const initialResolved = searchParams.get('resolved') || 'false';
 
   const [devices, setDevices] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(null);
+  const [highlightedId, setHighlightedId] = useState(null);
+  const [highlightedActive, setHighlightedActive] = useState(false);
+  const location = useLocation();
 
-  const [filters, setFilters] = useState({
-    deviceId: initialDeviceId,
-    resolved: 'false', // Default to active alerts
-  });
-
-  const loadAlerts = async (f = filters) => {
+  const currentFilters = useMemo(() => ({
+    deviceId: searchParams.get('device_id') || '',
+    resolved: searchParams.get('resolved') || 'false'
+  }), [searchParams]);
+  const loadAlerts = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Load registered devices for filters
-      const devs = await deviceApi.list();
-      setDevices(devs);
-
-      // 2. Load stored alerts from backend (MQTT alerts)
+      // Load stored alerts from backend (MQTT alerts)
       const storedAlerts = await alertApi.list({
-        tankId: f.deviceId,
-        resolved: f.resolved === '' ? undefined : f.resolved
+        tankId: currentFilters.deviceId,
+        resolved: currentFilters.resolved === 'all' ? undefined : currentFilters.resolved
       });
 
-      // 3. Reshape for UI
+      // Reshape for UI
       const processedAlerts = storedAlerts.map(a => ({
         id: a.id,
         type: a.type.charAt(0).toUpperCase() + a.type.slice(1),
@@ -48,19 +47,56 @@ export default function Alerts() {
       setAlerts([]); 
     }
     setLoading(false);
-  };
+  }, [currentFilters]);
+
+  // Initial devices load
+  useEffect(() => {
+    deviceApi.list().then(setDevices).catch(console.error);
+  }, []);
 
   useEffect(() => {
     loadAlerts();
     const timer = setInterval(loadAlerts, 30000); // Auto-refresh every 30s
     return () => clearInterval(timer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadAlerts]);
+
+  useEffect(() => {
+    // 1. Handle single alert highlight via Hash
+    if (location.hash && location.hash.startsWith('#alert-')) {
+      const id = location.hash.replace('#alert-', '');
+      setHighlightedId(id);
+      setTimeout(() => setHighlightedId(null), 3000);
+    }
+
+    // 2. Handle "Active Issues" highlight via query param
+    if (searchParams.get('highlight') === 'active') {
+      setHighlightedActive(true);
+      setTimeout(() => setHighlightedActive(false), 3000);
+    }
+  }, [location, searchParams]);
 
   const handleFilterChange = (field) => (e) => {
-    const newFilters = { ...filters, [field]: e.target.value };
-    setFilters(newFilters);
-    loadAlerts(newFilters);
+    const nextValue = e.target.value;
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextValue) {
+      nextParams.set(field, nextValue);
+    } else {
+      nextParams.delete(field);
+    }
+    setSearchParams(nextParams);
   };
+
+  const latestCategoryAlerts = useMemo(() => {
+    const map = {};
+    alerts.forEach(a => {
+      if (a.resolved) return;
+      const type = a.type.toLowerCase();
+      if (!map[type] || new Date(a.createdAt) > new Date(map[type].createdAt)) {
+        map[type] = a;
+      }
+    });
+    return new Set(Object.values(map).map(a => a.id));
+  }, [alerts]);
 
   const handleResolve = async (alertId) => {
     setResolving(alertId);
@@ -82,7 +118,7 @@ export default function Alerts() {
         <div className="filters">
           <div className="form-group">
             <label>Device</label>
-            <select value={filters.deviceId} onChange={handleFilterChange('deviceId')}>
+            <select value={currentFilters.deviceId} onChange={handleFilterChange('device_id')}>
               <option value="">All devices</option>
               {devices.map((d) => (
                 <option key={d.deviceId} value={d.deviceId}>
@@ -93,8 +129,8 @@ export default function Alerts() {
           </div>
           <div className="form-group">
             <label>Status</label>
-            <select value={filters.resolved} onChange={handleFilterChange('resolved')}>
-              <option value="">All</option>
+            <select value={currentFilters.resolved} onChange={handleFilterChange('resolved')}>
+              <option value="all">All</option>
               <option value="false">Active</option>
               <option value="true">Resolved</option>
             </select>
@@ -122,8 +158,11 @@ export default function Alerts() {
                 </tr>
               </thead>
               <tbody>
-                {alerts.map((a) => (
-                  <tr key={a.id}>
+                {alerts.map((a) => {
+                  const isLatestForCategory = latestCategoryAlerts.has(a.id);
+                  const isHighlighted = a.id === highlightedId || (highlightedActive && isLatestForCategory);
+                  return (
+                    <tr key={a.id} id={`alert-${a.id}`} className={isHighlighted ? 'highlighted-row' : ''}>
                     <td>
                       <span className={`alert-type-chip ${a.resolved ? 'resolved' : 'unresolved'}`}>
                         {a.type}
@@ -149,8 +188,9 @@ export default function Alerts() {
                         </button>
                       )}
                     </td>
-                  </tr>
-                ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
