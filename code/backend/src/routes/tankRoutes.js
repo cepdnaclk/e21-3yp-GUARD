@@ -19,11 +19,6 @@ import {
 
 const router = express.Router();
 
-router.use((req, res, next) => {
-    console.log(`📦 TankRouter: ${req.method} ${req.url}`);
-    next();
-});
-
 const validateRequest = (req, res, next) => {
   const errors = validationResult(req);
 

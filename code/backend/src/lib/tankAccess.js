@@ -2,10 +2,17 @@ import prisma from './prisma.js';
 
 /**
  * Finds a tank that the given user has permission to access.
+ * SUPER_ADMIN: can access any tank.
  * ADMIN: must own the tank.
  * USER:  must be in the tank's workerIds.
  */
 export const findAccessibleTank = async (tankId, user) => {
+  if (user.role === 'SUPER_ADMIN') {
+    return prisma.tank.findUnique({
+      where: { tankId },
+    });
+  }
+
   if (user.role === 'ADMIN') {
     return prisma.tank.findFirst({
       where: { tankId, adminId: user.userId },

@@ -8,23 +8,25 @@ const router = express.Router();
 router.get('/', verifyToken, getAlerts);
 router.post('/resolve', verifyToken, resolveAlert);
 
-// 🧪 TEST ENDPOINT: Simulate an MQTT alert trigger
-router.post('/test-mqtt-alert', async (req, res) => {
-    const { tankId, parameter, alertType, value } = req.body;
-    
-    if (!tankId) return res.status(400).json({ error: 'tankId is required' });
+// 🧪 TEST ENDPOINT: Simulate an MQTT alert trigger (dev/test only)
+if (process.env.NODE_ENV !== 'production') {
+    router.post('/test-mqtt-alert', async (req, res) => {
+        const { tankId, parameter, alertType, value } = req.body;
 
-    try {
-        await processAlert(
-            tankId, 
-            parameter || 'Temperature', 
-            alertType || 'CRITICAL HIGH', 
-            value || 42.5
-        );
-        res.json({ message: 'Simulated MQTT alert processed successfully' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+        if (!tankId) return res.status(400).json({ error: 'tankId is required' });
+
+        try {
+            await processAlert(
+                tankId,
+                parameter || 'Temperature',
+                alertType || 'CRITICAL HIGH',
+                value || 42.5
+            );
+            res.json({ message: 'Simulated MQTT alert processed successfully' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+}
 
 export default router;

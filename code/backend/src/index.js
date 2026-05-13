@@ -8,10 +8,10 @@ import alertRoutes from './routes/alertRoutes.js';
 import prisma from './lib/prisma.js'; 
 import { writeApi } from './lib/influx.js';
 import { initMqtt, shutdownMqtt } from './services/mqttService.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import { Server } from 'socket.io';
 
 const app = express();
-let io;
 
 const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
@@ -36,13 +36,16 @@ app.use((req, res) => {
     res.status(404).json({ error: `Route ${req.method} ${req.originalUrl} not found.` });
 });
 
+// Central error handler — must be registered AFTER all routes
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, async () => {
     console.log(`🚀 Server ready at http://localhost:${PORT}`);
     
     // Initialize Socket.io
-    io = new Server(server, {
+    const io = new Server(server, {
         cors: {
             origin: corsOrigins,
             methods: ["GET", "POST"]
@@ -58,7 +61,7 @@ const server = app.listen(PORT, async () => {
 
     try {
         await prisma.$connect();
-        initMqtt();
+        initMqtt(io);
         console.log('✅ MongoDB securely connected via Prisma!');
     } catch (error) {
         console.error('❌ Database connection failed:', error.message);
@@ -97,5 +100,3 @@ process.once('SIGUSR2', async () => {
     await prisma.$disconnect();
     process.kill(process.pid, 'SIGUSR2');
 });
-
-export { io };

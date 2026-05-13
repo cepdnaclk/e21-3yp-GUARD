@@ -19,7 +19,7 @@ import {
   forgotPasswordVerifyEmail,
   forgotPasswordVerifyCode,
   forgotPasswordReset,
-} from "../controllers/authController.js";
+} from "../controllers/auth/index.js";
 import { verifyToken, requireRole, requireAnyRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();

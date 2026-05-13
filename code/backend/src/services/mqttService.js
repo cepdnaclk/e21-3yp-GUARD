@@ -3,7 +3,8 @@ import prisma from '../lib/prisma.js';
 import { Point } from '@influxdata/influxdb-client';
 import { writeApi } from '../lib/influx.js';
 import { sendAlertEmail } from './emailService.js';
-import { io } from '../index.js';
+
+let io = null;
 
 let mqttClient = null;
 
@@ -16,7 +17,9 @@ const SENSOR_MAP = {
     waterlevel:  ['lastWaterLevel', 'waterLevel'],
 };
 
-export const initMqtt = () => {
+export const initMqtt = (ioInstance) => {
+    io = ioInstance;
+
     // Disconnect any previous client (handles nodemon restarts on Windows)
     if (mqttClient) {
         mqttClient.end(true);
