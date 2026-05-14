@@ -41,23 +41,3 @@
   color: white;
 }
 
-.tank-status-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #3a5268;
-  flex-shrink: 0;
-}
-
-.tank-status-dot.active {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.55);
-}
-
-.tank-status-dot.offline {
-  background: #ef4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.55);
-}
-
-
-

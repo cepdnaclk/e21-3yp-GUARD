@@ -9,14 +9,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { sensorApi } from '../services/api';
+import { SENSOR_LINE_CONFIG } from '../constants/sensorConstants';
 
-const SERIES = [
-  { key: 'temp', label: 'Temperature', color: '#2f63d7', unit: '°C' },
-  { key: 'pH', label: 'pH', color: '#14b8a6', unit: '' },
-  { key: 'tds', label: 'TDS', color: '#8b5cf6', unit: 'ppm' },
-  { key: 'turbidity', label: 'Turbidity', color: '#f59e0b', unit: 'NTU' },
-  { key: 'waterLevel', label: 'Water Level', color: '#ef4444', unit: '%' },
-];
+const SERIES = Object.values(SENSOR_LINE_CONFIG);
 
 function formatFullTime(value) {
   if (!value) return '';
@@ -42,13 +38,10 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, i
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const historyUrl = useMemo(() => `/api/sensors/history/${deviceId}`, [deviceId]);
-
   useEffect(() => {
     if (!deviceId) return undefined;
 
     let active = true;
-    const controller = new AbortController();
 
     const loadHistory = async (isInitialLoad = false) => {
       if (isInitialLoad) {
@@ -59,29 +52,11 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, i
       setError('');
 
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(historyUrl, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Request failed (${response.status})`);
-        }
-
-        const data = await response.json();
+        const data = await sensorApi.chartHistory(deviceId);
         if (!active) return;
-
-        const normalized = Array.isArray(data)
-          ? data.map((item) => ({
-              ...item,
-              // Keep original time for sorting/memos
-            }))
-          : [];
-
-        setRows(normalized);
+        setRows(data);
       } catch (err) {
-        if (err.name !== 'AbortError' && active) {
+        if (active) {
           setError(err.message || 'Failed to load chart data.');
           setRows([]);
         }
@@ -104,10 +79,9 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, i
 
     return () => {
       active = false;
-      controller.abort();
       if (timer) clearInterval(timer);
     };
-  }, [deviceId, historyUrl, autoRefreshMs]);
+  }, [deviceId, autoRefreshMs]);
 
   const chartData = useMemo(() => {
     let lastDateStr = null;

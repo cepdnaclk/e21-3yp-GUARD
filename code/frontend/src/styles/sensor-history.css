@@ -49,16 +49,3 @@
   box-shadow: none !important;
 }
 
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-end;
-  padding: 1rem;
-}
-
-.action-pill-btn {
-  height: 42px;
-  padding: 0 1.5rem;
-}
-

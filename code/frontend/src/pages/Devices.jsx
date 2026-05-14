@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { deviceApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { formatProductKey } from '../utils/formatUtils';
 import '../styles/devices.css';
 
 export default function Devices() {
@@ -32,11 +33,8 @@ export default function Devices() {
 
   useEffect(() => { loadDevices(); }, []);
 
-  // Format XXXXXXXXXXXXXXXX -> XXXX-XXXX-XXXX-XXXX as user types
   const handleProductKeyChange = (e) => {
-    const digits = e.target.value.replace(/-/g, '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 16);
-    const formatted = digits.replace(/(.{4})(?=.)/g, '$1-');
-    setForm({ ...form, productKey: formatted });
+    setForm({ ...form, productKey: formatProductKey(e.target.value) });
   };
 
   const handleAdd = async (e) => {

@@ -11,38 +11,9 @@ import {
   YAxis,
 } from 'recharts';
 import { deviceApi, sensorApi } from '../services/api';
+import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../constants/sensorConstants';
+import { formatChartTime } from '../utils/formatUtils';
 import '../styles/sensor-history.css';
-
-const SENSOR_TYPES = [
-  { id: 'temp', sensorName: 'Temperature' },
-  { id: 'pH', sensorName: 'pH' },
-  { id: 'tds', sensorName: 'TDS' },
-  { id: 'turbidity', sensorName: 'Turbidity' },
-  { id: 'waterLevel', sensorName: 'Water Level' },
-];
-
-const SENSOR_LINE_CONFIG = {
-  temp: { key: 'temp', label: 'Temperature', color: '#2563eb' },
-  pH: { key: 'pH', label: 'pH', color: '#7c3aed' },
-  tds: { key: 'tds', label: 'TDS', color: '#0f766e' },
-  turbidity: { key: 'turbidity', label: 'Turbidity', color: '#ea580c' },
-  waterLevel: { key: 'waterLevel', label: 'Water Level', color: '#16a34a' },
-};
-
-const SENSOR_ID_TO_FIELD = {
-  temp: 'temp',
-  pH: 'pH',
-  tds: 'tds',
-  turbidity: 'turbidity',
-  waterLevel: 'waterLevel',
-};
-
-function formatChartTime(value) {
-  if (!value) return '';
-  const time = new Date(value);
-  if (Number.isNaN(time.getTime())) return String(value);
-  return time.toLocaleString();
-}
 
 function transformReadingsToChartData(items) {
   const grouped = new Map();
@@ -83,7 +54,6 @@ export default function SensorHistory() {
   const initialDeviceId = searchParams.get('device_id') || searchParams.get('deviceId') || '';
 
   const [devices, setDevices] = useState([]);
-  const [sensorTypes, setSensorTypes] = useState([]);
   const [readings, setReadings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -99,10 +69,9 @@ export default function SensorHistory() {
   });
 
   useEffect(() => {
-    Promise.all([deviceApi.list()])
-      .then(([devs]) => {
+    deviceApi.list()
+      .then((devs) => {
         setDevices(devs);
-        setSensorTypes(SENSOR_TYPES);
         if (!initialDeviceId && Array.isArray(devs) && devs.length > 0) {
           setFilters((prev) => ({ ...prev, deviceId: devs[0].deviceId }));
         }
@@ -137,7 +106,6 @@ export default function SensorHistory() {
     try {
       const params = { deviceId: filters.deviceId };
       if (filters.sensorId) params.sensorId = filters.sensorId;
-      // Keep datetime-local values as-is to avoid invalid Date conversion edge cases.
       if (filters.from) params.from = filters.from;
       if (filters.to) params.to = filters.to;
       const fetched = await sensorApi.history(params);
@@ -220,7 +188,7 @@ export default function SensorHistory() {
             <label>Sensor Type</label>
             <select value={filters.sensorId} onChange={set('sensorId')}>
               <option value="">All sensors</option>
-              {sensorTypes.map((s) => (
+              {SENSOR_TYPES.map((s) => (
                 <option key={s.id} value={s.id}>{s.sensorName}</option>
               ))}
             </select>

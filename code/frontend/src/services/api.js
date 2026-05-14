@@ -1,13 +1,6 @@
-const BASE_URL = 'http://localhost:5000/api';
+import { SENSOR_FIELDS } from '../constants/sensorConstants';
 
-// Sensor keys used by the backend and the UI.
-const SENSOR_FIELDS = [
-  ['temp', 'Temperature'],
-  ['pH', 'pH'],
-  ['tds', 'TDS'],
-  ['turbidity', 'Turbidity'],
-  ['waterLevel', 'Water Level'],
-];
+const BASE_URL = '/api';
 
 // Sends one request to the backend and automatically adds the JWT token.
 async function request(endpoint, options = {}) {
@@ -267,5 +260,11 @@ export const sensorApi = {
     }
 
     return historyReadings;
+  },
+
+  // Raw chart data for TankTimeSeriesChart (returns rows as-is from InfluxDB).
+  chartHistory: async (deviceId) => {
+    const rows = await request(`/sensors/history/${encodeURIComponent(deviceId)}`);
+    return Array.isArray(rows) ? rows : [];
   },
 };

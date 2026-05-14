@@ -4,7 +4,7 @@ import guardLogo from '../assets/guard-logo.png';
 import '../styles/layout.css';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard' },
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/alerts', label: 'Notifications' },
   { to: '/analytics', label: 'Analytics' },
   { to: '/devices', label: 'Devices' },
@@ -37,7 +37,7 @@ export default function Layout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/dashboard'}
               className={({ isActive }) => isActive ? 'active' : ''}
             >
               {item.label}

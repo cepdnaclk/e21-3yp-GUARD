@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Landing from './pages/Landing';
 import Devices from './pages/Devices';
 import DeviceDetail from './pages/DeviceDetail';
 import SensorHistory from './pages/SensorHistory';
@@ -21,7 +22,7 @@ function PrivateRoute({ children }) {
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading-screen">Loading...</div>;
-  return user ? <Navigate to="/" /> : children;
+  return user ? <Navigate to="/dashboard" /> : children;
 }
 
 function RoleRoute({ children, allowedRoles, fallback = '/' }) {
@@ -35,20 +36,20 @@ function RoleRoute({ children, allowedRoles, fallback = '/' }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
-        <Route path="/" element={<RoleRoute allowedRoles={['ADMIN', 'USER']} fallback="/users"><Dashboard /></RoleRoute>} />
+        <Route path="/dashboard" element={<RoleRoute allowedRoles={['ADMIN', 'USER']} fallback="/users"><Dashboard /></RoleRoute>} />
         <Route path="/devices" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><Devices /></RoleRoute>} />
         <Route path="/devices/:id" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><DeviceDetail /></RoleRoute>} />
         <Route path="/analytics" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><SensorHistory /></RoleRoute>} />
-        <Route path="/sensors/history" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><SensorHistory /></RoleRoute>} />
         <Route path="/alerts" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><Alerts /></RoleRoute>} />
         <Route path="/users" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']} fallback="/"><Users /></RoleRoute>} />
         <Route path="/profile" element={<Profile />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
   );
 }

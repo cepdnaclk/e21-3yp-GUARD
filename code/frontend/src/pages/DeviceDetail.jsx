@@ -2,20 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { deviceApi, sensorApi, authApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { SENSOR_UNITS } from '../constants/sensorConstants';
+import useOnlineStatus from '../hooks/useOnlineStatus';
 import TankTimeSeriesChart from '../components/TankTimeSeriesChart';
 import ThresholdsPanel from '../components/ThresholdsPanel';
 import ActuatorPanel from '../components/ActuatorPanel';
 import { getSocket } from '../services/socket';
 import '../styles/device-detail.css';
-
-const SENSOR_UNITS = {
-  'temperature': '°C',
-  ph: '',
-  turbidity: 'NTU',
-  'water level': '%',
-  waterlevel: '%',
-  tds: 'ppm',
-};
 
 function buildLocalAlerts(device, readings) {
   const nextAlerts = [];
@@ -55,18 +48,13 @@ export default function DeviceDetail() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [lastSeen, setLastSeen] = useState(null);
-  const [now, setNow] = useState(new Date());
-
-  // Periodically update 'now' to trigger timeout re-evaluations
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 5000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Admin only: list of all workers to assign from
   const [allWorkers, setAllWorkers] = useState([]);
   const [busy, setBusy] = useState(false);
+
+  // Online status via shared hook
+  const { isOnline, markSeen } = useOnlineStatus(device?.currentStats?.lastReadingTime);
 
   const loadData = async () => {
     try {
@@ -97,7 +85,7 @@ export default function DeviceDetail() {
     if (socket) {
       const handleSensorData = (data) => {
         if (data.tankId === id) {
-          setLastSeen(new Date());
+          markSeen();
           setReadings(prev => {
             const dType = data.sensorType.replace(/\s+/g, '').toLowerCase();
             return prev.map(r => {
@@ -159,13 +147,10 @@ export default function DeviceDetail() {
               {device.deviceName || 'Unnamed'}
             </p>
           </div>
-          {(() => {
-            const initialLastTime = device.currentStats?.lastReadingTime;
-            const effectiveLastTime = lastSeen || (initialLastTime ? new Date(initialLastTime) : null);
-            const isRecentlyUpdated = effectiveLastTime && (now - effectiveLastTime) < 30000;
-            const isActive = !!isRecentlyUpdated;
-            return <span className={`tank-status-dot ${isActive ? 'active' : 'offline'}`} title={effectiveLastTime ? `Last seen: ${effectiveLastTime.toLocaleTimeString()}` : 'No data'} />;
-          })()}
+          <span
+            className={`tank-status-dot ${isOnline ? 'active' : 'offline'}`}
+            title={isOnline ? 'Online' : 'Offline'}
+          />
         </div>
         <Link to="/devices" className="btn btn-outline btn-sm">Back to Devices</Link>
       </div>
@@ -201,12 +186,7 @@ export default function DeviceDetail() {
       <ActuatorPanel tankId={id} />
       
       {/* Time Series Chart */}
-      {(() => {
-        const initialLastTime = device.currentStats?.lastReadingTime;
-        const effectiveLastTime = lastSeen || (initialLastTime ? new Date(initialLastTime) : null);
-        const isOnline = effectiveLastTime && (now - effectiveLastTime) < 30000;
-        return <TankTimeSeriesChart deviceId={id} autoRefreshMs={30000} isOnline={isOnline} />;
-      })()}
+      <TankTimeSeriesChart deviceId={id} autoRefreshMs={30000} isOnline={isOnline} />
       
       {/* Sensor Thresholds (ADMIN only) */}
       {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
