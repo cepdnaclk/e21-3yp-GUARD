@@ -87,7 +87,9 @@
   gap: 1rem;
 }
 
-.landing-btn {
+.hero-actions .landing-btn {
+  width: auto;
+  white-space: nowrap;
   padding: 0.75rem 2rem;
   font-size: 1rem;
   font-weight: 600;
@@ -100,16 +102,16 @@
   transition: background-color 0.2s ease;
 }
 
-.landing-btn:hover {
+.hero-actions .landing-btn:hover {
   background-color: #0284c7;
 }
 
-.landing-btn-outline {
+.hero-actions .landing-btn-outline {
   background-color: #ffffff;
   color: #0f172a;
 }
 
-.landing-btn-outline:hover {
+.hero-actions .landing-btn-outline:hover {
   background-color: #f1f5f9;
 }
 
