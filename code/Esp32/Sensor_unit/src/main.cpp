@@ -10,8 +10,9 @@
 #include <Preferences.h>
 #include <Adafruit_NeoPixel.h>
 
-// 🟢 Include your hidden passwords
+// 🟢 Include your hidden passwords and public cert
 #include "secrets.h"
+#include "cert.h"
 
 // ---------------- Pins & Constants ----------------
 #define RESET_BUTTON 0
@@ -30,46 +31,10 @@ const int pumpOutPin = 10;
 #define ADC_RESOLUTION 4095
 
 // ---------------- Network Config ------------------
-// 🟢 Everything is now pulled safely from secrets.h!
 const char* mqtt_server = SECRET_MQTT_SERVER;
 const int mqtt_port = SECRET_MQTT_PORT; 
 const char* mqtt_user = SECRET_MQTT_USER;          
 const char* mqtt_password = SECRET_MQTT_PASS; 
-
-// ISRG Root X1 — Let's Encrypt Root CA
-static const char* root_ca = R"EOF(
------BEGIN CERTIFICATE-----
-MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
-TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
-cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
-WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
-ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
-MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
-h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
-0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
-A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
-T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
-B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
-B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
-KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
-OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
-jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
-qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
-rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
-HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
-hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
-ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
-3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
-NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
-ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
-TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
-jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
-oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
-4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
-mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
-emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
------END CERTIFICATE-----
-)EOF";
 
 // ---------------- Objects -------------------------
 Adafruit_NeoPixel pixels(NUMPIXELS, RGB_LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -93,8 +58,8 @@ unsigned long servoStartTime = 0;
 const unsigned long SERVO_RUN_TIME = 3000; 
 
 // ⏱️ TIMING INTERVALS
-const unsigned long POLL_INTERVAL = 2000;     // Read sensors every 2 seconds
-const unsigned long PUBLISH_INTERVAL = 10000; // Routine publish every 10 seconds
+const unsigned long POLL_INTERVAL = 2000;     
+const unsigned long PUBLISH_INTERVAL = 10000; 
 
 // ⏱️ TIMING TRACKERS
 unsigned long lastTempRead = 0;
@@ -104,7 +69,10 @@ unsigned long lastTdsRead = 0;
 unsigned long lastTempPub = 0;
 unsigned long lastWaterPub = 0;
 unsigned long lastTdsPub = 0;
-unsigned long lastReconnectAttempt = 0;
+
+// 🟢 NEW: Split Reconnect Trackers
+unsigned long lastReconnectAttempt = 0;      // For MQTT
+unsigned long lastWiFiReconnectAttempt = 0;  // For Wi-Fi
 unsigned long pressStart = 0;
 
 // 🚦 SYSTEM HEALTH FLAGS
@@ -119,7 +87,7 @@ bool drainPumpOn = false;
 float lastWaterDistanceCm = -1.0f;
 bool hasValidWaterDistance = false;
 
-unsigned long DeviceID = 300; 
+String DeviceID = "GUARD-300"; 
 String clientID = "ESP32_" + String(DeviceID);
 
 // ---------------- Helper Functions ----------------
@@ -296,7 +264,6 @@ boolean reconnect() {
 void setup() {
   Serial.begin(115200); 
   
-  // Initialize Hardware
   pixels.begin();
   pixels.setBrightness(50);
   pixels.clear();
@@ -326,11 +293,19 @@ void setup() {
   ESP32PWM::allocateTimer(0);
   myServo.setPeriodHertz(50);
 
+  // 🟢 WI-FI CONFIGURATION
+  WiFi.disconnect(true, true);
+  delay(100);
+  
   WiFi.mode(WIFI_STA); 
+  
+  // 🚨 THE FIX: Lower the radio power to prevent the brownout crash
+  WiFi.setTxPower(WIFI_POWER_8_5dBm); 
+  
+  WiFi.setAutoReconnect(true); 
 
   WiFiManager wm;
   wm.autoConnect(("ESP32_GUARD_" + String(DeviceID)).c_str());
-
   configTime(19800, 0, "pool.ntp.org", "time.nist.gov"); 
   Serial.print("Syncing Time");
   while (time(nullptr) < 1000000) { 
@@ -348,31 +323,38 @@ void setup() {
 
 // ---------------- Main Loop -----------------------
 void loop() {
+  unsigned long now = millis();
+
+  // 🌐 1. ACTIVE WI-FI RECONNECT MANAGER
   if (WiFi.status() != WL_CONNECTED) {
-      Serial.println("[WIFI] Disconnected. Waiting for auto-reconnect...");
-      delay(1000);
-      return; 
+      if (now - lastWiFiReconnectAttempt > 10000) { // Check every 10 seconds
+          Serial.println("🌐 [WIFI] Disconnected! Forcing radio reconnect...");
+          WiFi.disconnect(); 
+          WiFi.reconnect(); // Kick the radio
+          lastWiFiReconnectAttempt = now;
+      }
+      // Notice there is NO return here! The loop continues so pumps stay alive.
+  } 
+  // ☁️ 2. ACTIVE MQTT RECONNECT MANAGER (Only try if Wi-Fi is working)
+  else if (!client.connected()) {
+      if (now - lastReconnectAttempt > 5000) { // Check every 5 seconds
+          lastReconnectAttempt = now;
+          if (reconnect()) lastReconnectAttempt = 0;
+      }
+  } 
+  // 📡 3. NORMAL MQTT LISTENER
+  else {
+      client.loop();
   }
 
-  if (!client.connected()) {
-    unsigned long now = millis();
-    if (now - lastReconnectAttempt > 5000) {
-      lastReconnectAttempt = now;
-      if (reconnect()) lastReconnectAttempt = 0;
-    }
-  } else {
-    client.loop();
-  }
-
-  if (servoActive && (millis() - servoStartTime >= SERVO_RUN_TIME)) {
+  // ⚙️ SERVO LOGIC
+  if (servoActive && (now - servoStartTime >= SERVO_RUN_TIME)) {
     myServo.write(90); 
     delay(100);       
     myServo.detach();  
     servoActive = false;
   }
 
-  unsigned long now = millis();
-  
   // 🌡️ TEMPERATURE SENSOR (Fast Poll & Edge Detect)
   if (now - lastTempRead > POLL_INTERVAL) {
     lastTempRead = now;
@@ -391,12 +373,11 @@ void loop() {
           alertType = "HIGH";
       }
 
-      // Publish if it's a NEW alert OR the 10-second routine timer fired
       if ((isAlertNow && !tempAlert) || (now - lastTempPub > PUBLISH_INTERVAL)) {
           if (client.connected()) publishSensor("temperature", currentTemp);
-          lastTempPub = now; // Reset routine timer
+          lastTempPub = now; 
           
-          if (isAlertNow && !tempAlert) { // Send immediate alert only once per boundary crossing
+          if (isAlertNow && !tempAlert) { 
               if (client.connected()) publishAlert("temperature", alertType, currentTemp);
           }
       }
@@ -427,7 +408,6 @@ void loop() {
           alertType = "HIGH";
       }
 
-      // Publish if it's a NEW alert OR the 10-second routine timer fired
       if ((isAlertNow && !waterAlert) || (now - lastWaterPub > PUBLISH_INTERVAL)) {
           if (client.connected()) publishSensor("waterlevel", currentDist);
           lastWaterPub = now;
@@ -476,7 +456,6 @@ void loop() {
         alertType = "HIGH";
     }
 
-    // Publish if it's a NEW alert OR the 10-second routine timer fired
     if ((isAlertNow && !tdsAlert) || (now - lastTdsPub > PUBLISH_INTERVAL)) {
         if (client.connected()) publishSensor("tds", tdsValue);
         lastTdsPub = now;
@@ -492,12 +471,31 @@ void loop() {
   }
 
   // 🚦 UNIFIED MASTER LED LOGIC
-  if (tempAlert || waterAlert || tdsAlert) {
-      pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // RED
-  } else {
-      pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // GREEN
+  // 🚦 UNIFIED MASTER LED LOGIC (Color-Coded Priority System)
+  
+  if (WiFi.status() != WL_CONNECTED || !client.connected()) {
+      // 1. NETWORK ERROR (Wi-Fi or MQTT disconnected)
+      pixels.setPixelColor(0, pixels.Color(255, 255, 0)); // 🟡 YELLOW
+  } 
+  else if (waterAlert) {
+      // 2. WATER LEVEL ERROR
+      pixels.setPixelColor(0, pixels.Color(255, 0, 0));   // 🔴 RED
+  } 
+  else if (tempAlert) {
+      // 3. TEMPERATURE ERROR
+      // Note: NeoPixel Purple/Magenta is 255 Red + 255 Blue
+      pixels.setPixelColor(0, pixels.Color(255, 0, 255)); // 🟣 PURPLE
+  } 
+  else if (tdsAlert) {
+      // 4. TDS / QUALITY ERROR
+      pixels.setPixelColor(0, pixels.Color(0, 0, 255));   // 🔵 BLUE
+  } 
+  else {
+      // 5. SYSTEM NORMAL
+      pixels.setPixelColor(0, pixels.Color(0, 255, 0));   // 🟢 GREEN
   }
-  pixels.show();
+  
+  pixels.show(); // Push the final selected color to the bulb
 
   // 🔄 Hardware Reset
   if (digitalRead(RESET_BUTTON) == LOW) {
