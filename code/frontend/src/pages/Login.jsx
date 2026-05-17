@@ -73,7 +73,7 @@ export default function Login() {
       </div>
 
       <div className="auth-card login-card">
-        <button className="card-close-btn" onClick={() => navigate(-1)} aria-label="Go back">&times;</button>
+        <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>
         <h1>Welcome Back</h1>
         <p className="subtitle">Sign in to G.U.A.R.D Dashboard</p>
 

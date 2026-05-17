@@ -69,7 +69,7 @@ export default function Register() {
       </div>
 
       <div className="auth-card login-card register-card">
-        <button className="card-close-btn" onClick={() => navigate(-1)} aria-label="Go back">&times;</button>
+        <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>
         <h1>Create Account</h1>
         <p className="subtitle">Register for G.U.A.R.D Dashboard</p>
 
