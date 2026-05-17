@@ -1,6 +1,6 @@
 import { SENSOR_FIELDS } from '../constants/sensorConstants';
 
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Sends one request to the backend and automatically adds the JWT token.
 async function request(endpoint, options = {}) {

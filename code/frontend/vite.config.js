@@ -5,15 +5,18 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true, // TEMP: expose to LAN for mobile testing — revert when done
+    host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://e21-3yp-guard.onrender.com',
         changeOrigin: true,
+        secure: true,
       },
       '/socket.io': {
-        target: 'http://localhost:5000',
+        target: 'https://e21-3yp-guard.onrender.com',
         ws: true,
+        changeOrigin: true,
+        secure: true,
       },
     },
   },
