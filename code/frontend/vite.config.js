@@ -8,12 +8,14 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://e21-3yp-guard.onrender.com',
+        // target: 'https://e21-3yp-guard.onrender.com',
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: true,
       },
       '/socket.io': {
-        target: 'https://e21-3yp-guard.onrender.com',
+        // target: 'https://e21-3yp-guard.onrender.com',
+        target: 'http://localhost:5000',
         ws: true,
         changeOrigin: true,
         secure: true,

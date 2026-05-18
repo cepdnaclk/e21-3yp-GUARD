@@ -135,11 +135,25 @@
     top: 1rem;
     left: 1rem;
     font-size: 1.08rem;
+    position: relative;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  
+  .auth-brand-logo {
+    width: 60px;
+    height: 60px;
   }
 
   .login-card,
   .register-card {
-    margin-top: 2.25rem;
+    margin-top: 1rem;
     padding: 2rem 1.2rem;
+  }
+  
+  .auth-page {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 2rem;
   }
 }
