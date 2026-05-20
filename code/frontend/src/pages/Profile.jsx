@@ -103,9 +103,7 @@ export default function Profile() {
   return (
     <div className="profile-page">
       <div className="profile-top-bar">
-        <button type="button" className="profile-back-btn" onClick={() => navigate(-1)}>
-          Back
-        </button>
+        <h3 className="profile-title">My Profile</h3>
       </div>
 
       <div className="profile-avatar-placeholder" aria-label="Profile image placeholder">
@@ -121,7 +119,7 @@ export default function Profile() {
 
         <div className="profile-grid">
           <label className="profile-field">
-            <span>Email</span>
+            <span className='field text'>Email</span>
             <input
               type="email"
               value={form.email}
@@ -132,7 +130,7 @@ export default function Profile() {
           </label>
 
           <label className="profile-field">
-            <span>Username</span>
+            <span className='field text'>Username</span>
             <input
               type="text"
               value={form.username}
@@ -143,7 +141,7 @@ export default function Profile() {
           </label>
 
           <label className="profile-field">
-            <span>Full Name</span>
+            <span className='field text'>Full Name</span>
             <input
               type="text"
               value={form.fullName}
@@ -154,7 +152,7 @@ export default function Profile() {
           </label>
 
           <label className="profile-field">
-            <span>Address</span>
+            <span className='field text'>Address</span>
             <input
               type="text"
               value={form.address}
@@ -165,7 +163,7 @@ export default function Profile() {
           </label>
 
           <label className="profile-field">
-            <span>Phone Number</span>
+            <span className='field text'>Phone Number</span>
             <input
               type="text"
               value={form.phoneNumber}
@@ -176,7 +174,7 @@ export default function Profile() {
           </label>
 
           <label className="profile-field">
-            <span>Member Since</span>
+            <span className='field text'>Member Since</span>
             <input type="text" value={memberSince} disabled />
           </label>
         </div>

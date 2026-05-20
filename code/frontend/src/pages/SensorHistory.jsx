@@ -175,7 +175,7 @@ export default function SensorHistory() {
         <div className="filters">
           <div className="form-group">
             <label>Device *</label>
-            <select value={filters.deviceId} onChange={set('deviceId')} required>
+            <select className='form-input' value={filters.deviceId} onChange={set('deviceId')} required>
               <option value="">Select device</option>
               {devices.map((d) => (
                 <option key={d.deviceId} value={d.deviceId}>
@@ -186,7 +186,7 @@ export default function SensorHistory() {
           </div>
           <div className="form-group">
             <label>Sensor Type</label>
-            <select value={filters.sensorId} onChange={set('sensorId')}>
+            <select className='form-input' value={filters.sensorId} onChange={set('sensorId')}>
               <option value="">All sensors</option>
               {SENSOR_TYPES.map((s) => (
                 <option key={s.id} value={s.id}>{s.sensorName}</option>
@@ -195,12 +195,15 @@ export default function SensorHistory() {
           </div>
           <div className="form-group">
             <label>From</label>
-            <input type="datetime-local" value={filters.from} onChange={set('from')} />
+            <input className='form-input' type="datetime-local" value={filters.from} onChange={set('from')} />
           </div>
           <div className="form-group">
             <label>To</label>
-            <input type="datetime-local" value={filters.to} onChange={set('to')} />
+            <input className='form-input' type="datetime-local" value={filters.to} onChange={set('to')} />
           </div>
+        </div>
+
+        <div className="filter-actions" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <button className="btn action-btn" onClick={fetchHistory} type="button">
             {loading ? 'Loading...' : 'Fetch'}
           </button>
@@ -221,7 +224,7 @@ export default function SensorHistory() {
             Analytics
           </button>
           <button
-            className="btn action-btn download-btn"
+            className="btn action-btn"
             onClick={downloadReport}
             disabled={readings.length === 0}
             type="button"

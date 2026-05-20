@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { authApi } from '../../services/api';
+import '../../styles/CreateAccountForm.css';
 
 const EMPTY_FORM = {
   username: '', email: '', password: '', fullName: '', address: '', phoneNumber: '',
@@ -49,12 +50,12 @@ export default function CreateAccountForm({ mode, onSuccess, onCancel }) {
       <h3 className="users-form-title">{mode === 'admin' ? 'Create Admin' : 'Create User'}</h3>
       {error && <p className="error-msg">{error}</p>}
       <form onSubmit={handleSubmit}>
-        <div className="form-group"><label>Username *</label><input type="text" value={form.username} onChange={setField('username')} required /></div>
-        <div className="form-group"><label>Email *</label><input type="email" value={form.email} onChange={setField('email')} required /></div>
-        <div className="form-group"><label>Password *</label><input type="password" value={form.password} onChange={setField('password')} required /></div>
-        <div className="form-group"><label>Full Name *</label><input type="text" value={form.fullName} onChange={setField('fullName')} required /></div>
-        <div className="form-group"><label>Address</label><input type="text" value={form.address} onChange={setField('address')} /></div>
-        <div className="form-group"><label>Phone Number</label><input type="text" value={form.phoneNumber} onChange={setField('phoneNumber')} /></div>
+        <div className="form-group"><label>Username *</label><input className='form-input' type="text" value={form.username} onChange={setField('username')} required /></div>
+        <div className="form-group"><label>Email *</label><input className='form-input' type="email" value={form.email} onChange={setField('email')} required /></div>
+        <div className="form-group"><label>Password *</label><input className='form-input' type="password" value={form.password} onChange={setField('password')} required /></div>
+        <div className="form-group"><label>Full Name *</label><input className='form-input' type="text" value={form.fullName} onChange={setField('fullName')} required /></div>
+        <div className="form-group"><label>Address</label><input className='form-input' type="text" value={form.address} onChange={setField('address')} /></div>
+        <div className="form-group"><label>Phone Number</label><input className='form-input' type="text" value={form.phoneNumber} onChange={setField('phoneNumber')} /></div>
         <div className="users-form-actions">
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'Saving...' : mode === 'admin' ? 'Create Admin' : 'Create User'}

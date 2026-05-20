@@ -117,8 +117,8 @@ export default function Alerts() {
       <div className="card alerts-filter-card">
         <div className="filters">
           <div className="form-group">
-            <label>Device</label>
-            <select value={currentFilters.deviceId} onChange={handleFilterChange('device_id')}>
+            <label >Device</label>
+            <select className="form-input" value={currentFilters.deviceId} onChange={handleFilterChange('device_id')}>
               <option value="">All devices</option>
               {devices.map((d) => (
                 <option key={d.deviceId} value={d.deviceId}>
@@ -129,7 +129,7 @@ export default function Alerts() {
           </div>
           <div className="form-group">
             <label>Status</label>
-            <select value={currentFilters.resolved} onChange={handleFilterChange('resolved')}>
+            <select className="form-input" value={currentFilters.resolved} onChange={handleFilterChange('resolved')}>
               <option value="all">All</option>
               <option value="false">Active</option>
               <option value="true">Resolved</option>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { deviceApi } from '../../services/api';
 import { formatProductKey } from '../../utils/formatUtils';
+import '../../styles/CreateAccountForm.css';
 
 /**
  * SUPER_ADMIN form for adding a new device to the inventory.
@@ -54,7 +55,8 @@ export default function AddDeviceForm({ onSuccess, onCancel }) {
       <form onSubmit={handleSubmit} className="devices-form">
         <div className="form-group devices-form-device-id">
           <label>Tank ID (Device ID) *</label>
-          <input
+          <input 
+            className="form-input"
             type="text"
             value={tankId}
             onChange={(e) => setTankId(e.target.value.toUpperCase())}
@@ -64,7 +66,8 @@ export default function AddDeviceForm({ onSuccess, onCancel }) {
         </div>
         <div className="form-group devices-form-device-name">
           <label>Product Key *</label>
-          <input
+          <input 
+            className="form-input"
             type="text"
             value={productKey}
             onChange={(e) => setProductKey(formatProductKey(e.target.value))}

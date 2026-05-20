@@ -102,8 +102,15 @@ export default function Login() {
             />
           </div>
           <div className="form-group">
-            <div className="login-password-label">
-              <label>Password</label>
+            <label>Password</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="Enter password"
+              required
+            />
+            <div className="login-password-label" style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '0.4rem' }}>
               <a
                 href="#"
                 onClick={(e) => { e.preventDefault(); setShowForgot(true); }}
@@ -112,13 +119,6 @@ export default function Login() {
                 Forgot password?
               </a>
             </div>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Enter password"
-              required
-            />
           </div>
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'Signing in...' : 'Sign In'}

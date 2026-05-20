@@ -3,6 +3,18 @@
   margin-bottom: 1rem;
 }
 
+.users-actions-card .action-btn {
+  background: var(--action-btn-bg);
+  color: var(--action-btn-color);
+  border: none;
+  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);
+}
+
+.users-actions-card .action-btn:hover:not(:disabled) {
+  /* background: var(--action-btn-hover-bg); */
+  box-shadow: 0 6px 14px rgba(14, 165, 233, 0.4);
+}
+
 .users-form-title {
   margin-top: 0;
 }
@@ -13,6 +25,7 @@
 }
 
 .users-row-actions {
+  
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;

@@ -2,8 +2,8 @@
 
 .landing-page {
   font-family: 'Outfit', sans-serif;
-  color: #1e293b;
-  background-color: #ffffff;
+  color: var(--c-1e293b);
+  background-color: var(--c-ffffff);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -15,7 +15,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 4rem;
-  background-color: #ffffff;
+  background-color: var(--c-ffffff);
 }
 
 .landing-nav-logo {
@@ -51,20 +51,20 @@
 
 .landing-nav-links a {
   text-decoration: none;
-  color: #000;
+  color: var(--c-000);
   font-size: 0.85rem;
   font-weight: 600;
   transition: color 0.2s ease;
 }
 
 .landing-nav-links a:hover {
-  color: #0ea5e9;
+  color: var(--c-0ea5e9);
 }
 
 /* Hero Section */
 .landing-hero {
-  background-color: #0d1627;
-  color: #ffffff;
+  background-color: var(--c-0d1627);
+  color: var(--c-ffffff);
   text-align: center;
   padding: 6rem 2rem;
 }
@@ -78,7 +78,7 @@
 .hero-content p {
   font-size: 1.25rem;
   margin-bottom: 2.5rem;
-  color: #e2e8f0;
+  color: var(--c-e2e8f0);
 }
 
 .hero-actions {
@@ -95,7 +95,7 @@
   font-weight: 600;
   border-radius: 6px;
   text-decoration: none;
-  background-color: #0ea5e9;
+  background-color: var(--c-0ea5e9);
   color: white;
   border: none;
   cursor: pointer;
@@ -103,21 +103,21 @@
 }
 
 .hero-actions .landing-btn:hover {
-  background-color: #0284c7;
+  background-color: var(--c-0284c7);
 }
 
 .hero-actions .landing-btn-outline {
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--c-ffffff);
+  color: var(--c-0f172a);
 }
 
 .hero-actions .landing-btn-outline:hover {
-  background-color: #f1f5f9;
+  background-color: var(--c-f1f5f9);
 }
 
 /* About Section */
 .landing-about {
-  background-color: #f0f7fb;
+  background-color: var(--c-f0f7fb);
   padding: 4rem 4rem;
 }
 
@@ -141,14 +141,14 @@
 
 .about-text p {
   margin-bottom: 1rem;
-  color: #334155;
+  color: var(--c-334155);
   line-height: 1.6;
 }
 
 .iot-badge {
   display: inline-block;
-  background-color: #000;
-  color: #fff;
+  background-color: var(--c-000);
+  color: var(--c-fff);
   padding: 0.25rem 0.75rem;
   border-radius: 4px;
   font-weight: 700;
@@ -158,7 +158,7 @@
 
 .about-icon-card {
   flex: 1;
-  background-color: #1e293b;
+  background-color: var(--c-1e293b);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -180,7 +180,7 @@
 
 /* Features Section */
 .landing-features {
-  background-color: #f0f7fb;
+  background-color: var(--c-f0f7fb);
   padding: 2rem 4rem 4rem;
 }
 
@@ -192,7 +192,7 @@
 .features-container h2 {
   font-size: 2rem;
   margin-bottom: 2rem;
-  color: #0f172a;
+  color: var(--c-0f172a);
 }
 
 .features-grid {
@@ -202,10 +202,10 @@
 }
 
 .feature-card {
-  background-color: #ffffff;
+  background-color: var(--c-ffffff);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px var(--c-rgba-0-0-0-0-05);
   display: flex;
   flex-direction: column;
 }
@@ -233,7 +233,7 @@
 }
 
 .feature-card-content p {
-  color: #64748b;
+  color: var(--c-64748b);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -246,7 +246,7 @@
 
 /* Mission / Values / Vision */
 .landing-core-values {
-  background-color: #f8fafc;
+  background-color: var(--c-f8fafc);
   padding: 4rem;
 }
 
@@ -265,14 +265,14 @@
 }
 
 .value-item p {
-  color: #475569;
+  color: var(--c-475569);
   font-size: 0.95rem;
   line-height: 1.5;
 }
 
 /* Why Choose Us */
 .landing-why-choose-us {
-  background-color: #ffffff;
+  background-color: var(--c-ffffff);
   padding: 4rem;
   text-align: center;
 }
@@ -302,11 +302,11 @@
 }
 
 .why-icon {
-  color: #0ea5e9;
+  color: var(--c-0ea5e9);
 }
 
 .why-item p {
-  color: #475569;
+  color: var(--c-475569);
   font-size: 0.9rem;
   line-height: 1.5;
   margin-left: 1.75rem;
@@ -314,14 +314,14 @@
 
 /* Footer */
 .landing-footer {
-  background-color: #f0f7fb;
+  background-color: var(--c-f0f7fb);
   padding: 2rem 4rem;
   text-align: center;
   margin-top: auto;
 }
 
 .footer-content p {
-  color: #64748b;
+  color: var(--c-64748b);
   font-size: 0.9rem;
 }
 

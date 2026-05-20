@@ -171,6 +171,7 @@ export default function Devices() {
             <div className="form-group devices-form-device-id">
               <label>Product Key *</label>
               <input
+                className='form-input'
                 type="text"
                 value={form.productKey}
                 onChange={handleProductKeyChange}
@@ -181,7 +182,7 @@ export default function Devices() {
             </div>
             <div className="form-group devices-form-device-name">
               <label>Device Name</label>
-              <input type="text" value={form.deviceName} onChange={(e) => setForm({ ...form, deviceName: e.target.value })} placeholder="My Pond Sensor" />
+              <input className='form-input' type="text" value={form.deviceName} onChange={(e) => setForm({ ...form, deviceName: e.target.value })} placeholder="My Pond Sensor" />
             </div>
           
             <button type="submit" className="btn btn-primary devices-form-submit" disabled={busy}>
@@ -199,6 +200,7 @@ export default function Devices() {
             <div className="form-group devices-form-device-id">
               <label>Device ID (Tank ID) *</label>
               <input
+                className="form-input"
                 type="text"
                 value={deleteForm.deviceId}
                 onChange={(e) => setDeleteForm({ ...deleteForm, deviceId: e.target.value })}
@@ -209,6 +211,7 @@ export default function Devices() {
             <div className="form-group devices-form-device-name">
               <label>Device Name *</label>
               <input
+                className="form-input"
                 type="text"
                 value={deleteForm.deviceName}
                 onChange={(e) => setDeleteForm({ ...deleteForm, deviceName: e.target.value })}

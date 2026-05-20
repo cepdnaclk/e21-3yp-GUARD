@@ -1,0 +1,9 @@
+
+
+.form-input{
+    margin-bottom: 1rem;
+    background-color: var(--c-e6ecf0);
+    border: 2px solid var(--c-fff);
+    border-radius: 8px;
+    color: var(--c-333);
+}

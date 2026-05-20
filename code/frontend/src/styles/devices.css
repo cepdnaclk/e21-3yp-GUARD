@@ -14,6 +14,18 @@
   margin-bottom: 1rem;
 }
 
+.devices-actions .action-btn {
+  background: var(--action-btn-bg);
+  color: var(--action-btn-color);
+  border: none;
+  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);
+}
+
+.devices-actions .action-btn:hover:not(:disabled) {
+  /* background: var(--action-btn-hover-bg); */
+  box-shadow: 0 6px 14px rgba(14, 165, 233, 0.4);
+}
+
 .devices-form-card {
   margin-bottom: 1.25rem;
 }

@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import guardLogo from '../assets/guard-logo.png';
 import '../styles/layout.css';
 
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
 export default function Layout() {
   const { user, role, logout } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   const navItems = role === 'SUPER_ADMIN'
     ? [{ to: '/users', label: 'Users' }] // only Users
@@ -45,6 +47,9 @@ export default function Layout() {
           ))}
         </div>
         <div className="topnav-user">
+          <button className="theme-toggle-switch" title="Toggle Theme" onClick={toggleTheme} aria-label="Toggle Dark Mode">
+            <span className="theme-toggle-circle"></span>
+          </button>
           <button className="topnav-notif" title="Profile" onClick={() => navigate('/profile')}>
             👤
           </button>
