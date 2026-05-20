@@ -7,7 +7,12 @@
   margin-bottom: 1rem;
 }
 
-
+.devices-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
 
 .devices-form-card {
   margin-bottom: 1.25rem;

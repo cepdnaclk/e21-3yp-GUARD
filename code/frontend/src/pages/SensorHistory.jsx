@@ -201,11 +201,11 @@ export default function SensorHistory() {
             <label>To</label>
             <input type="datetime-local" value={filters.to} onChange={set('to')} />
           </div>
-          <button className="btn btn-primary action-pill-btn" onClick={fetchHistory} type="button">
+          <button className="btn action-btn" onClick={fetchHistory} type="button">
             {loading ? 'Loading...' : 'Fetch'}
           </button>
           <button
-            className="btn btn-primary action-pill-btn"
+            className="btn action-btn"
             onClick={clearReadings}
             type="button"
             disabled={readings.length === 0 && !hasFetched}
@@ -213,7 +213,7 @@ export default function SensorHistory() {
             Clear Readings
           </button>
           <button
-            className="btn btn-primary action-pill-btn"
+            className="btn action-btn"
             onClick={() => setShowAnalytics((value) => !value)}
             disabled={!filters.deviceId}
             type="button"
@@ -221,7 +221,7 @@ export default function SensorHistory() {
             Analytics
           </button>
           <button
-            className="btn btn-primary action-pill-btn download-btn"
+            className="btn action-btn download-btn"
             onClick={downloadReport}
             disabled={readings.length === 0}
             type="button"

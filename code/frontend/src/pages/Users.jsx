@@ -160,7 +160,7 @@ export default function Users() {
       <div className="card users-actions-card">
         <div className="devices-actions">
           <button
-            type="button" className="btn btn-primary action-pill-btn"
+            type="button" className="btn action-btn"
             onClick={() => { closeAll(); setMode('admin'); }}
             disabled={!canCreateAdmin || busy}
             title={canCreateAdmin ? 'Create ADMIN account' : 'Only SUPER_ADMIN can create admins'}
@@ -168,7 +168,7 @@ export default function Users() {
 
           {canCreateUser && (
             <button
-              type="button" className="btn btn-primary action-pill-btn"
+              type="button" className="btn action-btn"
               onClick={() => { closeAll(); setMode('user'); }}
               disabled={busy}
               title="Create USER account"
@@ -177,7 +177,7 @@ export default function Users() {
 
           {canAddDevice && (
             <button
-              type="button" className="btn btn-primary action-pill-btn"
+              type="button" className="btn action-btn"
               onClick={() => { closeAll(); setShowDevice(true); }}
               disabled={busy}
               title="Add a new device to the inventory"

@@ -121,7 +121,7 @@ export default function Devices() {
       <div className="devices-actions">
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn action-btn"
           onClick={() => {
             setShowForm(true);
             setShowDeleteForm(false);
@@ -135,7 +135,7 @@ export default function Devices() {
 
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn action-btn"
           onClick={() => {
             setShowDeleteForm(true);
             setShowForm(false);
