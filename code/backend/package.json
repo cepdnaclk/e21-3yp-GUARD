@@ -9,7 +9,8 @@
     "dev": "nodemon src/index.js",
     "seed": "node seed.js",
     "seed:analytics": "node seed-analytics.js",
-    "db:init": "docker exec docker-mongodb-1 mongosh --eval \"try { rs.initiate(); } catch(e) { print('Already initialized'); } cfg = rs.conf(); cfg.members[0].host = 'localhost:27017'; rs.reconfig(cfg, {force: true}); print('✅ Replica Set Ready!');\""
+    "db:init": "docker exec docker-mongodb-1 mongosh --eval \"try { rs.initiate(); } catch(e) { print('Already initialized'); } cfg = rs.conf(); cfg.members[0].host = 'localhost:27017'; rs.reconfig(cfg, {force: true}); print('✅ Replica Set Ready!');\"",
+    "dummy-sensor": "node dummy-sensor.js"
   },
   "keywords": [],
   "author": "",
