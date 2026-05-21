@@ -131,43 +131,49 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, i
           <p>No history available for this tank.</p>
         </div>
       ) : (
-        <div className="tank-chart-wrap">
-          <ResponsiveContainer width="100%" height={360}>
-            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#d8e0eb" />
-              <XAxis
-                dataKey="displayTime"
-                tick={{ fill: '#64748b', fontSize: 11 }}
-                angle={-30}
-                textAnchor="end"
-                height={70}
-                interval="preserveStartEnd"
-              />
-              <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
-              <Tooltip
-                formatter={formatTooltipValue}
-                labelFormatter={(label, payload) => {
-                  if (payload && payload[0]) {
-                    return `Time: ${payload[0].payload.fullTime}`;
-                  }
-                  return `Time: ${label}`;
-                }}
-              />
-              <Legend />
-              {SERIES.map((series) => (
-                <Line
-                   key={series.key}
-                   type="monotone"
-                   dataKey={series.key}
-                   name={`${series.label}${series.unit ? ` (${series.unit})` : ''}`}
-                   stroke={series.color}
-                   strokeWidth={2}
-                   dot={false}
-                   connectNulls={false}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(45%, 1fr))', gap: '1.5rem', padding: '1rem' }}>
+          {SERIES.map((series) => (
+             <div key={series.key} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem' }}>
+               <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: '#334155' }}>
+                 {series.label}
+               </h4>
+               <div style={{ width: '100%', height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#d8e0eb" />
+                      <XAxis
+                        dataKey="displayTime"
+                        tick={{ fill: '#64748b', fontSize: 11 }}
+                        angle={-30}
+                        textAnchor="end"
+                        height={70}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
+                      <Tooltip
+                        formatter={formatTooltipValue}
+                        labelFormatter={(label, payload) => {
+                          if (payload && payload[0]) {
+                            return `Time: ${payload[0].payload.fullTime}`;
+                          }
+                          return `Time: ${label}`;
+                        }}
+                      />
+                      <Legend />
+                      <Line
+                         type="monotone"
+                         dataKey={series.key}
+                         name={`${series.label}${series.unit ? ` (${series.unit})` : ''}`}
+                         stroke={series.color}
+                         strokeWidth={2}
+                         dot={false}
+                         connectNulls={true}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+               </div>
+             </div>
+          ))}
         </div>
       )}
     </div>

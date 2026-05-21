@@ -1,4 +1,38 @@
 /* ========== Auth Pages ========== */
+
+/* Force the login page to always use the light color palette */
+.auth-page.login-page {
+  /* Light mode color variables (overrides global/theme vars) */
+  --c-0ea5e9: #0ea5e9;
+  --c-06b6d4: #06b6d4;
+  --c-d8e8f3: #d8e8f3;
+  --c-rgba-255-255-255-0-35: rgba(255, 255, 255, 0.35);
+  --c-0c2c47: #0c2c47;
+  --c-f7f9fc: #f7f9fc;
+  --c-cdddec: #cdddec;
+  --c-rgba-9-40-70-0-14: rgba(9, 40, 70, 0.14);
+  --c-0e3454: #0e3454;
+  --c-3b6586: #3b6586;
+  --c-204968: #204968;
+  --c-edf5fb: #edf5fb;
+  --c-93b8d4: #93b8d4;
+  --c-102f4a: #102f4a;
+  --c-6f8fa8: #6f8fa8;
+  --c-5b92b8: #5b92b8;
+  --c-rgba-91-146-184-0-18: rgba(91, 146, 184, 0.18);
+  --c-0b3658: #0b3658;
+  --c-0a2d4a: #0a2d4a;
+  --c-0e567f: #0e567f;
+  --c-d4d7dc: #d4d7dc;
+  --c-555: #555555;
+  --c-b0b5be: #b0b5be;
+  --c-222: #222222;
+  --border: #e6eef6;
+  --text-muted: #6b7280;
+  --surface: #ffffff;
+  --shadow-lg: 0 10px 24px rgba(9, 40, 70, 0.14);
+}
+
 .auth-page {
   min-height: 100vh;
   display: flex;

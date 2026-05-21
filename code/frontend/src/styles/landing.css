@@ -1,6 +1,24 @@
 /* ========== Landing Page Styles ========== */
 
 .landing-page {
+  /* Force light mode colors for landing page */
+  --c-1e293b: #1e293b;
+  --c-ffffff: #ffffff;
+  --c-000: #000000;
+  --c-0ea5e9: #0ea5e9;
+  --c-0d1627: #0d1627;
+  --c-e2e8f0: #e2e8f0;
+  --c-0284c7: #0284c7;
+  --c-0f172a: #0f172a;
+  --c-f1f5f9: #f1f5f9;
+  --c-f0f7fb: #f0f7fb;
+  --c-334155: #334155;
+  --c-fff: #ffffff;
+  --c-rgba-0-0-0-0-05: rgba(0, 0, 0, 0.05);
+  --c-64748b: #64748b;
+  --c-f8fafc: #f8fafc;
+  --c-475569: #475569;
+
   font-family: 'Outfit', sans-serif;
   color: var(--c-1e293b);
   background-color: var(--c-ffffff);

@@ -7,3 +7,10 @@
     border-radius: 8px;
     color: var(--c-333);
 }
+
+.category-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--c-333);
+    margin-bottom: 0.75rem;
+}
