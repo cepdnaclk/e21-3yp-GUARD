@@ -27,5 +27,6 @@
             "email": "yasodhav@eng.pdn.ac.lk"
         }
     ],
-    "tags": ["Web", "Embedded Systems"]
+    "tags": ["Web", "Embedded Systems"],
+    "thumbnail":"thumbnail.jpg"
 }
