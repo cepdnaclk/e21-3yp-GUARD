@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Landing from './pages/Landing';
+import Landing from './pages/Landing/Landing';
 import Devices from './pages/Devices';
 import DeviceDetail from './pages/DeviceDetail';
 import SensorHistory from './pages/SensorHistory';
