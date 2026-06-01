@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/landing.css';
+import PublicNav from '../../components/PublicNav';
 
 
 import cloudImg from '../../assets/Image-1.png';
@@ -8,7 +9,6 @@ import dashboardImg from '../../assets/Image-2.png';
 import waterImg from '../../assets/Image-3.png';
 import feedingImg from '../../assets/Image-4.jpg';
 import problemImg from '../../assets/Image-5.jpg';
-import guardLogo from '../../assets/guard-logo.png';
 import shieldImg from '../../assets/Image.png';
 import productVideo from '../../assets/Device_intro.mp4';
 
@@ -17,21 +17,7 @@ export default function Landing() {
 
   return (
     <div className="landing-page">
-      {/* Top Navigation */}
-      <nav className="landing-nav">
-        <div className="landing-nav-logo">
-          <div className="logo-shield">
-            <img src={guardLogo} />
-          </div>
-          <span className="logo-text">G.U.A.R.D</span>
-        </div>
-        <div className="landing-nav-links">
-          <a href="#about">About</a>
-          <a href="#services">Services</a>
-          <a href="#cta">Call to action</a>
-          <a href="#contacts">Contacts</a>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero Section */}
       <section className="landing-hero" id="cta">

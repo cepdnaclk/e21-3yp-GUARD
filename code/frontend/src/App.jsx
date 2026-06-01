@@ -12,6 +12,7 @@ import Alerts from './pages/Alerts';
 import Profile from './pages/Profile';
 import Users from './pages/Users';
 import VerifyEmail from './pages/VerifyEmail';
+import About from './pages/Landing/About';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -37,6 +38,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/about" element={<About />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />

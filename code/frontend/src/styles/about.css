@@ -1,0 +1,408 @@
+/* About page specific styles and the target sections for the hero buttons */
+.landing-about { position: relative; }
+.about-sections {
+  max-width: 1100px;
+  margin-top: 6rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  padding: 0 1rem;
+}
+
+.about-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.04);
+  border: 1px solid rgba(10, 20, 36, 0.03);
+}
+
+.about-section h3 { margin-top: 0; font-size: 1.15rem; }
+.about-section p { color: var(--c-64748b); line-height: 1.6; }
+
+@media (max-width: 900px) {
+  .about-sections { grid-template-columns: 1fr; }
+}
+
+/* Hero buttons/cards that attach to the bottom of the about section */
+.hero-buttons {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -56px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  width: min(1100px, calc(100% - 4rem));
+  padding: 0 1rem;
+}
+
+.hero-button {
+  background: #02163f;
+
+  border-radius: 10px;
+  padding: 1rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(8, 20, 32, 0.04);
+  text-decoration: none;
+  color: var(--c-0f172a);
+  transition: transform 200ms ease, box-shadow 200ms ease, background-color 160ms ease;
+}
+
+.hero-button:hover,
+.hero-button:focus {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.12);
+  background: #123457;
+  color: #02163f;
+}
+
+.hero-button-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(3,18,26,0.03), rgba(3,18,26,0.02));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-0ea5e9);
+  font-size: 1.25rem;
+}
+
+.hero-button-body h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff
+}
+
+
+@media (max-width: 992px) {
+  .hero-buttons { grid-template-columns: repeat(2, 1fr); bottom: -48px; }
+}
+
+@media (max-width: 540px) {
+  .hero-buttons { grid-template-columns: 1fr; bottom: -36px; }
+}
+
+/* Sensors section */
+
+.about-sensors {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.04);
+  border: 1px solid rgba(10, 20, 36, 0.03);
+  
+}
+.about-sensors .sensor-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  min-height: 120px;
+  background: #02102d; /* dark blue */
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.08);
+  overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+  margin: 0;
+}
+.about-sensors .sensor-photo {
+  width: 40%;
+  min-width: 140px;
+  flex: 0 0 40%;
+  order: 2;
+}
+.about-sensors .sensor-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.about-sensors .sensor-body {
+  padding: 0 20px;
+  flex: 1 1 60%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  order: 1;
+}
+.about-sensors .sensor-card .sensor-name  { font-size: 18px; font-weight: 500; margin: 0; color: #9acdfa; }
+.about-sensors .sensor-card .sensor-spec  { font-size: 12px; color: rgba(255, 255, 255, 0.78); margin: 0; }
+
+/* Sensors section layout and responsive tweaks */
+.sensors-content {
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.section-label {
+  display: block;
+  font-size: 3rem;
+  color: #28a5db;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.section-sub {
+  color: var(--c-64748b);
+  max-width: 720px;
+  margin-bottom: 1rem;
+}
+
+.about-sensors .sensor-badge {
+  margin-top: 8px;
+  display: inline-block;
+  background: rgba(255,255,255,0.08);
+  color: #ffffff;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.06);
+  width: fit-content;
+}
+
+.about-sensors .sensor-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(2,6,23,0.12);
+}
+
+/* Row-based layout for paired cards */
+.sensor-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.sensor-card-empty {
+  background: transparent;
+  border-radius: 12px;
+}
+
+@media (max-width: 720px) {
+  .sensor-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .about-sensors .sensor-card {
+    flex-direction: row;
+    height: auto;
+    align-items: stretch;
+  }
+
+  .about-sensors .sensor-photo { width: 120px; min-width: 120px; }
+  .about-sensors .sensor-body { padding: 12px; }
+}
+
+@media (max-width: 420px) {
+  .about-sensors .sensor-card { flex-direction: column; height: auto; }
+  .about-sensors .sensor-photo { width: 100%; min-width: auto; height: 160px; }
+  .about-sensors .sensor-photo img { height: 100%; object-fit: cover; }
+  .about-sensors .sensor-body { padding: 14px; }
+}
+
+/* Hardware section */
+.about-hardware {
+  margin-top: 6rem;
+  background: #072c57;
+  border-radius: 30px;
+  
+}
+
+.hardware-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  margin-top: 5rem;
+  margin-bottom: 5rem;
+  color: #ffffff;
+}
+
+.hardware-label {
+  color: #9fd7ff;
+}
+
+.hardware-sub {
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 760px;
+}
+
+.hardware-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.hardware-card {
+  background: transparent;
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 1.4rem;
+  border: 3px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 32px rgba(2, 6, 23, 0.14);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.hardware-card-icon {
+  width: fit-content;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(159, 215, 255, 0.14);
+  color: #d9f1ff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hardware-card h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.hardware-card p {
+  margin: 0;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+@media (max-width: 900px) {
+  .hardware-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hardware-card {
+    min-height: auto;
+  }
+}
+
+/* Software section */
+.about-software {
+  margin-top: 4rem;
+  background: #072c57;
+  border-radius: 30px;
+}
+
+.software-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 5rem 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 2rem;
+  align-items: center;
+  color: #ffffff;
+}
+
+.software-label {
+  color: #9fd7ff;
+}
+
+.software-copy h2 {
+  margin-bottom: 0.75rem;
+}
+
+.software-sub {
+  margin: 0;
+  max-width: 700px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.software-visual {
+  display: flex;
+  justify-content: center;
+}
+
+.software-image-placeholder {
+  position: relative;
+  width: min(100%, 420px);
+  aspect-ratio: 1 / 0.92;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06)),
+    linear-gradient(135deg, #f4f8fc 0%, #d9e8f5 55%, #c4d8ec 100%);
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.software-image-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 18% 10% 28% 10%;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(2, 22, 63, 0.92), rgba(13, 54, 112, 0.92));
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.24);
+}
+
+.software-image-placeholder::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 34%;
+  background: linear-gradient(180deg, rgba(12, 86, 147, 0.12), rgba(12, 86, 147, 0.28));
+}
+
+.software-image-glow {
+  position: absolute;
+  top: 10%;
+  right: 12%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(159, 215, 255, 0.55), rgba(159, 215, 255, 0));
+  filter: blur(2px);
+}
+
+.software-image-label {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.12);
+}
+
+.software-image-label span {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.software-image-label p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+@media (max-width: 900px) {
+  .software-content {
+    grid-template-columns: 1fr;
+    padding: 4rem 1rem;
+  }
+
+  .software-visual {
+    justify-content: flex-start;
+  }
+}

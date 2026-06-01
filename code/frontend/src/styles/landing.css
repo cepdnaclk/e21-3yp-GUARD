@@ -78,11 +78,23 @@
   color: var(--c-000);
   font-size: 0.85rem;
   font-weight: 600;
-  transition: color 0.2s ease;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .landing-nav-links a:hover {
-  color: var(--c-0ea5e9);
+  background-color: var(--c-0b3658);
+  color: var(--c-ffffff);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(11, 54, 88, 0.18);
+}
+
+.landing-nav-links a:focus-visible {
+  background-color: var(--c-0b3658);
+  color: var(--c-ffffff);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(11, 54, 88, 0.18);
 }
 
 /* Hero Section */
