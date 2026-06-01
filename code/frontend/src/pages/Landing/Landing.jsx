@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/landing.css';
 import PublicNav from '../../components/PublicNav';
@@ -14,6 +16,14 @@ import productVideo from '../../assets/Device_intro.mp4';
 
 export default function Landing() {
   const { user } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash === '#contacts') {
+      const footer = document.getElementById('contacts');
+      footer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [location.hash]);
 
   return (
     <div className="landing-page">
@@ -222,6 +232,44 @@ export default function Landing() {
             <div className="why-card-body">
               <h4>Scalable & Future-Ready</h4>
               <p>Easily expand with more tanks and sensors without replacing existing devices.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="landing-how-it-works" id="how-it-works">
+        <div className="how-it-works-container">
+          <span className="section-eyebrow how-it-works-eyebrow">EASY STEPS</span>
+          <h2>HOW TO CONNECT</h2>
+
+          <div className="how-it-works-steps">
+            <div className="how-step">
+              <div className="how-step-circle">1</div>
+              <div className="how-step-content">
+                <h3>Get Your Registered Device</h3>
+              </div>
+            </div>
+
+            <div className="how-step">
+              <div className="how-step-circle">2</div>
+              <div className="how-step-content">
+                <h3>Connect to the Wifi</h3>
+              </div>
+            </div>
+
+            <div className="how-step">
+              <div className="how-step-circle">3</div>
+              <div className="how-step-content">
+                <h3>Login using the Registered User Logins</h3>
+              </div>
+            </div>
+
+            <div className="how-step">
+              <div className="how-step-circle">4</div>
+              <div className="how-step-content">
+                <h3>Moniter your Aquarium</h3>
+              </div>
             </div>
           </div>
         </div>
