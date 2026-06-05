@@ -57,6 +57,7 @@ export default function Login() {
           <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
           <span>G.U.A.R.D</span>
         </div>
+
         <ForgotPasswordFlow
           onClose={() => setShowForgot(false)}
           onSuccess={(msg) => { setShowForgot(false); setSuccessMsg(msg); }}
