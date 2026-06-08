@@ -77,7 +77,7 @@ export const authApi = {
   verifyEmail: (username, code) => request('/auth/verify-email', { method: 'POST', body: JSON.stringify({ username, code }) }),
   resendVerification: (username, email) => request('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ username, email }) }),
   getMe: () => request('/auth/me'),
-  updateProfile: (body) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
+  updateProfile: (body) => request('/auth/me', { method: 'PUT', body: JSON.stringify(body) }),
 
   // Forgot Password APIs
   forgotPasswordInit: async (username) => {

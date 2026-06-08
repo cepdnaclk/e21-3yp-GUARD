@@ -5,12 +5,16 @@ import { connectSocket, disconnectSocket } from '../services/socket';
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'token';
 const ROLE_KEY = 'role';
-const USER_KEY = 'auth_user';
 
 function normalizeUserFromAuthResponse(data, fallback = {}) {
   if (data?.user) {
     return {
       ...data.user,
+      id: data.user.id ?? fallback.id,
+      email: data.user.email ?? data.email ?? fallback.email ?? '',
+      address: data.user.address ?? data.address ?? fallback.address ?? '',
+      phoneNumber: data.user.phoneNumber ?? data.phoneNumber ?? fallback.phoneNumber ?? '',
+      createdAt: data.user.createdAt ?? data.createdAt ?? fallback.createdAt ?? null,
       role: data.user.role ?? data.role ?? fallback.role ?? null,
       fullName: data.user.fullName ?? data.fullName ?? fallback.fullName ?? '',
       username: data.user.username ?? fallback.username ?? '',
@@ -18,8 +22,13 @@ function normalizeUserFromAuthResponse(data, fallback = {}) {
   }
 
   return {
+    id: data?.id ?? fallback.id,
     username: data?.username ?? fallback.username ?? '',
+    email: data?.email ?? fallback.email ?? '',
     fullName: data?.fullName ?? fallback.fullName ?? '',
+    address: data?.address ?? fallback.address ?? '',
+    phoneNumber: data?.phoneNumber ?? fallback.phoneNumber ?? '',
+    createdAt: data?.createdAt ?? fallback.createdAt ?? null,
     role: data?.role ?? fallback.role ?? null,
   };
 }
@@ -48,7 +57,6 @@ export function AuthProvider({ children }) {
   const loadUser = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
     const storedRole = localStorage.getItem(ROLE_KEY);
-    const storedUserRaw = localStorage.getItem(USER_KEY);
     if (!token) {
       setLoading(false);
       return;
@@ -57,39 +65,24 @@ export function AuthProvider({ children }) {
     if (isTokenExpired(token)) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(ROLE_KEY);
-      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem('auth_user');
       setUser(null);
       setLoading(false);
       return;
     }
 
-    let storedUser = null;
-    if (storedUserRaw) {
-      try {
-        storedUser = JSON.parse(storedUserRaw);
-      } catch {
-        storedUser = null;
-      }
-    }
-
     try {
       const data = await authApi.getMe();
-      const nextUser = normalizeUserFromAuthResponse(data, { ...(storedUser || {}), role: storedRole });
+      const nextUser = normalizeUserFromAuthResponse(data, { role: storedRole });
       setUser(nextUser);
       if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+      localStorage.removeItem('auth_user');
       connectSocket();
     } catch {
-      if (storedUser) {
-        setUser(storedUser);
-        if (storedUser.role) localStorage.setItem(ROLE_KEY, storedUser.role);
-        connectSocket();
-      } else {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(ROLE_KEY);
-        localStorage.removeItem(USER_KEY);
-        setUser(null);
-      }
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(ROLE_KEY);
+      localStorage.removeItem('auth_user');
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -117,7 +110,7 @@ export function AuthProvider({ children }) {
     }
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    localStorage.removeItem('auth_user');
     setUser(nextUser);
     connectSocket();
   };
@@ -142,7 +135,7 @@ export function AuthProvider({ children }) {
     });
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    localStorage.removeItem('auth_user');
     setUser(nextUser);
     connectSocket();
     return authData;
@@ -159,21 +152,35 @@ export function AuthProvider({ children }) {
     });
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    localStorage.removeItem('auth_user');
     setUser(nextUser);
     connectSocket();
   };
 
   const updateProfile = async (profileData) => {
-    const updatedUser = await authApi.updateProfile(profileData);
-    setUser(updatedUser);
-    return updatedUser;
+    const updatedData = await authApi.updateProfile(profileData);
+    const nextUser = normalizeUserFromAuthResponse(updatedData, user || {});
+
+    if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
+    localStorage.removeItem('auth_user');
+    setUser(nextUser);
+    return nextUser;
+  };
+
+  const refreshUser = async () => {
+    const data = await authApi.getMe();
+    const nextUser = normalizeUserFromAuthResponse(data, user || {});
+
+    if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
+    localStorage.removeItem('auth_user');
+    setUser(nextUser);
+    return nextUser;
   };
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
-    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('auth_user');
     setUser(null);
     disconnectSocket();
   };
@@ -185,7 +192,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, hasRole, loading, login, register, googleLogin, updateProfile, logout }}>
+    <AuthContext.Provider value={{ user, role, hasRole, loading, login, register, googleLogin, updateProfile, refreshUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

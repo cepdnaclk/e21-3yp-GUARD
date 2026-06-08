@@ -17,7 +17,7 @@ function getInitials(user) {
 }
 
 export default function Profile() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -87,12 +87,20 @@ export default function Profile() {
       await updateProfile({
         username: form.username.trim(),
         fullName: form.fullName.trim(),
-        email: form.email.trim(),
+        // email omitted: cannot be changed from profile UI
         phoneNumber: form.phoneNumber.trim(),
         address: form.address.trim(),
       });
+      const latestUser = await refreshUser();
+      setForm({
+        username: latestUser.username || '',
+        fullName: latestUser.fullName || '',
+        email: latestUser.email || '',
+        phoneNumber: latestUser.phoneNumber || '',
+        address: latestUser.address || '',
+      });
       setIsEditing(false);
-      setSuccess('Profile updated in this session.');
+      setSuccess('Profile updated and verified from the database.');
     } catch (err) {
       setError(err.message || 'Failed to update profile.');
     } finally {
@@ -113,9 +121,7 @@ export default function Profile() {
       <div className="profile-card">
         {error ? <p className="error-msg profile-message">{error}</p> : null}
         {success ? <p className="profile-success-msg profile-message">{success}</p> : null}
-        <p className="profile-message" style={{ marginTop: 0 }}>
-          Profile edits are currently stored locally because no backend profile update endpoint is available.
-        </p>
+        
 
         <div className="profile-grid">
           <label className="profile-field">
@@ -123,8 +129,8 @@ export default function Profile() {
             <input
               type="email"
               value={form.email}
-              onChange={onChange('email')}
-              disabled={!isEditing || saving}
+              // Email cannot be edited from the profile page
+              disabled={true}
               placeholder="Email"
             />
           </label>

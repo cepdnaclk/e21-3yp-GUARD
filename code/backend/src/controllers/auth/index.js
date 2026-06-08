@@ -10,6 +10,7 @@ export {
 } from "./passwordController.js";
 export {
   getMe,
+  updateMe,
   getWorkersByAdmin,
   getUsersByAdmin,
   getAdminsBySuperAdmin,
