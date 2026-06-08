@@ -16,6 +16,7 @@ export default function Login() {
   const [unverifiedUser, setUnverifiedUser] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [showForgot, setShowForgot] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -105,13 +106,22 @@ export default function Login() {
           <div className="form-group">
             <label>Password</label>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="Enter password"
               required
             />
-            <div className="login-password-label" style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '0.4rem' }}>
+            <div className="login-password-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(e) => setShowPassword(e.target.checked)}
+                />
+                <span>Show password</span>
+              </label>
+
               <a
                 href="#"
                 onClick={(e) => { e.preventDefault(); setShowForgot(true); }}
