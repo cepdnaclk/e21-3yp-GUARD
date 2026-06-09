@@ -14,9 +14,21 @@ export default function PublicNav() {
   const location = useLocation();
   const contactActive = location.pathname === '/' && location.hash === '#contacts';
 
+  /* If the user clicks a nav link for the page they're already on, scroll to top */
+  function handleNavClick(targetPath) {
+    if (location.pathname === targetPath) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
+  }
+
   return (
     <nav className="site-nav" aria-label="Primary">
-      <Link to="/" className="site-nav-brand" aria-label="Go to home page">
+      <Link
+        to="/"
+        className="site-nav-brand"
+        aria-label="Go to home page"
+        onClick={() => handleNavClick('/')}
+      >
         <span className="site-nav-logo">
           <img src={guardLogo} alt="G.U.A.R.D logo" />
         </span>
@@ -24,7 +36,7 @@ export default function PublicNav() {
       </Link>
 
       <div className="site-nav-links">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.map((item) =>
           item.label === 'Contact' ? (
             <Link
               key={item.label}
@@ -35,15 +47,18 @@ export default function PublicNav() {
             </Link>
           ) : (
             <NavLink
-              key={item.to}
+              key={item.label}
               to={item.to}
               end={item.end}
               className={({ isActive }) => (isActive ? 'site-nav-link active' : 'site-nav-link')}
+              onClick={() =>
+                handleNavClick(typeof item.to === 'string' ? item.to : item.to.pathname)
+              }
             >
               {item.label}
             </NavLink>
           )
-        ))}
+        )}
       </div>
     </nav>
   );
