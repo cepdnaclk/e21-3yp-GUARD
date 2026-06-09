@@ -41,6 +41,7 @@ const usersSeed = {
 const tanksSeed = [
   {
     tankId: 'GUARD-101',
+    productKey: '1111-1111-1111-1111',
     name: 'Tilapia Tank Alpha',
     workerUsernames: ['analytics_worker_1'],
     tempMin: 24,
@@ -54,6 +55,7 @@ const tanksSeed = [
   },
   {
     tankId: 'GUARD-102',
+    productKey: '2222-2222-2222-2222',
     name: 'Shrimp Tank Bravo',
     workerUsernames: ['analytics_worker_1', 'analytics_worker_2'],
     tempMin: 25,
@@ -67,6 +69,7 @@ const tanksSeed = [
   },
   {
     tankId: 'GUARD-103',
+    productKey: '3333-3333-3333-3333',
     name: 'Carp Tank Charlie',
     workerUsernames: ['analytics_worker_2'],
     tempMin: 23,
@@ -185,6 +188,7 @@ async function run() {
       },
       create: {
         tankId: tankSeed.tankId,
+        productKey: tankSeed.productKey,
         name: tankSeed.name,
         adminId: admin.id,
         workerIds,

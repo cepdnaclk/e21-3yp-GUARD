@@ -12,3 +12,5 @@ start_all.bat
 start_all.ps1
 code/gap_analysis.md.resolved
 code/gap_analysis.md
+code/mqtt server/mqtt-broker/docker-compose.yml
+code/mqtt server/mqtt-broker/config/mosquitto.conf
