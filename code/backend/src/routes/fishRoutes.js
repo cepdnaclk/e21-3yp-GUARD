@@ -5,9 +5,11 @@ import {
   createFish,
   updateFish,
   deleteFish,
+  upload,
 } from "../controllers/fishController.js";
 import {
   verifyToken,
+  requireRole,
   requireAnyRole,
 } from "../middleware/authMiddleware.js";
 
@@ -17,9 +19,9 @@ const router = express.Router();
 router.get("/",    verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getAllFish);
 router.get("/:id", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getFishById);
 
-// Only admins can manage the catalogue
-router.post("/",    verifyToken, requireAnyRole(["ADMIN", "SUPER_ADMIN"]), createFish);
-router.put("/:id",  verifyToken, requireAnyRole(["ADMIN", "SUPER_ADMIN"]), updateFish);
-router.delete("/:id", verifyToken, requireAnyRole(["ADMIN", "SUPER_ADMIN"]), deleteFish);
+// Only SUPER_ADMIN can manage the catalogue (add, edit, delete, upload images)
+router.post(  "/",    verifyToken, requireRole("SUPER_ADMIN"), upload.single("image"), createFish);
+router.put(   "/:id", verifyToken, requireRole("SUPER_ADMIN"), upload.single("image"), updateFish);
+router.delete("/:id", verifyToken, requireRole("SUPER_ADMIN"), deleteFish);
 
 export default router;

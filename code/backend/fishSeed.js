@@ -17,8 +17,7 @@ const FISH_SPECIES = [
     scientificName: "Poecilia reticulata",
     description:
       "One of the most popular freshwater fish, known for their vibrant colours and peaceful temperament. Highly adaptable and ideal for beginners.",
-    imageUrl:
-      "https://inaturalist-open-data.s3.amazonaws.com/photos/207665741/medium.jpg",
+    imageUrl: null,
     phMin: 6.8, phMax: 7.8,
     tempMin: 22, tempMax: 28,
     tdsMin: 100, tdsMax: 400,
