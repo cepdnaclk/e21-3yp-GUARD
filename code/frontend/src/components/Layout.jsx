@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/alerts', label: 'Notifications' },
   { to: '/analytics', label: 'Analytics' },
   { to: '/devices', label: 'Devices' },
+  { to: '/fish', label: 'Fish Info' },
 ];
 
 export default function Layout() {

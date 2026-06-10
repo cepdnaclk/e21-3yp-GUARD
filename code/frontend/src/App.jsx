@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import Users from './pages/Users';
 import VerifyEmail from './pages/VerifyEmail';
 import About from './pages/Landing/About';
+import FishInfo from './pages/FishInfo';
 
 /* ── Scrolls to top of page on every route change ── */
 function ScrollToTop() {
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="/alerts" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><Alerts /></RoleRoute>} />
           <Route path="/users" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']} fallback="/"><Users /></RoleRoute>} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/fish" element={<RoleRoute allowedRoles={['ADMIN', 'USER', 'SUPER_ADMIN']}><FishInfo /></RoleRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>

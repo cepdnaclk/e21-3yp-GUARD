@@ -269,3 +269,15 @@ export const sensorApi = {
     return Array.isArray(rows) ? rows : [];
   },
 };
+
+// ── Fish Species Catalogue ──────────────────────────────────────
+export const fishApi = {
+  // GET /api/fish?search=<query>  — returns all species, filtered by name if provided
+  list: (search = '') => {
+    const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+    return request(`/fish${qs}`);
+  },
+  // GET /api/fish/:id  — returns a single species record
+  get: (id) => request(`/fish/${id}`),
+};
+
