@@ -153,18 +153,29 @@ export const updateFish = asyncHandler(async (req, res) => {
   if (tdsMax       != null)  data.tdsMax       = parseFloat(tdsMax);
   if (turbidityMax != null)  data.turbidityMax = parseFloat(turbidityMax);
 
-  // Handle image update
+  // Handle image update (defer deleting old files until DB update succeeds)
+  const newImageUrl = req.file ? toImageUrl(req.file) : null;
+
   if (req.file) {
-    // Delete old image if one existed
-    if (existing.imageUrl) deleteImageFile(existing.imageUrl);
-    data.imageUrl = toImageUrl(req.file);
+    data.imageUrl = newImageUrl;
   } else if (removeImage === "true") {
-    // Explicit request to remove image without replacing
-    if (existing.imageUrl) deleteImageFile(existing.imageUrl);
     data.imageUrl = null;
   }
 
-  const updated = await prisma.fishSpecies.update({ where: { id }, data });
+  let updated;
+  try {
+    updated = await prisma.fishSpecies.update({ where: { id }, data });
+  } catch (err) {
+    // Clean up newly uploaded file if the DB update fails
+    if (req.file) deleteImageFile(newImageUrl);
+    throw err;
+  }
+
+  // Remove old image only after DB update succeeded
+  if (req.file || removeImage === "true") {
+    if (existing.imageUrl && existing.imageUrl !== updated.imageUrl) deleteImageFile(existing.imageUrl);
+  }
+
   return res.status(200).json(updated);
 });
 
