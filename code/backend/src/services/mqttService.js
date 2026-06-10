@@ -42,14 +42,43 @@ export const initMqtt = (ioInstance) => {
         // Subscribe at QoS 1 so the broker tracks delivery and won't re-send duplicates
         client.subscribe({ 
             'sensor/+/+': { qos: 1 }, 
-            'alert/+/+': { qos: 1 } 
+            'alert/+/+': { qos: 1 },
+            'device/+/request_thresholds': { qos: 1 }
         }, (err) => { 
-            if (!err) console.log('✅ Listening for sensor and alert topics...'); 
+            if (!err) console.log('✅ Listening for sensor, alert, and threshold request topics...'); 
         });
     });
 
     client.on('message', async (topic, message, packet) => {
         const [prefix, tankId, sensorType] = topic.split('/');
+
+        // Handle threshold request topic: device/{tankId}/request_thresholds
+        if (prefix === 'device' && sensorType === 'request_thresholds') {
+            console.log(`📡 Device ${tankId} requested threshold sync.`);
+            try {
+                const tank = await prisma.tank.findUnique({
+                    where: { tankId }
+                });
+                if (tank) {
+                    const { publishThresholdsToDevice } = await import('./thresholdService.js');
+                    const mqttUpdates = {
+                        temp_min: tank.tempMin,
+                        temp_max: tank.tempMax,
+                        tds_min: tank.tdsMin,
+                        tds_max: tank.tdsMax,
+                        water_level: tank.waterLevelThreshold,
+                        water_stop: tank.waterStopThreshold,
+                    };
+                    await publishThresholdsToDevice(tankId, mqttUpdates);
+                    console.log(`✅ Sent current DB thresholds to device ${tankId}`);
+                } else {
+                    console.warn(`⚠️ Device ${tankId} requested thresholds but tank not found in DB`);
+                }
+            } catch (err) {
+                console.error(`❌ Failed to sync thresholds for requested device ${tankId}:`, err.message);
+            }
+            return;
+        }
 
         // Ignore retained messages for alerts to prevent re-processing old events on restart
         if (packet.retain && prefix === 'alert') {
@@ -344,6 +373,22 @@ export const publishActuatorCommand = (topic, payload) => {
 
     return new Promise((resolve, reject) => {
         mqttClient.publish(topic, message, { qos: 0 }, (error) => {
+            if (error) return reject(error);
+            resolve();
+        });
+    });
+};
+
+export const publishThresholdConfig = (topic, payload) => {
+    if (!mqttClient || !mqttClient.connected) {
+        throw new Error('MQTT broker is not connected.');
+    }
+
+    const message = typeof payload === 'string' ? payload : String(payload);
+
+    return new Promise((resolve, reject) => {
+        // Publish configuration with QoS 1 and Retain: true so offline devices receive them on connection
+        mqttClient.publish(topic, message, { qos: 1, retain: true }, (error) => {
             if (error) return reject(error);
             resolve();
         });

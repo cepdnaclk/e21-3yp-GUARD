@@ -1,4 +1,4 @@
-import { publishActuatorCommand } from "./mqttService.js";
+import { publishThresholdConfig } from "./mqttService.js";
 
 /**
  * Publishes threshold values to the ESP32 via MQTT.
@@ -12,8 +12,8 @@ export const publishThresholdsToDevice = async (tankId, thresholds) => {
   const publishPromises = Object.entries(thresholds).map(([key, value]) => {
     const topic = `device/${tankId}/set/${key}`;
     const payload = String(parseFloat(value)); // Must be a plain float string per spec
-    console.log(`📡 Publishing threshold to ESP32: ${topic} = ${payload}`);
-    return publishActuatorCommand(topic, payload);
+    console.log(`📡 Publishing threshold to ESP32: ${topic} = ${payload} (Retained)`);
+    return publishThresholdConfig(topic, payload);
   });
 
   await Promise.all(publishPromises);

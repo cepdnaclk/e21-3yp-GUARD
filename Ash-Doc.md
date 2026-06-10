@@ -39,3 +39,11 @@ We introduced a premium design feel using curated modern colors, glassmorphism, 
 - **Navigation Panel Restored**: Sign In ([Login.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/pages/Login.jsx)) and Sign Up ([Register.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/pages/Register.jsx)) now display the public navigation bar (`<PublicNav />`) at the top of the viewport.
 - **Header Alignment Correction**: Nested the elements inside a flex wrapper (`.auth-wrapper`), letting `.site-nav` sit naturally on top and `.auth-page` fill the remaining height below it, centering cards correctly.
 - **De-cluttered Layout**: Removed redundant absolute-positioned `.auth-brand` headers from the login and register views to avoid visual conflicts with the header navigation.
+
+---
+
+## 5. Offline Threshold Sync Mechanism
+Implemented a hybrid sync mechanism to ensure the ESP32 receives updated threshold levels, even if the device was offline/disconnected when the thresholds were modified in the dashboard:
+- **Retained Configuration Messages**: Backend now publishes threshold updates via `publishThresholdConfig` in [mqttService.js](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/backend/src/services/mqttService.js) using `{ qos: 1, retain: true }`. The MQTT broker caches the configuration and automatically pushes it to the ESP32 the moment it reconnects.
+- **On-Demand Sync Request (Method B)**: Backend listens to the `device/+/request_thresholds` topic. When the ESP32 connects and publishes to this topic, the backend retrieves the current values from MongoDB and sends them down to the device.
+- **Refactored Threshold Service**: Updated [thresholdService.js](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/backend/src/services/thresholdService.js) to leverage retained configuration publishing instead of general actuator commands.
