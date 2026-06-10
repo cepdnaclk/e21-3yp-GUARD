@@ -260,7 +260,7 @@ function FishDetailDrawer({ fish, tanks, role, onClose, onEdit, onDelete }) {
 
   const selectedTank = tanks.find(t => t.deviceId === selectedTankId);
   const isSuperAdmin = role === 'SUPER_ADMIN';
-  const canPreset    = (role === 'ADMIN' || role === 'SUPER_ADMIN') && selectedTankId;
+  const canPreset    = role === 'ADMIN' && selectedTankId;
 
   const compatRows = selectedTank ? [
     { label: 'Temperature', icon: '🌡', unit: '°C',  value: selectedTank.currentStats?.temp,      min: fish.tempMin,  max: fish.tempMax,      range: fmtRange(fish.tempMin, fish.tempMax, '°C') },
@@ -420,7 +420,7 @@ function FishDetailDrawer({ fish, tanks, role, onClose, onEdit, onDelete }) {
           </div>
 
           {/* Apply Preset */}
-          {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+          {role === 'ADMIN' && (
             <div className="fish-preset-section">
               <p className="fish-section-label">Apply as Tank Preset</p>
               <p className="fish-preset-hint">

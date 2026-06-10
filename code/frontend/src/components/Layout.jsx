@@ -18,7 +18,7 @@ export default function Layout() {
   const { theme, toggleTheme } = useTheme();
 
   const navItems = role === 'SUPER_ADMIN'
-    ? [{ to: '/users', label: 'Users' }] // only Users
+    ? [{ to: '/users', label: 'Users' }, { to: '/fish', label: 'Fish Info' }] // Users and Fish Info
     : role === 'ADMIN'
     ? [...NAV_ITEMS, { to: '/users', label: 'Users' }] // all pages
     : NAV_ITEMS.filter(item => item.to !== '/users'); // USER → everything except Users
