@@ -61,7 +61,7 @@ router.post(
 
 // Threshold routes
 router.get("/:tankId/thresholds", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getThresholds);
-router.patch("/:tankId/thresholds", verifyToken, requireAnyRole(["ADMIN", "SUPER_ADMIN"]), updateThresholds);
+router.patch("/:tankId/thresholds", verifyToken, requireAnyRole(["ADMIN"]), updateThresholds);
 
 router.get("/", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getAllTanks);
 router.get("/:tankId/status", verifyToken, requireAnyRole(["ADMIN", "USER", "SUPER_ADMIN"]), getTankStatus);

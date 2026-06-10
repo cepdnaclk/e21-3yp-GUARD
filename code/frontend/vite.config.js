@@ -20,6 +20,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/uploads': {
+        // proxy local fish images served by the backend
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

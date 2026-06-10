@@ -126,3 +126,21 @@ model DeviceCommand {
   issuedAt   DateTime @default(now())
   status     String   @default("sent") // sent | failed
 }
+
+model FishSpecies {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String   @unique
+  scientificName String?
+  description    String?
+  imageUrl       String?
+  // Safe water condition ranges
+  phMin          Float?
+  phMax          Float?
+  tempMin        Float?
+  tempMax        Float?
+  tdsMin         Float?
+  tdsMax         Float?
+  turbidityMax   Float?   // max NTU — matches Tank schema convention
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
