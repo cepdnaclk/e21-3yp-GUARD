@@ -167,10 +167,72 @@ export default function Profile() {
     }
   };
 
+  // Profile Picture Upload
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError('');
+    setSuccess('');
+    setSaving(true);
+
+    try {
+      await authApi.uploadProfilePicture(file);
+      await refreshUser();
+      setSuccess('Profile picture updated successfully.');
+    } catch (err) {
+      setError(err.message || 'Failed to upload profile picture.');
+    } finally {
+      setSaving(false);
+      e.target.value = '';
+    }
+  };
+
+  // Profile Picture Delete
+  const handlePhotoDelete = async () => {
+    if (!window.confirm('Are you sure you want to remove your profile picture?')) return;
+
+    setError('');
+    setSuccess('');
+    setSaving(true);
+
+    try {
+      await authApi.deleteProfilePicture();
+      await refreshUser();
+      setSuccess('Profile picture removed successfully.');
+    } catch (err) {
+      setError(err.message || 'Failed to remove profile picture.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Email verification trigger
   const handleSendEmailOtp = async () => {
     if (!form.email.trim()) {
       setError('Please enter a valid email address.');
+      return;
+    }
+    setError('');
+    setVerifyingEmailLoading(true);
+    try {
+      const res = await authApi.sendEmailOtp(form.email.trim());
+      setEmailOtpSent(true);
+      if (res.debugOtp) {
+        setDevEmailOtp(res.debugOtp);
+      }
+      setSuccess('Verification OTP sent to your new email.');
+    } catch (err) {
+      setError(err.message || 'Failed to send verification code.');
+    } finally {
+      setVerifyingEmailLoading(false);
+    }
+  };
+
+  // Email verification confirm
+  const handleConfirmEmailOtp = async () => {
+    if (!emailOtp.trim()) {
+      setError('Please enter the verification code.');
       return;
     }
     setError('');
@@ -266,6 +328,14 @@ export default function Profile() {
       await updateProfile({
         fullName: form.fullName.trim(),
         address: form.address.trim(),
+      });
+      const latestUser = await refreshUser();
+      setForm({
+        username: latestUser.username || '',
+        fullName: latestUser.fullName || '',
+        email: latestUser.email || '',
+        phoneNumber: latestUser.phoneNumber || '',
+        address: latestUser.address || '',
       });
       setIsEditing(false);
       setSuccess('Profile details saved successfully.');

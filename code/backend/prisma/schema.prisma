@@ -165,4 +165,4 @@ model DeviceRequest {
   numberOfDevices Int
   notes           String?
   createdAt       DateTime @default(now())
-}
+}
