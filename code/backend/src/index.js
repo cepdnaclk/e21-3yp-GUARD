@@ -13,6 +13,7 @@ import fishRoutes from './routes/fishRoutes.js';
 import prisma from './lib/prisma.js'; 
 import { writeApi } from './lib/influx.js';
 import { initMqtt, shutdownMqtt } from './services/mqttService.js';
+import { pollTelegramUpdates } from './services/telegramService.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { Server } from 'socket.io';
 
@@ -71,6 +72,10 @@ const server = app.listen(PORT, async () => {
         await prisma.$connect();
         initMqtt(io);
         console.log('✅ MongoDB securely connected via Prisma!');
+        
+        // Start Telegram Bot polling loop
+        globalThis.telegramInterval = setInterval(pollTelegramUpdates, 3000);
+        console.log('🤖 Telegram Bot updates polling initiated.');
     } catch (error) {
         console.error('❌ Database connection failed:', error.message);
         process.exit(1);
@@ -82,6 +87,9 @@ const shutdown = async (signal) => {
     console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
     
     shutdownMqtt();
+    if (globalThis.telegramInterval) {
+        clearInterval(globalThis.telegramInterval);
+    }
     
     try {
         await writeApi.close();
@@ -104,6 +112,9 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGUSR2', async () => {
     console.log('\n🔄 nodemon restart — cleaning up MQTT...');
     shutdownMqtt();
+    if (globalThis.telegramInterval) {
+        clearInterval(globalThis.telegramInterval);
+    }
     try { await writeApi.close(); } catch { /* ignore */ }
     await prisma.$disconnect();
     process.kill(process.pid, 'SIGUSR2');

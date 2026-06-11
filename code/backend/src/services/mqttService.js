@@ -3,6 +3,7 @@ import prisma from '../lib/prisma.js';
 import { Point } from '@influxdata/influxdb-client';
 import { writeApi } from '../lib/influx.js';
 import { sendAlertEmail } from './emailService.js';
+import { sendTelegramMessage } from './telegramService.js';
 
 let io = null;
 
@@ -259,8 +260,8 @@ async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue
     const tank = await prisma.tank.findUnique({
         where: { tankId },
         include: {
-            admin: { select: { email: true } },
-            workers: { select: { email: true } },
+            admin: { select: { email: true, telegramChatId: true, phoneVerified: true } },
+            workers: { select: { email: true, telegramChatId: true, phoneVerified: true } },
         },
     });
 
@@ -289,6 +290,30 @@ async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue
     // Real-time notification via Socket.io
     if (io) {
         io.emit('alert_new', { ...newAlert, tankName: tank.name });
+    }
+
+    // ── Send Telegram Alerts ──────────────────────────────────────────
+    if (tank.isRegistered && tank.admin) {
+        const telegramChats = [...new Set([
+            tank.admin.phoneVerified && tank.admin.telegramChatId ? tank.admin.telegramChatId : null,
+            ...tank.workers.map((w) => w.phoneVerified && w.telegramChatId ? w.telegramChatId : null),
+        ].filter(Boolean))];
+
+        if (telegramChats.length > 0) {
+            console.log(`🤖 Sending Telegram alerts to chat IDs: ${telegramChats.join(', ')}`);
+            const alertText = `🚨 <b>CRITICAL ALERT</b>\n\n` +
+                              `<b>Tank:</b> ${tank.name} (${tankId})\n` +
+                              `<b>Type:</b> ${normalizedParam.toUpperCase()}\n` +
+                              `<b>Status:</b> ${alertType}\n` +
+                              `<b>Value:</b> ${sensorValue}\n\n` +
+                              `Please check the dashboard immediately to resolve.`;
+            await Promise.allSettled(
+                telegramChats.map((chatId) =>
+                    sendTelegramMessage(chatId, alertText)
+                )
+            );
+            console.log(`✅ ${telegramChats.length} Telegram alert(s) sent.`);
+        }
     }
 
     // ── Send emails ──────────────────────────────────────────────────

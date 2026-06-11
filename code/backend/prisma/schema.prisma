@@ -25,6 +25,18 @@ model User {
   fullName    String
   address     String?
   phoneNumber String?
+  profilePicture String?
+  phoneVerified Boolean @default(false)
+  telegramChatId String?
+  
+  // Pending verification details
+  pendingEmail    String?
+  pendingPhone    String?
+  emailOtpCode    String?
+  emailOtpExpiry  DateTime?
+  phoneOtpCode    String?
+  phoneOtpExpiry  DateTime?
+  
   createdAt   DateTime @default(now())
 
   // ==========================================

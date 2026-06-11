@@ -78,6 +78,16 @@ export const authApi = {
   resendVerification: (username, email) => request('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ username, email }) }),
   getMe: () => request('/auth/me'),
   updateProfile: (body) => request('/auth/me', { method: 'PUT', body: JSON.stringify(body) }),
+  sendEmailOtp: (email) => request('/auth/profile/verify-email/send', { method: 'POST', body: JSON.stringify({ email }) }),
+  confirmEmailOtp: (code) => request('/auth/profile/verify-email/confirm', { method: 'POST', body: JSON.stringify({ code }) }),
+  sendPhoneOtp: (phoneNumber) => request('/auth/profile/verify-phone/send', { method: 'POST', body: JSON.stringify({ phoneNumber }) }),
+  confirmPhoneOtp: () => request('/auth/profile/verify-phone/confirm', { method: 'POST' }),
+  uploadProfilePicture: (imageFile) => {
+    const fd = new FormData();
+    fd.append('profilePicture', imageFile);
+    return requestForm('/auth/profile/picture', 'POST', fd);
+  },
+  deleteProfilePicture: () => request('/auth/profile/picture', { method: 'DELETE' }),
 
   // Forgot Password APIs
   forgotPasswordInit: async (username) => {
