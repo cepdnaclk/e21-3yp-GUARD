@@ -9,7 +9,11 @@ let lastUpdateId = 0;
  * @param {object} [replyMarkup] - Optional Telegram ReplyMarkup
  */
 export const sendTelegramMessage = async (chatId, text, replyMarkup = null) => {
-  const token = process.env.TELEGRAM_BOT_TOKEN || "8856499141:AAFEYLa-mP8F7pBPBoQEj97Jlxzk3Y4fk6I";
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    console.error("❌ TELEGRAM_BOT_TOKEN is not defined in environment variables.");
+    return;
+  }
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
   try {
@@ -39,7 +43,11 @@ export const sendTelegramMessage = async (chatId, text, replyMarkup = null) => {
  * Matches 6-digit OTP codes and handles contact-sharing confirmations.
  */
 export const pollTelegramUpdates = async () => {
-  const token = process.env.TELEGRAM_BOT_TOKEN || "8856499141:AAFEYLa-mP8F7pBPBoQEj97Jlxzk3Y4fk6I";
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    console.error("❌ TELEGRAM_BOT_TOKEN is not defined in environment variables.");
+    return;
+  }
   const url = `https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}&timeout=0`;
 
   try {
