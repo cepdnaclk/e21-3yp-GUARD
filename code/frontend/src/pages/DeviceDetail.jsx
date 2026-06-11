@@ -202,7 +202,7 @@ export default function DeviceDetail() {
         <div className="card">
           <div className="card-header">
             <h3>Assigned Workers ({device.workers?.length || 0})</h3>
-            <div className="worker-assign-form">
+            {/* <div className="worker-assign-form">
               <select 
                 className="form-control" 
                 defaultValue="" 
@@ -217,7 +217,7 @@ export default function DeviceDetail() {
                   ))
                 }
               </select>
-            </div>
+            </div> */}
           </div>
           {device.workers?.length === 0 ? (
             <div className="empty-state"><p>No workers assigned to this device.</p></div>

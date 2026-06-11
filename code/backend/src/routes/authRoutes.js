@@ -15,6 +15,7 @@ import {
   getAdminsBySuperAdmin,
   deleteAdminBySuperAdmin,
   updateProfile,
+  updateMe,
   forgotPasswordInit,
   forgotPasswordVerifyEmail,
   forgotPasswordVerifyCode,
@@ -63,6 +64,7 @@ router.post("/forgot-password/reset", forgotPasswordReset);
 
 // ── Protected routes ─────────────────────────────────────────────────────────
 router.get("/me", verifyToken, getMe);
+router.put("/me", verifyToken, requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]), updateMe);
 router.post(
   "/create-admin",
   verifyToken,
