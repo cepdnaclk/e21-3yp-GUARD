@@ -164,6 +164,11 @@
   border-color: var(--border);
 }
 
+.auth-or-divider {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  color: #102f4a;
+}
 .auth-divider span {
   color: var(--text-muted);
   font-size: 0.8rem;
@@ -173,6 +178,7 @@
   margin-top: 1.25rem;
   text-align: center;
   font-size: 0.9rem;
+  color: #102f4a;
 }
 
 @media (max-width: 768px) {
