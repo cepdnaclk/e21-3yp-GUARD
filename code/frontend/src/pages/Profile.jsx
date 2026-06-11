@@ -265,7 +265,17 @@ export default function Profile() {
     try {
       await updateProfile({
         fullName: form.fullName.trim(),
+        // email omitted: cannot be changed from profile UI
+        phoneNumber: form.phoneNumber.trim(),
         address: form.address.trim(),
+      });
+      const latestUser = await refreshUser();
+      setForm({
+        username: latestUser.username || '',
+        fullName: latestUser.fullName || '',
+        email: latestUser.email || '',
+        phoneNumber: latestUser.phoneNumber || '',
+        address: latestUser.address || '',
       });
       setIsEditing(false);
       setSuccess('Profile details saved successfully.');
@@ -289,6 +299,9 @@ export default function Profile() {
       </div>
 
       <div className="profile-card">
+        {error ? <p className="error-msg profile-message">{error}</p> : null}
+        {success ? <p className="profile-success-msg profile-message">{success}</p> : null}
+        
         {/* Profile Header Block */}
         <div className="profile-header-section">
           <div className="profile-avatar-container">
