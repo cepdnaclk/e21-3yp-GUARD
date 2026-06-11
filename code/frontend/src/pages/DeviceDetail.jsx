@@ -127,6 +127,7 @@ export default function DeviceDetail() {
     try {
       await deviceApi.unassignUser(id, userId);
       await loadData(); // Refresh device workers
+      alert('Worker removed successfully.');
     } catch (err) {
       alert(err.message);
     } finally {

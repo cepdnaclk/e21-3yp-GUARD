@@ -60,7 +60,7 @@ const USER_SELECT_FIELDS = {
 export const getMe = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.userId },
-    select: { id: true, username: true, email: true, fullName: true, role: true, address: true, phoneNumber: true, createdAt: true },
+    select: USER_SELECT_FIELDS,
   });
   if (!user) throw new AppError("User not found.", 404);
   return res.json(user);
@@ -90,13 +90,10 @@ export const updateMe = asyncHandler(async (req, res) => {
   const updated = await prisma.user.update({
     where: { id: userId },
     data: {
-      ...(username ? { username } : {}),
       ...(fullName ? { fullName } : {}),
-      ...(email ? { email } : {}),
-      ...(phoneNumber !== undefined ? { phoneNumber } : {}),
       ...(address !== undefined ? { address } : {}),
     },
-    select: { id: true, username: true, email: true, fullName: true, phoneNumber: true, address: true, role: true, createdAt: true },
+    select: USER_SELECT_FIELDS,
   });
 
   return res.status(200).json({ message: "Profile updated successfully.", user: updated });

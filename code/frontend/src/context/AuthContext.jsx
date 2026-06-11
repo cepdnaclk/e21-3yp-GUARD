@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authApi } from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
+import { useTheme } from './ThemeContext';
 
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'token';
@@ -59,6 +60,7 @@ function isTokenExpired(token) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { resetTheme } = useTheme();
 
   const loadUser = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -187,6 +189,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
     localStorage.removeItem('auth_user');
+    resetTheme();
     setUser(null);
     disconnectSocket();
   };

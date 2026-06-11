@@ -337,3 +337,10 @@ export const fishApi = {
   delete: (id) => request(`/fish/${id}`, { method: 'DELETE' }),
 };
 
+export const deviceRequestApi = {
+  create: (body) => request('/device-requests', { method: 'POST', body: JSON.stringify(body) }),
+  list: () => request('/device-requests'),
+  delete: (id) => request(`/device-requests/${id}`, { method: 'DELETE' }),
+};
+
+

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { authApi, deviceApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import CreateAccountForm from '../components/admin/CreateAccountForm';
 import AddDeviceForm from '../components/admin/AddDeviceForm';
-import AssignTankForm from '../components/admin/AssignTankForm';
 import UserTable from '../components/admin/UserTable';
 import AdminTable from '../components/admin/AdminTable';
 import DeviceInventoryTable from '../components/admin/DeviceInventoryTable';
+import DeviceRequestsTable from '../components/admin/DeviceRequestsTable';
+import { authApi, deviceApi, deviceRequestApi } from '../services/api';
 import '../styles/devices.css';
 import '../styles/profile.css';
 import '../styles/users.css';
@@ -26,6 +26,9 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [tanks, setTanks] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
 
   // Loading / feedback
   const [loading, setLoading] = useState(true);
@@ -78,19 +81,44 @@ export default function Users() {
     }
   };
 
+  const loadTanks = async () => {
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') return;
+    try {
+      const list = await deviceApi.list();
+      setTanks(Array.isArray(list) ? list : []);
+    } catch {
+      setTanks([]);
+    }
+  };
+
   const loadInventory = async () => {
     if (!canViewInventory) return;
     setInventoryLoading(true);
     try {
-      const tanks = await deviceApi.list();
-      setInventory(Array.isArray(tanks) ? tanks : []);
+      const list = await deviceApi.list();
+      setInventory(Array.isArray(list) ? list : []);
     } catch { setInventory([]); }
     finally { setInventoryLoading(false); }
+  };
+
+  const loadRequests = async () => {
+    if (role !== 'SUPER_ADMIN') return;
+    setRequestsLoading(true);
+    try {
+      const data = await deviceRequestApi.list();
+      setRequests(Array.isArray(data) ? data : []);
+    } catch {
+      setRequests([]);
+    } finally {
+      setRequestsLoading(false);
+    }
   };
 
   useEffect(() => { loadUsers(); }, [canViewUsers]);
   useEffect(() => { loadAdmins(); }, [canViewAdmins]);
   useEffect(() => { loadInventory(); }, [canViewInventory]);
+  useEffect(() => { loadTanks(); }, [role]);
+  useEffect(() => { loadRequests(); }, [role]);
 
   // ---------- Panel helpers ----------
 
@@ -141,6 +169,53 @@ export default function Users() {
       await loadUsers();
     } catch (err) {
       setDeleteError(err.message || 'Failed to delete user.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleUnassignTank = async (user, tankId) => {
+    if (!window.confirm(`Are you sure you want to remove tank "${tankId}" from user "${user.fullName || user.username}"?`)) return;
+    setBusy(true);
+    setSuccess('');
+    try {
+      await deviceApi.unassignUser(tankId, user.id);
+      setSuccess(`Tank "${tankId}" removed from user "${user.fullName || user.username}".`);
+      alert('Worker removed from tank successfully.');
+      await loadUsers();
+      await loadTanks();
+    } catch (err) {
+      alert(err.message || 'Failed to remove tank.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleAssignTanks = async (user, tankIds) => {
+    setBusy(true);
+    setSuccess('');
+    try {
+      await Promise.all(tankIds.map(tankId => deviceApi.assignUser(tankId, user.id)));
+      setSuccess(`Tanks assigned to ${user.fullName || user.username} successfully.`);
+      alert('Tanks assigned successfully.');
+      await loadUsers();
+      await loadTanks();
+    } catch (err) {
+      alert(err.message || 'Failed to assign tanks.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleResolveRequest = async (id) => {
+    if (!window.confirm("Are you sure you want to resolve/delete this request?")) return;
+    setBusy(true);
+    try {
+      await deviceRequestApi.delete(id);
+      alert("Request resolved successfully.");
+      await loadRequests();
+    } catch (err) {
+      alert(err.message || "Failed to resolve request.");
     } finally {
       setBusy(false);
     }
@@ -209,15 +284,6 @@ export default function Users() {
         />
       )}
 
-      {/* Assign Tank */}
-      {showAssign && canManageUsers && assignTarget && (
-        <AssignTankForm
-          targetUser={assignTarget}
-          onSuccess={(msg) => { setSuccess(msg); setShowAssign(false); setAssignTarget(null); loadUsers(); }}
-          onCancel={() => { setShowAssign(false); setAssignTarget(null); }}
-        />
-      )}
-
       {/* Delete User */}
       {showDelete && canManageUsers && (
         <div className="card devices-form-card">
@@ -246,12 +312,10 @@ export default function Users() {
         ) : (
           <UserTable
             users={users}
+            allTanks={tanks}
             busy={busy}
-            onAssign={(user) => {
-              closeAll();
-              setAssignTarget(user);
-              setShowAssign(true);
-            }}
+            onAssignTanks={handleAssignTanks}
+            onUnassign={handleUnassignTank}
             onDelete={(user) => {
               closeAll();
               setDeleteForm({ userId: user.id, userName: user.fullName || user.username });
@@ -290,6 +354,24 @@ export default function Users() {
             loading={inventoryLoading}
             onRefresh={loadInventory}
           />
+        </div>
+      )}
+
+      {/* Device Requests Queue (SUPER_ADMIN) */}
+      {role === 'SUPER_ADMIN' && (
+        <div className="users-section">
+          <div className="users-header devices-header">
+            <h3>Device Requests Queue ({requests.length})</h3>
+          </div>
+          {requestsLoading ? (
+            <div className="empty-state"><p>Loading requests...</p></div>
+          ) : (
+            <DeviceRequestsTable
+              requests={requests}
+              onResolve={handleResolveRequest}
+              busy={busy}
+            />
+          )}
         </div>
       )}
     </div>

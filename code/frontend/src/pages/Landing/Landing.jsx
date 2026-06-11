@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Reveal, ScrollProgress } from '../../utils/animations';
+import { deviceRequestApi } from '../../services/api';
 import '../../styles/landing.css';
 import PublicNav from '../../components/PublicNav';
 
@@ -40,6 +41,47 @@ export default function Landing() {
   const { user } = useAuth();
   const location = useLocation();
   const [pageReady, setPageReady] = useState(false);
+  const [orderForm, setOrderForm] = useState({
+    name: '',
+    email: '',
+    contactNo: '',
+    numberOfDevices: 1,
+    notes: ''
+  });
+  const [orderBusy, setOrderBusy] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderError, setOrderError] = useState('');
+  const [showOrderModal, setShowOrderModal] = useState(false);
+
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setShowOrderModal(false);
+      }
+    }
+    if (showOrderModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showOrderModal]);
+
+  const handleOrderSubmit = async (e) => {
+    e.preventDefault();
+    setOrderBusy(true);
+    setOrderError('');
+    try {
+      await deviceRequestApi.create(orderForm);
+      setOrderSuccess(true);
+    } catch (err) {
+      setOrderError(err.message || 'Failed to submit request.');
+    } finally {
+      setOrderBusy(false);
+    }
+  };
 
   /* Page-load fade-in */
   useEffect(() => {
@@ -148,7 +190,7 @@ export default function Landing() {
             {[
               { src: cloudImg, alt: 'Centralized Intelligence', title: 'Centralized Intelligence', desc: 'Alert & notification system, Local LED indicators for an emergency situations' },
               { src: dashboardImg, alt: 'Real time Dashboard', title: 'Real time & Historical Dashboard', desc: 'Vendors can monitor their entire aquarium status in a single dashboard in real time based on the measured water parameters.' },
-              { src: waterImg, alt: 'Automated filtration', title: 'Automated filtration, circulation & optional water change control.', desc: 'Keep water moving safely with automated circulation and optional water change control.' },
+              { src: waterImg, alt: 'Water pump circulation', title: 'Water pump circulation & optional water change control.', desc: 'Keep water moving safely with automated circulation and optional water change control.' },
               { src: feedingImg, alt: 'Automated feeding', title: 'Automated feeding', desc: 'Use the dedicated feeder to schedule and deliver food reliably for each tank.' },
             ].map((f, i) => (
               <Reveal key={f.title} direction="scale" delay={i * 100}>
@@ -232,6 +274,171 @@ export default function Landing() {
                 </div>
               </Reveal>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Order Section ── */}
+      <section className="landing-order" id="order" style={{ padding: '6rem 4rem', background: 'var(--c-0d1627)', color: '#fff' }}>
+        <div ref={containerRef} style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+          <Reveal>
+            <div style={{ marginBottom: '2rem' }}>
+              <span className="section-eyebrow" style={{ fontSize: '2.5rem', color: '#7cc6e8', fontWeight: 'bold' }}>Order GUARD</span>
+              <h2 style={{ fontSize: '2.5rem', marginTop: '0.5rem', fontWeight: 800 }}>Bring Smart Protection to Your Aquarium</h2>
+              <p style={{ color: '#cbd5e1', marginTop: '0.5rem', fontSize: '1.1rem', maxWidth: '600px', margin: '0.5rem auto 2rem' }}>
+                Join other aquarium owners who use GUARD to automate monitoring and protect their aquatic life from sudden water changes.
+              </p>
+              
+              <button
+                onClick={() => setShowOrderModal(!showOrderModal)}
+                className="btn btn-primary"
+                style={{
+                  background: 'var(--c-0ea5e9)',
+                  color: '#fff',
+                  fontSize: '1.2rem',
+                  padding: '1rem 2.5rem',
+                  borderRadius: '30px',
+                  fontWeight: '700',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)',
+                  transition: 'all 0.3s ease',
+                  width: 'fit-content',
+                  display: 'inline-block'
+                }}
+              >
+                {showOrderModal ? 'Close Request Form' : 'Get Started with GUARD'}
+              </button>
+            </div>
+          </Reveal>
+
+          {/* Expanding Card */}
+          <div style={{
+            maxHeight: showOrderModal ? '1200px' : '0px',
+            opacity: showOrderModal ? 1 : 0,
+            overflow: 'hidden',
+            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            textAlign: 'left',
+            marginTop: '1.5rem'
+          }}>
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.03)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '24px',
+              padding: '2.5rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              color: '#fff'
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>Get Started with GUARD</h3>
+                <p style={{ color: '#cbd5e1', marginTop: '0.5rem', fontSize: '0.95rem' }}>
+                  Fill out the form below to request GUARD devices for your aquarium ecosystem.
+                </p>
+              </div>
+
+              {orderSuccess ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                  <div style={{ fontSize: '3.5rem', color: 'var(--c-22c55e)', marginBottom: '1rem' }}>✓</div>
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Request Submitted!</h3>
+                  <p style={{ color: '#94a3b8' }}>
+                    Thank you for your interest. We will contact you soon to finalize your order.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    style={{ marginTop: '1.5rem', color: '#fff', borderColor: 'rgba(255,255,255,0.2)', width: 'fit-content', display: 'inline-block' }}
+                    onClick={() => {
+                      setOrderSuccess(false);
+                      setOrderForm({ name: '', email: '', contactNo: '', numberOfDevices: 1, notes: '' });
+                    }}
+                  >
+                    Submit Another Request
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleOrderSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {orderError && <p className="error-msg" style={{ margin: 0 }}>{orderError}</p>}
+                  
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ color: '#cbd5e1', fontSize: '0.9rem', fontWeight: 600 }}>Full Name *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
+                      value={orderForm.name}
+                      onChange={(e) => setOrderForm({ ...orderForm, name: e.target.value })}
+                      required
+                      placeholder="John Doe"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ color: '#cbd5e1', fontSize: '0.9rem', fontWeight: 600 }}>Email Address *</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
+                      value={orderForm.email}
+                      onChange={(e) => setOrderForm({ ...orderForm, email: e.target.value })}
+                      required
+                      placeholder="john@example.com"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ color: '#cbd5e1', fontSize: '0.9rem', fontWeight: 600 }}>Contact Number *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
+                      value={orderForm.contactNo}
+                      onChange={(e) => setOrderForm({ ...orderForm, contactNo: e.target.value })}
+                      required
+                      placeholder="+94 77 123 4567"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ color: '#cbd5e1', fontSize: '0.9rem', fontWeight: 600 }}>Number of Devices Needed * (Max 20)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      className="form-input"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
+                      value={orderForm.numberOfDevices}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        setOrderForm({ ...orderForm, numberOfDevices: val > 20 ? 20 : val < 1 ? 1 : val || '' });
+                      }}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ color: '#cbd5e1', fontSize: '0.9rem', fontWeight: 600 }}>Special Notes / Requirements</label>
+                    <textarea
+                      rows="3"
+                      className="form-input"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', width: '100%', padding: '0.6rem 0.75rem', fontFamily: 'inherit' }}
+                      value={orderForm.notes}
+                      onChange={(e) => setOrderForm({ ...orderForm, notes: e.target.value })}
+                      placeholder="Tell us about your setup (number of tanks, species, etc.)"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={orderBusy}
+                    style={{ background: 'var(--c-0ea5e9)', color: '#fff', marginTop: '0.5rem', width: '100%', borderRadius: '8px', fontWeight: 'bold' }}
+                  >
+                    {orderBusy ? 'Submitting...' : 'Submit Request'}
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </section>
