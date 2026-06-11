@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import prisma from "../../lib/prisma.js";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { AppError } from "../../lib/AppError.js";
@@ -13,19 +14,16 @@ function maskEmail(email) {
   return `${localPart[0]}${localPart[1]}***@${domain}`;
 }
 
-// ─── Step 1: Init ─────────────────────────────────────────────────────────────
+// ─── Step 1: Init ─────────────────────────────────────────────────────────────────────
 export const forgotPasswordInit = asyncHandler(async (req, res) => {
   const { username } = req.body;
   if (!username) throw new AppError("Username is required.", 400);
 
   const user = await prisma.user.findUnique({ where: { username } });
-  if (!user) {
-    throw new AppError("User not found.", 404);
-  }
 
-  // Check if it's a real email
-  if (user.email.endsWith("@local.guard")) {
-    throw new AppError("Account does not have a valid email for recovery. Please contact support.", 400);
+  // Return a generic response whether or not the user exists (prevents user enumeration)
+  if (!user || user.email.endsWith("@local.guard")) {
+    return res.status(200).json({ maskedEmail: "xx***@***.***" });
   }
 
   const maskedEmail = maskEmail(user.email);
@@ -53,8 +51,8 @@ export const forgotPasswordVerifyEmail = asyncHandler(async (req, res) => {
     }
   }
 
-  // Generate 6-digit code
-  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate 6-digit code using a cryptographically secure source
+  const resetCode = crypto.randomInt(100000, 1000000).toString();
   const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
   await prisma.user.update({
@@ -69,7 +67,7 @@ export const forgotPasswordVerifyEmail = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     message: "Verification code sent to your email.",
-    username: user.username // Return username so frontend can track it
+    username: user.username, // Return username so frontend can track it
   });
 });
 

@@ -2,6 +2,7 @@ import prisma from "../lib/prisma.js";
 import { findAccessibleTank } from "../lib/tankAccess.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { AppError } from "../lib/AppError.js";
+import { addTankToAllowlist } from "../services/mqttService.js";
 
 const uniqueIds = (arr) => [...new Set(arr || [])];
 
@@ -60,6 +61,10 @@ export const registerTank = asyncHandler(async (req, res) => {
       isRegistered: true,
     },
   });
+
+  // Immediately add to the in-memory MQTT allowlist so the device can
+  // start sending data without waiting for the next cache refresh cycle.
+  addTankToAllowlist(updatedTank.tankId);
 
   return res.status(200).json({
     message: "Device registered successfully.",

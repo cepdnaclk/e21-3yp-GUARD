@@ -3,7 +3,8 @@ import { authApi } from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
 
 const AuthContext = createContext(null);
-const TOKEN_KEY = 'token';
+// NOTE: TOKEN is no longer stored in localStorage — it lives in an HttpOnly cookie
+// set by the server. Only the role (non-sensitive) is stored locally for quick UI rendering.
 const ROLE_KEY = 'role';
 
 function normalizeUserFromAuthResponse(data, fallback = {}) {
@@ -61,33 +62,18 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const loadUser = useCallback(async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
     const storedRole = localStorage.getItem(ROLE_KEY);
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    if (isTokenExpired(token)) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(ROLE_KEY);
-      localStorage.removeItem('auth_user');
-      setUser(null);
-      setLoading(false);
-      return;
-    }
 
     try {
+      // The cookie is sent automatically — just validate it by hitting /auth/me
       const data = await authApi.getMe();
       const nextUser = normalizeUserFromAuthResponse(data, { role: storedRole });
       setUser(nextUser);
       if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-      localStorage.removeItem('auth_user');
       connectSocket();
     } catch {
-      localStorage.removeItem(TOKEN_KEY);
+      // Cookie missing, expired, or invalid
       localStorage.removeItem(ROLE_KEY);
-      localStorage.removeItem('auth_user');
       setUser(null);
     } finally {
       setLoading(false);
@@ -98,9 +84,7 @@ export function AuthProvider({ children }) {
 
   const login = async (credentials) => {
     const authData = await authApi.login(credentials);
-    if (!authData?.token) throw new Error('Login succeeded but token is missing.');
-
-    localStorage.setItem(TOKEN_KEY, authData.token);
+    // Backend now sets the HttpOnly cookie — no localStorage token needed
 
     let nextUser = normalizeUserFromAuthResponse(authData, {
       username: credentials.username,
@@ -116,7 +100,6 @@ export function AuthProvider({ children }) {
     }
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.removeItem('auth_user');
     setUser(nextUser);
     connectSocket();
   };
@@ -124,16 +107,12 @@ export function AuthProvider({ children }) {
   const register = async (data) => {
     const authData = await authApi.register(data);
 
-    // Email verification required — backend returns no token yet.
-    // Return the response so the UI can show the "check your inbox" screen.
+    // Email verification required — backend returns no token/cookie yet.
     if (authData?.emailVerified === false) {
-      return authData; // { message, emailVerified: false, user }
+      return authData;
     }
 
-    // No real email / @local.guard fallback — backend returns a token immediately.
-    if (!authData?.token) throw new Error('Registration failed: unexpected response from server.');
-    localStorage.setItem(TOKEN_KEY, authData.token);
-
+    // No real email / @local.guard fallback — backend sets cookie immediately.
     const nextUser = normalizeUserFromAuthResponse(authData, {
       username: data.username,
       role: authData.role,
@@ -141,7 +120,6 @@ export function AuthProvider({ children }) {
     });
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.removeItem('auth_user');
     setUser(nextUser);
     connectSocket();
     return authData;
@@ -149,8 +127,7 @@ export function AuthProvider({ children }) {
 
   const googleLogin = async (idToken) => {
     const authData = await authApi.googleLogin(idToken);
-    if (!authData?.token) throw new Error('Google login succeeded but token is missing.');
-    localStorage.setItem(TOKEN_KEY, authData.token);
+    // Backend sets the HttpOnly cookie — no localStorage token needed
 
     const nextUser = normalizeUserFromAuthResponse(authData, {
       role: authData.role,
@@ -158,7 +135,6 @@ export function AuthProvider({ children }) {
     });
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.removeItem('auth_user');
     setUser(nextUser);
     connectSocket();
   };
@@ -168,7 +144,6 @@ export function AuthProvider({ children }) {
     const nextUser = normalizeUserFromAuthResponse(updatedData, user || {});
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.removeItem('auth_user');
     setUser(nextUser);
     return nextUser;
   };
@@ -178,15 +153,18 @@ export function AuthProvider({ children }) {
     const nextUser = normalizeUserFromAuthResponse(data, user || {});
 
     if (nextUser.role) localStorage.setItem(ROLE_KEY, nextUser.role);
-    localStorage.removeItem('auth_user');
     setUser(nextUser);
     return nextUser;
   };
 
-  const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
+  const logout = async () => {
+    try {
+      // Ask the server to clear the HttpOnly cookie
+      await authApi.logout();
+    } catch {
+      // Best-effort — still clear local state even if server call fails
+    }
     localStorage.removeItem(ROLE_KEY);
-    localStorage.removeItem('auth_user');
     setUser(null);
     disconnectSocket();
   };

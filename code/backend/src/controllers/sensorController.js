@@ -139,11 +139,14 @@ export const getTankHistory = asyncHandler(async (req, res) => {
         }
       },
       error(error) {
-        console.error("❌ Influx Query Error Details:", {
-          message: error.message,
-          stack: error.stack,
-          query: fluxQuery
-        });
+        if (process.env.NODE_ENV !== 'production') {
+          console.error("❌ Influx Query Error Details:", {
+            message: error.message,
+            query: fluxQuery,
+          });
+        } else {
+          console.error("❌ Influx Query Error:", error.message);
+        }
         reject(new AppError(`InfluxDB Error: ${error.message}`, 500));
       },
       complete() {

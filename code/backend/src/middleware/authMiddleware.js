@@ -1,19 +1,29 @@
 import jwt from "jsonwebtoken";
 
-export const verifyToken = (req, res, next) => {
+/**
+ * Extracts the JWT from (in order of priority):
+ *  1. HttpOnly cookie named "token"  — preferred, XSS-safe transport
+ *  2. Authorization: Bearer <token>  — legacy / ESP32 / API-key clients
+ */
+const extractToken = (req) => {
+  if (req.cookies?.token) return req.cookies.token;
   const authHeader = req.header("Authorization");
+  if (authHeader?.startsWith("Bearer ")) return authHeader.split(" ")[1];
+  return null;
+};
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+export const verifyToken = (req, res, next) => {
+  const token = extractToken(req);
+
+  if (!token) {
     return res.status(401).json({ error: "Access denied. No token provided." });
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     return next();
-  } catch (error) {
+  } catch {
     return res.status(401).json({ error: "Invalid or expired token." });
   }
 };

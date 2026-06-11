@@ -18,6 +18,25 @@ const SENSOR_MAP = {
     waterlevel:  ['lastWaterLevel', 'waterLevel'],
 };
 
+// ── Registered-tank allowlist cache ──────────────────────────────────────────
+// Refreshed every 5 minutes. Drops MQTT messages for unknown tankIds before
+// any DB or InfluxDB operation, preventing flooding-based DoS.
+let registeredTankIds = new Set();
+
+const refreshRegisteredTankCache = async () => {
+    try {
+        const tanks = await prisma.tank.findMany({
+            where: { isRegistered: true },
+            select: { tankId: true },
+        });
+        registeredTankIds = new Set(tanks.map(t => t.tankId));
+        console.log(`✅ Tank allowlist refreshed: ${registeredTankIds.size} registered tanks.`);
+    } catch (err) {
+        console.error('❌ Failed to refresh tank allowlist:', err.message);
+    }
+};
+
+
 export const initMqtt = (ioInstance) => {
     io = ioInstance;
 
@@ -26,6 +45,10 @@ export const initMqtt = (ioInstance) => {
         mqttClient.end(true);
         mqttClient = null;
     }
+
+    // Build initial tank allowlist then refresh every 5 minutes
+    refreshRegisteredTankCache();
+    setInterval(refreshRegisteredTankCache, 5 * 60 * 1000);
 
     const brokerUrl = process.env.MQTT_BROKER_URL;
     
@@ -53,7 +76,11 @@ export const initMqtt = (ioInstance) => {
     client.on('message', async (topic, message, packet) => {
         const [prefix, tankId, sensorType] = topic.split('/');
 
-        // Handle threshold request topic: device/{tankId}/request_thresholds
+        // ── Allowlist guard: drop sensor/alert messages for unregistered tanks ──
+        // Device requests are exempt as they may come from newly flashed hardware.
+        if (prefix !== 'device' && !registeredTankIds.has(tankId)) {
+            return; // Silently discard — prevents DB flooding from unknown devices
+        }
         if (prefix === 'device' && sensorType === 'request_thresholds') {
             console.log(`📡 Device ${tankId} requested threshold sync.`);
             try {
@@ -181,6 +208,15 @@ export const shutdownMqtt = () => {
         console.log('✅ MQTT client disconnected.');
     }
 };
+
+/**
+ * Immediately adds a newly registered tank to the in-memory allowlist
+ * so MQTT messages from it are accepted before the next 5-minute refresh.
+ */
+export const addTankToAllowlist = (tankId) => {
+    registeredTankIds.add(tankId);
+};
+
 
 // ── Alert processing lock ────────────────────────────────────────────
 // Key: alertKey string → Value: Promise that resolves when processing is done.

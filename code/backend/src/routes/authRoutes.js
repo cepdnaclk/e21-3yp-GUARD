@@ -59,6 +59,16 @@ router.post("/login", validateLogin, login);
 router.post("/register", register);
 router.post("/google", googleLogin);
 
+// Logout — clears the HttpOnly auth cookie
+router.post("/logout", (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+  return res.status(200).json({ message: 'Logged out successfully.' });
+});
+
 // Email verification via POST (expects username and code in body)
 router.post("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerificationEmail);

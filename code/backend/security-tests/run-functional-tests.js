@@ -12,11 +12,25 @@ async function generateToken(user) {
 
 async function cleanupTestData() {
   console.log("🧹 Cleaning up old test data...");
-  await prisma.tank.deleteMany({ where: { tankId: { startsWith: '_TEST_' } } });
-  
-  // Delete child users first to avoid violating the AdminToWorkers relationship
-  await prisma.user.deleteMany({ where: { username: { startsWith: '_TEST_' }, role: 'USER' } });
-  await prisma.user.deleteMany({ where: { username: { startsWith: '_TEST_' } } });
+  try {
+    const tanks = await prisma.tank.findMany({
+      where: { tankId: { startsWith: '_TEST_' } },
+      select: { tankId: true }
+    });
+    for (const t of tanks) {
+      await prisma.tank.delete({ where: { tankId: t.tankId } }).catch(() => {});
+    }
+
+    const users = await prisma.user.findMany({
+      where: { username: { startsWith: '_TEST_' } },
+      select: { id: true }
+    });
+    for (const u of users) {
+      await prisma.user.delete({ where: { id: u.id } }).catch(() => {});
+    }
+  } catch (err) {
+    console.warn("⚠️ Error cleaning up test data:", err.message);
+  }
 }
 
 async function runFunctionalTests() {

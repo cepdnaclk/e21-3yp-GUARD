@@ -1,8 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import jwt from 'jsonwebtoken';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 import authRoutes from './routes/authRoutes.js';
@@ -19,18 +23,66 @@ import { Server } from 'socket.io';
 
 const app = express();
 
+// ── Allowed CORS origins (comma-separated in env) ────────────────────────────
 const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map(o => o.trim());
 
+// ── Security headers (helmet) ─────────────────────────────────────────────────
+// Disable contentSecurityPolicy here so it doesn't interfere with the frontend
+// dev server; tighten in production via CSP env var or reverse-proxy config.
+app.use(helmet({ contentSecurityPolicy: false }));
+
+// ── CORS — allow cookies to be sent cross-origin ─────────────────────────────
 app.use(cors({
-  origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
+  origin: (origin, callback) => {
+    // Allow same-origin requests (origin is undefined) and whitelisted origins
+    if (!origin || corsOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} is not allowed`));
+  },
+  credentials: true,          // Required for HttpOnly cookie transport
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Key'],
 }));
-app.use(express.json());
-// Serve locally uploaded fish images
+
+// ── Cookie parser (for HttpOnly JWT cookie) ───────────────────────────────────
+app.use(cookieParser());
+
+// ── Body parser with size limit (prevents payload-based DoS) ─────────────────
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// ── Global rate limiter ───────────────────────────────────────────────────────
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+app.use(globalLimiter);
+
+// ── Strict auth rate limiter (login, register, forgot-password, OTP) ─────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many auth requests. Please wait 15 minutes before trying again.' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/verify-email', authLimiter);
+app.use('/api/auth/resend-verification', authLimiter);
+app.use('/api/auth/profile/verify-email', authLimiter);
+app.use('/api/auth/profile/verify-phone', authLimiter);
+
+// ── Static file serving ───────────────────────────────────────────────────────
+// Serve locally uploaded fish / profile images
 app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
 
-// Routes
+// ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/tanks', tankRoutes);
 app.use('/api/sensors', sensorRoutes);
@@ -57,12 +109,35 @@ const server = app.listen(PORT, async () => {
     const io = new Server(server, {
         cors: {
             origin: corsOrigins,
-            methods: ["GET", "POST"]
+            methods: ["GET", "POST"],
+            credentials: true,
+        }
+    });
+
+    // ── Socket.IO JWT authentication middleware ───────────────────────────────
+    // Only clients that supply a valid JWT (in handshake auth or cookie) may connect.
+    io.use((socket, next) => {
+        // Prefer token from handshake auth, fall back to cookie
+        const token =
+            socket.handshake.auth?.token ||
+            socket.handshake.headers?.cookie
+                ?.split(';')
+                .find(c => c.trim().startsWith('token='))
+                ?.split('=')[1];
+
+        if (!token) return next(new Error('Authentication required'));
+
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            socket.user = decoded;
+            next();
+        } catch {
+            next(new Error('Invalid or expired token'));
         }
     });
 
     io.on('connection', (socket) => {
-        console.log(`🔌 New client connected: ${socket.id}`);
+        console.log(`🔌 Authenticated client connected: ${socket.id} (userId=${socket.user?.userId})`);
         socket.on('disconnect', () => {
             console.log(`🔌 Client disconnected: ${socket.id}`);
         });

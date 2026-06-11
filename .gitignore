@@ -18,3 +18,9 @@ Doc_for_fish_info.md
 /code/backend/scratch
 code/backend/verify_data.js
 test_data_flow/mock_devices.js
+/code/backend/security-tests
+/code/backend/security-tests
+/code/backend/security-tests
+code/backend/security-tests/run-simulation-tests.js
+code/backend/security-tests/run-functional-tests.js
+/code/backend/security-tests

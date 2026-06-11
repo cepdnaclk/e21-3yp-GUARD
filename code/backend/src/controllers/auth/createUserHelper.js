@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../lib/AppError.js";
 import { sendVerificationEmail } from "../../services/emailService.js";
@@ -61,7 +62,7 @@ export async function createUser({
   await ensureUniqueUser(username, resolvedEmail, phoneNumber);
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const verificationCode = crypto.randomInt(100000, 1000000).toString();
   const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
   const user = await prisma.user.create({

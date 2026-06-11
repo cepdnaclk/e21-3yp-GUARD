@@ -27,6 +27,12 @@ export const errorHandler = (err, req, res, _next) => {
     return res.status(404).json({ error: 'Record not found.' });
   }
 
+  // ── Prisma: raw query / network failure (e.g. Atlas IP not whitelisted) ──
+  if (err.code === 'P2010' || err.code === 'P1001' || err.code === 'P1002') {
+    console.error('❌ Database connectivity error:', err.meta?.message || err.message);
+    return res.status(503).json({ error: 'Database unavailable. Please try again later.' });
+  }
+
   // ── Unexpected / programmer error ─────────────────────────────────
   console.error('❌ Unhandled error:', err);
   return res.status(500).json({ error: 'Internal server error.' });

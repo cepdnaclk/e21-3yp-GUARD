@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import prisma from "../../lib/prisma.js";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { AppError } from "../../lib/AppError.js";
@@ -80,7 +81,7 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
     throw new AppError("This account is already verified.", 400);
   }
 
-  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const verificationCode = crypto.randomInt(100000, 1000000).toString();
   const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   await prisma.user.update({

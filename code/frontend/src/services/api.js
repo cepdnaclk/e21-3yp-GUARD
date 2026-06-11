@@ -3,16 +3,17 @@ import { SENSOR_FIELDS } from '../constants/sensorConstants';
 const API_ENV = import.meta.env.VITE_API_URL;
 const BASE_URL = API_ENV ? `${API_ENV}/api` : '/api';
 
-// Sends one request to the backend and automatically adds the JWT token.
+// Sends one request to the backend.
+// The JWT is now stored in an HttpOnly cookie and sent automatically by the browser.
+// 'credentials: include' is required so the browser attaches cross-origin cookies.
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('token');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: 'include',   // Send the HttpOnly auth cookie on every request
+  });
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -124,6 +125,9 @@ export const authApi = {
   listWorkers: () => request('/auth/workers'),
   getUsersByAdmin: () => request('/auth/users'),
   deleteUserByAdmin: (userId) => request(`/auth/users/${userId}`, { method: 'DELETE' }),
+
+  // Logout — clears the server-side HttpOnly cookie
+  logout: () => request('/auth/logout', { method: 'POST' }),
 
   // SUPER_ADMIN-only routes.
   getAdminsBySuperAdmin: () => request('/auth/admins'),
@@ -291,14 +295,15 @@ export function getImageUrl(imageUrl) {
   return `${BACKEND_ORIGIN}${imageUrl}`;                     // e.g. /uploads/fish/fish-xxx.jpg
 }
 
-/** Send a multipart/form-data request (for file uploads). JWT auto-attached. */
+/** Send a multipart/form-data request (for file uploads). Cookie auto-attached. */
 async function requestForm(endpoint, method, formData) {
-  const token = localStorage.getItem('token');
-  const headers = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
   // Do NOT set Content-Type — browser sets it with boundary automatically for FormData
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, { method, headers, body: formData });
+  // Do NOT set Authorization header — the HttpOnly cookie is sent automatically via credentials
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method,
+    body: formData,
+    credentials: 'include',   // Attach the HttpOnly auth cookie
+  });
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     throw new Error(data?.error || data?.errors?.[0]?.msg || `Request failed (${response.status})`);

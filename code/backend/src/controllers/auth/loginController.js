@@ -6,8 +6,25 @@ import prisma from "../../lib/prisma.js";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { AppError } from "../../lib/AppError.js";
 
-const DEFAULT_GOOGLE_CLIENT_ID = "108391237039-0jg9nf8pjn48vi5bqi8bbth2kfe03vtm.apps.googleusercontent.com";
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID);
+// Fail fast if the Google Client ID is not configured
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+if (!googleClientId) {
+  throw new Error('GOOGLE_CLIENT_ID environment variable is required but not set.');
+}
+const googleClient = new OAuth2Client(googleClientId);
+
+/**
+ * Attaches the JWT as an HttpOnly, Secure, SameSite=Strict cookie.
+ * Falls back to a 2-hour expiry matching the token lifetime.
+ */
+const attachAuthCookie = (res, token) => {
+  res.cookie('token', token, {
+    httpOnly: true,                                         // Not accessible from JavaScript
+    secure: process.env.NODE_ENV === 'production',          // HTTPS only in production
+    sameSite: 'strict',                                     // Prevent CSRF
+    maxAge: 2 * 60 * 60 * 1000,                            // 2 hours (matches JWT expiry)
+  });
+};
 
 const buildUniqueUsername = async (email, fallbackName = "google_user") => {
   const seed = (email?.split("@")[0] || fallbackName)
@@ -49,8 +66,10 @@ export const login = asyncHandler(async (req, res) => {
     { expiresIn: "2h" }
   );
 
+  attachAuthCookie(res, token);
+
   return res.json({
-    token,
+    token,      // Also returned in body for API clients / ESP32 devices
     role: user.role,
     fullName: user.fullName,
     adminId: user.adminId || null,
@@ -69,7 +88,7 @@ export const googleLogin = asyncHandler(async (req, res) => {
   try {
     ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID,
+      audience: googleClientId,
     });
   } catch {
     throw new AppError("Invalid Google token.", 401);
@@ -108,6 +127,8 @@ export const googleLogin = asyncHandler(async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: "2h" }
   );
+
+  attachAuthCookie(res, token);
 
   return res.json({
     token,

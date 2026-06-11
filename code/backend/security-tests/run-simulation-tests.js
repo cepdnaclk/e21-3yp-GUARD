@@ -28,9 +28,22 @@ async function runSimulation() {
     try {
         // 1. SETUP DATABASE
         console.log("⚙️  Setting up simulation environment in Database...");
-        await prisma.alert.deleteMany({ where: { tankId: '_SIM_TANK_01' } });
-        await prisma.tank.deleteMany({ where: { tankId: '_SIM_TANK_01' } });
-        await prisma.user.deleteMany({ where: { username: '_SIM_ADMIN' } });
+        try {
+            const alerts = await prisma.alert.findMany({ where: { tankId: '_SIM_TANK_01' }, select: { id: true } });
+            for (const a of alerts) {
+                await prisma.alert.delete({ where: { id: a.id } }).catch(() => {});
+            }
+            const tanks = await prisma.tank.findMany({ where: { tankId: '_SIM_TANK_01' }, select: { tankId: true } });
+            for (const t of tanks) {
+                await prisma.tank.delete({ where: { tankId: t.tankId } }).catch(() => {});
+            }
+            const users = await prisma.user.findMany({ where: { username: '_SIM_ADMIN' }, select: { id: true } });
+            for (const u of users) {
+                await prisma.user.delete({ where: { id: u.id } }).catch(() => {});
+            }
+        } catch (err) {
+            console.warn("⚠️ Warning during simulation setup cleanup:", err.message);
+        }
 
         const hash = await bcrypt.hash('password123', 10);
         const admin = await prisma.user.create({
@@ -122,9 +135,22 @@ async function runSimulation() {
     } finally {
         console.log("\n🧹 Cleaning up simulation data...");
         if (mqttClient) mqttClient.end();
-        await prisma.alert.deleteMany({ where: { tankId: '_SIM_TANK_01' } });
-        await prisma.tank.deleteMany({ where: { tankId: '_SIM_TANK_01' } });
-        await prisma.user.deleteMany({ where: { username: '_SIM_ADMIN' } });
+        try {
+            const alerts = await prisma.alert.findMany({ where: { tankId: '_SIM_TANK_01' }, select: { id: true } });
+            for (const a of alerts) {
+                await prisma.alert.delete({ where: { id: a.id } }).catch(() => {});
+            }
+            const tanks = await prisma.tank.findMany({ where: { tankId: '_SIM_TANK_01' }, select: { tankId: true } });
+            for (const t of tanks) {
+                await prisma.tank.delete({ where: { tankId: t.tankId } }).catch(() => {});
+            }
+            const users = await prisma.user.findMany({ where: { username: '_SIM_ADMIN' }, select: { id: true } });
+            for (const u of users) {
+                await prisma.user.delete({ where: { id: u.id } }).catch(() => {});
+            }
+        } catch (err) {
+            console.warn("⚠️ Warning during simulation cleanup:", err.message);
+        }
         await prisma.$disconnect();
         console.log(`\n📄 Any failures have been permanently logged to: ${LOG_FILE}`);
     }

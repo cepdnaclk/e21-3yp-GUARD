@@ -5,6 +5,7 @@ import { sendVerificationEmail } from "../../services/emailService.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,16 +27,25 @@ export const upload = multer({
   storage,
   limits: { fileSize: 3 * 1024 * 1024 }, // 3 MB cap
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) return cb(null, true);
-    cb(new AppError("Only image files are allowed.", 400));
+    const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (ALLOWED_MIMES.includes(file.mimetype)) return cb(null, true);
+    cb(new AppError("Only JPEG, PNG, GIF, and WebP image files are allowed.", 400));
   },
 });
 
-/* Helper to delete old files */
+/* Helper to safely delete image files — guards against path traversal */
 function deleteImageFile(imageUrl) {
   if (!imageUrl) return;
+  const uploadRoot = path.resolve(__dirname, "../../../../public");
   const relativePath = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
-  const filePath = path.join(__dirname, "../../../../public", relativePath);
+  const filePath = path.resolve(uploadRoot, relativePath);
+
+  // Path traversal guard: resolved path must be inside public/
+  if (!filePath.startsWith(uploadRoot + path.sep)) {
+    console.error(`⚠️ Path traversal blocked: ${filePath}`);
+    return;
+  }
+
   fs.unlink(filePath, (err) => {
     if (err && err.code !== "ENOENT") {
       console.warn(`⚠️ Could not delete old profile image: ${filePath}`);
@@ -226,7 +236,7 @@ export const sendEmailOtp = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new AppError("User not found.", 404);
 
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpCode = crypto.randomInt(100000, 1000000).toString();
   const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
   await prisma.user.update({
@@ -242,7 +252,6 @@ export const sendEmailOtp = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     message: "Verification code sent to your new email.",
-    debugOtp: otpCode,
   });
 });
 
@@ -305,7 +314,7 @@ export const sendPhoneOtp = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new AppError("User not found.", 404);
 
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpCode = crypto.randomInt(100000, 1000000).toString();
   const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
   await prisma.user.update({
@@ -318,11 +327,9 @@ export const sendPhoneOtp = asyncHandler(async (req, res) => {
     }
   });
 
-  console.log(`💬 Generated Telegram OTP code ${otpCode} for ${cleanPhone}`);
-
+  // OTP sent via Telegram — not logged to console
   return res.status(200).json({
     message: "Verification code generated. Please send this code to our Telegram bot to verify.",
-    debugOtp: otpCode,
   });
 });
 
