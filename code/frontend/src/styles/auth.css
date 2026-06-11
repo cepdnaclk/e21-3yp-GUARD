@@ -33,6 +33,12 @@
   --shadow-lg: 0 10px 24px rgba(9, 40, 70, 0.14);
 }
 
+.auth-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 .auth-page {
   min-height: 100vh;
   display: flex;
@@ -40,6 +46,11 @@
   justify-content: center;
   background: linear-gradient(135deg, var(--c-0ea5e9) 0%, var(--c-06b6d4) 100%);
   padding: 1rem;
+}
+
+.auth-wrapper .auth-page {
+  min-height: auto;
+  flex: 1;
 }
 
 .auth-card {

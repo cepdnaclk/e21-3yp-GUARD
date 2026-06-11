@@ -17,4 +17,11 @@ export {
   deleteAdminBySuperAdmin,
   deleteUserByAdmin,
   updateProfile,
+  upload,
+  uploadProfilePicture,
+  deleteProfilePicture,
+  sendEmailOtp,
+  confirmEmailOtp,
+  sendPhoneOtp,
+  confirmPhoneOtp,
 } from "./userController.js";

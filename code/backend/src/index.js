@@ -1,13 +1,19 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
 import authRoutes from './routes/authRoutes.js';
 import tankRoutes from './routes/tankRoutes.js';
 import sensorRoutes from './routes/sensorRoutes.js';
 import alertRoutes from './routes/alertRoutes.js';
+import fishRoutes from './routes/fishRoutes.js';
 import prisma from './lib/prisma.js'; 
 import { writeApi } from './lib/influx.js';
 import { initMqtt, shutdownMqtt } from './services/mqttService.js';
+import { pollTelegramUpdates } from './services/telegramService.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { Server } from 'socket.io';
 
@@ -21,12 +27,15 @@ app.use(cors({
   origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
 }));
 app.use(express.json());
+// Serve locally uploaded fish images
+app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tanks', tankRoutes);
 app.use('/api/sensors', sensorRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/fish', fishRoutes);
 
 app.get('/', (req, res) => res.send('Water IoT Backend is running!'));
 
@@ -63,6 +72,10 @@ const server = app.listen(PORT, async () => {
         await prisma.$connect();
         initMqtt(io);
         console.log('✅ MongoDB securely connected via Prisma!');
+        
+        // Start Telegram Bot polling loop
+        globalThis.telegramInterval = setInterval(pollTelegramUpdates, 3000);
+        console.log('🤖 Telegram Bot updates polling initiated.');
     } catch (error) {
         console.error('❌ Database connection failed:', error.message);
         process.exit(1);
@@ -74,6 +87,9 @@ const shutdown = async (signal) => {
     console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
     
     shutdownMqtt();
+    if (globalThis.telegramInterval) {
+        clearInterval(globalThis.telegramInterval);
+    }
     
     try {
         await writeApi.close();
@@ -96,6 +112,9 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGUSR2', async () => {
     console.log('\n🔄 nodemon restart — cleaning up MQTT...');
     shutdownMqtt();
+    if (globalThis.telegramInterval) {
+        clearInterval(globalThis.telegramInterval);
+    }
     try { await writeApi.close(); } catch { /* ignore */ }
     await prisma.$disconnect();
     process.kill(process.pid, 'SIGUSR2');

@@ -5,6 +5,7 @@ import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 import ForgotPasswordFlow from '../components/auth/ForgotPasswordFlow';
 import EmailVerificationBanner from '../components/auth/EmailVerificationBanner';
 import guardLogo from '../assets/guard-logo.png';
+import PublicNav from '../components/PublicNav';
 import '../styles/auth.css';
 
 export default function Login() {
@@ -53,28 +54,23 @@ export default function Login() {
 
   if (showForgot) {
     return (
-      <div className="auth-page login-page">
-        <div className="auth-brand">
-          <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
-          <span>G.U.A.R.D</span>
+      <div className="auth-wrapper">
+        <PublicNav />
+        <div className="auth-page login-page">
+          <ForgotPasswordFlow
+            onClose={() => setShowForgot(false)}
+            onSuccess={(msg) => { setShowForgot(false); setSuccessMsg(msg); }}
+          />
         </div>
-
-        <ForgotPasswordFlow
-          onClose={() => setShowForgot(false)}
-          onSuccess={(msg) => { setShowForgot(false); setSuccessMsg(msg); }}
-        />
       </div>
     );
   }
 
   return (
-    <div className="auth-page login-page">
-      <div className="auth-brand">
-        <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
-        <span>G.U.A.R.D</span>
-      </div>
-
-      <div className="auth-card login-card">
+    <div className="auth-wrapper">
+      <PublicNav />
+      <div className="auth-page login-page">
+        <div className="auth-card login-card">
         <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>
         <h1>Welcome Back</h1>
         <p className="subtitle">Sign in to G.U.A.R.D Dashboard</p>
@@ -149,5 +145,6 @@ export default function Login() {
         </p>
       </div>
     </div>
+  </div>
   );
 }

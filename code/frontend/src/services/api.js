@@ -78,6 +78,16 @@ export const authApi = {
   resendVerification: (username, email) => request('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ username, email }) }),
   getMe: () => request('/auth/me'),
   updateProfile: (body) => request('/auth/me', { method: 'PUT', body: JSON.stringify(body) }),
+  sendEmailOtp: (email) => request('/auth/profile/verify-email/send', { method: 'POST', body: JSON.stringify({ email }) }),
+  confirmEmailOtp: (code) => request('/auth/profile/verify-email/confirm', { method: 'POST', body: JSON.stringify({ code }) }),
+  sendPhoneOtp: (phoneNumber) => request('/auth/profile/verify-phone/send', { method: 'POST', body: JSON.stringify({ phoneNumber }) }),
+  confirmPhoneOtp: () => request('/auth/profile/verify-phone/confirm', { method: 'POST' }),
+  uploadProfilePicture: (imageFile) => {
+    const fd = new FormData();
+    fd.append('profilePicture', imageFile);
+    return requestForm('/auth/profile/picture', 'POST', fd);
+  },
+  deleteProfilePicture: () => request('/auth/profile/picture', { method: 'DELETE' }),
 
   // Forgot Password APIs
   forgotPasswordInit: async (username) => {
@@ -269,3 +279,61 @@ export const sensorApi = {
     return Array.isArray(rows) ? rows : [];
   },
 };
+
+// ── Fish Species Catalogue ──────────────────────────────────────
+// Images are stored locally on the backend and served at /uploads/fish/
+// Use getImageUrl() to build the correct src for any imageUrl from the DB.
+const BACKEND_ORIGIN = import.meta.env.VITE_API_URL || '';
+
+export function getImageUrl(imageUrl) {
+  if (!imageUrl) return null;
+  if (imageUrl.startsWith('http')) return imageUrl;          // already absolute
+  return `${BACKEND_ORIGIN}${imageUrl}`;                     // e.g. /uploads/fish/fish-xxx.jpg
+}
+
+/** Send a multipart/form-data request (for file uploads). JWT auto-attached. */
+async function requestForm(endpoint, method, formData) {
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  // Do NOT set Content-Type — browser sets it with boundary automatically for FormData
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, { method, headers, body: formData });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.error || data?.errors?.[0]?.msg || `Request failed (${response.status})`);
+  }
+  return data;
+}
+
+export const fishApi = {
+  // GET /api/fish?search=<query>
+  list: (search = '') => {
+    const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+    return request(`/fish${qs}`);
+  },
+
+  // GET /api/fish/:id
+  get: (id) => request(`/fish/${id}`),
+
+  // POST /api/fish  (SUPER_ADMIN only) — send as FormData to support image upload
+  create: (fields, imageFile) => {
+    const fd = new FormData();
+    Object.entries(fields).forEach(([k, v]) => { if (v != null && v !== '') fd.append(k, v); });
+    if (imageFile) fd.append('image', imageFile);
+    return requestForm('/fish', 'POST', fd);
+  },
+
+  // PUT /api/fish/:id  (SUPER_ADMIN only)
+  update: (id, fields, imageFile, removeImage = false) => {
+    const fd = new FormData();
+    Object.entries(fields).forEach(([k, v]) => { if (v != null && v !== '') fd.append(k, v); });
+    if (imageFile) fd.append('image', imageFile);
+    if (removeImage) fd.append('removeImage', 'true');
+    return requestForm(`/fish/${id}`, 'PUT', fd);
+  },
+
+  // DELETE /api/fish/:id  (SUPER_ADMIN only)
+  delete: (id) => request(`/fish/${id}`, { method: 'DELETE' }),
+};
+

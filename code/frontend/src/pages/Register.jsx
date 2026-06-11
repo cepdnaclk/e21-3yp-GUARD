@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 import guardLogo from '../assets/guard-logo.png';
+import PublicNav from '../components/PublicNav';
 import '../styles/auth.css';
 
 export default function Register() {
@@ -62,13 +63,10 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-page login-page">
-      <div className="auth-brand">
-        <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
-        <span>G.U.A.R.D</span>
-      </div>
-
-      <div className="auth-card login-card register-card">
+    <div className="auth-wrapper">
+      <PublicNav />
+      <div className="auth-page login-page">
+        <div className="auth-card login-card register-card">
         <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>
         <h1>Create Account</h1>
         <p className="subtitle">Register for G.U.A.R.D Dashboard</p>
@@ -118,5 +116,6 @@ export default function Register() {
         </p>
       </div>
     </div>
+  </div>
   );
 }
