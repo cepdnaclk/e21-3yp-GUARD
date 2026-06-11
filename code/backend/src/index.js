@@ -10,6 +10,7 @@ import tankRoutes from './routes/tankRoutes.js';
 import sensorRoutes from './routes/sensorRoutes.js';
 import alertRoutes from './routes/alertRoutes.js';
 import fishRoutes from './routes/fishRoutes.js';
+import deviceRequestRoutes from './routes/deviceRequestRoutes.js';
 import prisma from './lib/prisma.js'; 
 import { writeApi } from './lib/influx.js';
 import { initMqtt, shutdownMqtt } from './services/mqttService.js';
@@ -36,6 +37,7 @@ app.use('/api/tanks', tankRoutes);
 app.use('/api/sensors', sensorRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/fish', fishRoutes);
+app.use('/api/device-requests', deviceRequestRoutes);
 
 app.get('/', (req, res) => res.send('Water IoT Backend is running!'));
 

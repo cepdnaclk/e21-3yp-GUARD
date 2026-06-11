@@ -4,7 +4,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 1.5rem;
-  padding: 1rem 4rem;
+  padding: 0.4rem 4rem;
   background-color: var(--c-ffffff);
   position: sticky;
   top: 0;
@@ -23,8 +23,8 @@
 }
 
 .site-nav-logo {
-  width: 32px;
-  height: 32px;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;

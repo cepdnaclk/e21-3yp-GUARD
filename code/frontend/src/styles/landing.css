@@ -49,8 +49,8 @@
 }
 
 .logo-shield {
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,7 +513,7 @@
 }
 
 .video-content h2 {
-  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-size: clamp(2.5rem, 5vw, 4.38rem);
   line-height: 1.1;
   margin-bottom: 1rem;
 }
@@ -521,7 +521,7 @@
 .video-content p {
   max-width: 42rem;
   margin: 0 auto;
-  font-size: 1.1rem;
+  font-size: 1.38rem;
   color: var(--c-e2e8f0);
 }
 

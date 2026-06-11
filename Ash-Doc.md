@@ -101,3 +101,20 @@ We enforced strict registration and update rules ensuring system security and da
 - **Email & Phone Uniqueness**:
   - Implemented cross-account validation in [createUserHelper.js](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/backend/src/controllers/auth/createUserHelper.js) (registration) and [userController.js](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/backend/src/controllers/auth/userController.js) (profile editing).
   - Users are blocked from registering or modifying their profile to use an email address or phone number that is already associated with another active account, returning a `409 Conflict` error to prevent duplicates.
+
+---
+
+## 10. Product Ordering, Visual Polish, & Super Admin Device Inventory
+We optimized the ordering flow, improved the landing page visual consistency, and upgraded the device registration process:
+- **Collapsible Order Form & Device Clamping**:
+  - Replaced the static order form on the landing page with a "Get Started with GUARD" CTA button. Clicking it expands a form card directly underneath with smooth transitions.
+  - Implemented click-outside detection in [Landing.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/pages/Landing/Landing.jsx) to automatically close the form if a click occurs outside the card container.
+  - Restricted the maximum number of ordered devices to 20 per request, enforcing this via client-side input constraints (`max="20"`) and backend verification in [deviceRequestController.js](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/backend/src/controllers/deviceRequestController.js).
+- **Navigation Polish**:
+  - Resized the header logo in [navigation.css](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/styles/navigation.css) to `56px` for better visibility, and adjusted top bar vertical padding to `0.4rem` to keep the layout compact.
+  - Replaced the default browser globe favicon in [index.html](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/index.html) with the custom G.U.A.R.D logo.
+- **Super Admin Auto-Key Generator**:
+  - Refactored [AddDeviceForm.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/components/admin/AddDeviceForm.jsx) to prevent manually typing the product key, making the input `readOnly`.
+  - Added a "Generate" button that automatically creates a secure 16-character alphanumeric key.
+  - Aligned all form fields (Tank ID, Product Key generator, and submit button) horizontally on the same line.
+
