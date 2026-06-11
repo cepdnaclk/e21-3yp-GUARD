@@ -15,10 +15,18 @@ import {
   getAdminsBySuperAdmin,
   deleteAdminBySuperAdmin,
   updateProfile,
+  updateMe,
   forgotPasswordInit,
   forgotPasswordVerifyEmail,
   forgotPasswordVerifyCode,
   forgotPasswordReset,
+  upload,
+  uploadProfilePicture,
+  deleteProfilePicture,
+  sendEmailOtp,
+  confirmEmailOtp,
+  sendPhoneOtp,
+  confirmPhoneOtp,
 } from "../controllers/auth/index.js";
 import { verifyToken, requireRole, requireAnyRole } from "../middleware/authMiddleware.js";
 
@@ -63,6 +71,7 @@ router.post("/forgot-password/reset", forgotPasswordReset);
 
 // ── Protected routes ─────────────────────────────────────────────────────────
 router.get("/me", verifyToken, getMe);
+router.put("/me", verifyToken, requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]), updateMe);
 router.post(
   "/create-admin",
   verifyToken,
@@ -119,6 +128,49 @@ router.put(
   verifyToken,
   requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
   updateProfile
+);
+
+router.post(
+  "/profile/picture",
+  verifyToken,
+  requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
+  upload.single("profilePicture"),
+  uploadProfilePicture
+);
+
+router.delete(
+  "/profile/picture",
+  verifyToken,
+  requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
+  deleteProfilePicture
+);
+
+router.post(
+  "/profile/verify-email/send",
+  verifyToken,
+  requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
+  sendEmailOtp
+);
+
+router.post(
+  "/profile/verify-email/confirm",
+  verifyToken,
+  requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
+  confirmEmailOtp
+);
+
+router.post(
+  "/profile/verify-phone/send",
+  verifyToken,
+  requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
+  sendPhoneOtp
+);
+
+router.post(
+  "/profile/verify-phone/confirm",
+  verifyToken,
+  requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
+  confirmPhoneOtp
 );
 
 export default router;

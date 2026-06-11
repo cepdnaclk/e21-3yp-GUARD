@@ -7,10 +7,15 @@ import { sendVerificationEmail } from "../../services/emailService.js";
  * Check that both username and email are not already taken.
  * Throws AppError(409) if a conflict is found.
  */
-export const ensureUniqueUser = async (username, email) => {
+export const ensureUniqueUser = async (username, email, phoneNumber) => {
+  const queryConditions = [{ username }, { email }];
+  if (phoneNumber && phoneNumber.trim()) {
+    queryConditions.push({ phoneNumber: phoneNumber.trim() });
+  }
+
   const existing = await prisma.user.findFirst({
     where: {
-      OR: [{ username }, { email }],
+      OR: queryConditions,
     },
   });
 
@@ -19,7 +24,12 @@ export const ensureUniqueUser = async (username, email) => {
   if (existing.username === username) {
     throw new AppError("This username is already taken.", 409);
   }
-  throw new AppError("This email address is already registered.", 409);
+  if (existing.email === email) {
+    throw new AppError("This email address is already registered.", 409);
+  }
+  if (phoneNumber && existing.phoneNumber === phoneNumber.trim()) {
+    throw new AppError("This phone number is already registered.", 409);
+  }
 };
 
 /**
@@ -48,7 +58,7 @@ export async function createUser({
   const resolvedEmail = email || buildFallbackEmail(username);
   const isRealEmail = !resolvedEmail.endsWith("@local.guard");
 
-  await ensureUniqueUser(username, resolvedEmail);
+  await ensureUniqueUser(username, resolvedEmail, phoneNumber);
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();

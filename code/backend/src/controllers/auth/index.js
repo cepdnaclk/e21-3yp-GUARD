@@ -10,10 +10,18 @@ export {
 } from "./passwordController.js";
 export {
   getMe,
+  updateMe,
   getWorkersByAdmin,
   getUsersByAdmin,
   getAdminsBySuperAdmin,
   deleteAdminBySuperAdmin,
   deleteUserByAdmin,
   updateProfile,
+  upload,
+  uploadProfilePicture,
+  deleteProfilePicture,
+  sendEmailOtp,
+  confirmEmailOtp,
+  sendPhoneOtp,
+  confirmPhoneOtp,
 } from "./userController.js";

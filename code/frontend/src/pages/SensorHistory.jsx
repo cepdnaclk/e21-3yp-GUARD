@@ -246,9 +246,31 @@ export default function SensorHistory() {
                     dataKey="time"
                     tickFormatter={formatChartTime}
                     minTickGap={24}
+                    tick={{ fill: '#334155', fontSize: 11 }}
                   />
-                  <YAxis />
-                  <Tooltip labelFormatter={formatChartTime} />
+                  <YAxis tick={{ fill: '#334155', fontSize: 12 }} />
+                  <Tooltip
+                    labelFormatter={formatChartTime}
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                      padding: '12px'
+                    }}
+                    labelStyle={{
+                      color: '#0f172a',
+                      fontWeight: '700',
+                      marginBottom: '8px',
+                      display: 'block',
+                      borderBottom: '1px solid #f1f5f9',
+                      paddingBottom: '4px'
+                    }}
+                    itemStyle={{
+                      padding: '2px 0',
+                      fontWeight: '500'
+                    }}
+                  />
                   <Legend />
                   {filters.sensorId ? (
                     selectedLineConfig ? (

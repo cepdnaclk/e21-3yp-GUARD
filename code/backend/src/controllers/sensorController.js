@@ -6,34 +6,34 @@ import { AppError } from '../lib/AppError.js';
 
 // (Optional) HTTP route for testing via Postman — ESP32 now uses MQTT instead.
 export const logData = asyncHandler(async (req, res) => {
-    const { tankId, temp, pH, tds, turbidity, waterLevel } = req.body;
+  const { tankId, temp, pH, tds, turbidity, waterLevel } = req.body;
 
-    const updatedTank = await prisma.tank.update({
-        where: { tankId },
-        data: {
-            lastTemp: temp,
-            lastPh: pH,
-            lastTds: tds,
-            lastTurb: turbidity,
-            lastWaterLevel: waterLevel, 
-            status: "online"
-        }
-    });
+  const updatedTank = await prisma.tank.update({
+    where: { tankId },
+    data: {
+      lastTemp: temp,
+      lastPh: pH,
+      lastTds: tds,
+      lastTurb: turbidity,
+      lastWaterLevel: waterLevel,
+      status: "online"
+    }
+  });
 
-    const point = new Point('water_quality')
-        .tag('tankId', tankId)           
-        .floatField('temperature', temp)
-        .floatField('pH', pH)
-        .floatField('tds', tds)
-        .floatField('turbidity', turbidity)
-        .floatField('waterLevel', waterLevel); 
+  const point = new Point('water_quality')
+    .tag('tankId', tankId)
+    .floatField('temperature', temp)
+    .floatField('pH', pH)
+    .floatField('tds', tds)
+    .floatField('turbidity', turbidity)
+    .floatField('waterLevel', waterLevel);
 
-    writeApi.writePoint(point);
+  writeApi.writePoint(point);
 
-    res.status(201).json({ 
-        message: "Hybrid sync complete: State in Mongo, History in Influx!", 
-        currentStatus: updatedTank.status 
-    });
+  res.status(201).json({
+    message: "Hybrid sync complete: State in Mongo, History in Influx!",
+    currentStatus: updatedTank.status
+  });
 });
 
 // Fetch historical data for frontend charts
@@ -78,12 +78,30 @@ export const getTankHistory = asyncHandler(async (req, res) => {
     }
 
     if (parsedFrom && parsedTo) {
-      rangeClause = `|> range(start: time(v: "${parsedFrom.toISOString()}"), stop: time(v: "${parsedTo.toISOString()}"))`;
+      rangeClause = `|> range(start: ${parsedFrom.toISOString()}, stop: ${parsedTo.toISOString()})`;
     } else if (parsedFrom) {
-      rangeClause = `|> range(start: time(v: "${parsedFrom.toISOString()}"))`;
+      rangeClause = `|> range(start: ${parsedFrom.toISOString()})`;
     } else if (parsedTo) {
-      rangeClause = `|> range(start: -30d, stop: time(v: "${parsedTo.toISOString()}"))`;
+      rangeClause = `|> range(start: -30d, stop: ${parsedTo.toISOString()})`;
     }
+  }
+
+  // 1. Calculate dynamic sampling interval based on range
+  const fromDate = from ? new Date(from) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const toDate = to ? new Date(to) : new Date();
+  const diffHours = (toDate - fromDate) / (1000 * 60 * 60);
+
+  let every = '5m';
+  if (diffHours > 24 * 365) {      // > 1 year
+    every = '7d';
+  } else if (diffHours > 24 * 120) { // > 4 months
+    every = '1d';
+  } else if (diffHours > 24 * 30) { // > 1 month
+    every = '6h';
+  } else if (diffHours > 24 * 7) {  // > 1 week
+    every = '1h';
+  } else if (diffHours > 24) {      // > 1 day
+    every = '15m';
   }
 
   const fluxQuery = `
@@ -91,7 +109,7 @@ export const getTankHistory = asyncHandler(async (req, res) => {
       ${rangeClause}
       |> filter(fn: (r) => r._measurement == "water_quality")
       |> filter(fn: (r) => r.tankId == "${safeTankId}")
-      |> aggregateWindow(every: 5m, fn: last, createEmpty: true)
+      |> aggregateWindow(every: ${every}, fn: last, createEmpty: true)
       |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
   `;
 
@@ -121,8 +139,12 @@ export const getTankHistory = asyncHandler(async (req, res) => {
         }
       },
       error(error) {
-        console.error("Influx query error:", error);
-        reject(new AppError("Failed to fetch historical data.", 500));
+        console.error("❌ Influx Query Error Details:", {
+          message: error.message,
+          stack: error.stack,
+          query: fluxQuery
+        });
+        reject(new AppError(`InfluxDB Error: ${error.message}`, 500));
       },
       complete() {
         resolve();

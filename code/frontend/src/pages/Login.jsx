@@ -5,6 +5,7 @@ import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 import ForgotPasswordFlow from '../components/auth/ForgotPasswordFlow';
 import EmailVerificationBanner from '../components/auth/EmailVerificationBanner';
 import guardLogo from '../assets/guard-logo.png';
+import PublicNav from '../components/PublicNav';
 import '../styles/auth.css';
 
 export default function Login() {
@@ -16,6 +17,7 @@ export default function Login() {
   const [unverifiedUser, setUnverifiedUser] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [showForgot, setShowForgot] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,28 +54,23 @@ export default function Login() {
 
   if (showForgot) {
     return (
-      <div className="auth-page login-page">
-        <div className="auth-brand">
-          <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
-          <span>G.U.A.R.D</span>
+      <div className="auth-wrapper">
+        <PublicNav />
+        <div className="auth-page login-page">
+          <ForgotPasswordFlow
+            onClose={() => setShowForgot(false)}
+            onSuccess={(msg) => { setShowForgot(false); setSuccessMsg(msg); }}
+          />
         </div>
-
-        <ForgotPasswordFlow
-          onClose={() => setShowForgot(false)}
-          onSuccess={(msg) => { setShowForgot(false); setSuccessMsg(msg); }}
-        />
       </div>
     );
   }
 
   return (
-    <div className="auth-page login-page">
-      <div className="auth-brand">
-        <img src={guardLogo} alt="G.U.A.R.D logo" className="auth-brand-logo" />
-        <span>G.U.A.R.D</span>
-      </div>
-
-      <div className="auth-card login-card">
+    <div className="auth-wrapper">
+      <PublicNav />
+      <div className="auth-page login-page">
+        <div className="auth-card login-card">
         <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>
         <h1>Welcome Back</h1>
         <p className="subtitle">Sign in to G.U.A.R.D Dashboard</p>
@@ -105,13 +102,22 @@ export default function Login() {
           <div className="form-group">
             <label>Password</label>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="Enter password"
               required
             />
-            <div className="login-password-label" style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '0.4rem' }}>
+            <div className="login-password-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(e) => setShowPassword(e.target.checked)}
+                />
+                <span>Show password</span>
+              </label>
+
               <a
                 href="#"
                 onClick={(e) => { e.preventDefault(); setShowForgot(true); }}
@@ -139,5 +145,6 @@ export default function Login() {
         </p>
       </div>
     </div>
+  </div>
   );
 }
