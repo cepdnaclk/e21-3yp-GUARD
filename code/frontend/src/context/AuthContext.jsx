@@ -22,6 +22,8 @@ function normalizeUserFromAuthResponse(data, fallback = {}) {
       role: data.user.role ?? data.role ?? fallback.role ?? null,
       fullName: data.user.fullName ?? data.fullName ?? fallback.fullName ?? '',
       username: data.user.username ?? fallback.username ?? '',
+      emailAlertsEnabled: data.user.emailAlertsEnabled ?? data.emailAlertsEnabled ?? fallback.emailAlertsEnabled ?? true,
+      telegramAlertsEnabled: data.user.telegramAlertsEnabled ?? data.telegramAlertsEnabled ?? fallback.telegramAlertsEnabled ?? true,
     };
   }
 
@@ -37,6 +39,8 @@ function normalizeUserFromAuthResponse(data, fallback = {}) {
     telegramChatId: data?.telegramChatId ?? fallback.telegramChatId ?? null,
     createdAt: data?.createdAt ?? fallback.createdAt ?? null,
     role: data?.role ?? fallback.role ?? null,
+    emailAlertsEnabled: data?.emailAlertsEnabled ?? data.user?.emailAlertsEnabled ?? fallback.emailAlertsEnabled ?? true,
+    telegramAlertsEnabled: data?.telegramAlertsEnabled ?? data.user?.telegramAlertsEnabled ?? fallback.telegramAlertsEnabled ?? true,
   };
 }
 

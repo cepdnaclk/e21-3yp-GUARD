@@ -28,6 +28,8 @@ model User {
   profilePicture String?
   phoneVerified Boolean @default(false)
   telegramChatId String?
+  emailAlertsEnabled      Boolean  @default(true)
+  telegramAlertsEnabled   Boolean  @default(true)
   
   // Pending verification details
   pendingEmail    String?
