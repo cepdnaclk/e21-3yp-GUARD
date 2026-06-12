@@ -1,10 +1,39 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { deviceApi, alertApi } from '../services/api';
 import { useSearchParams, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../styles/alerts.css';
 
 export default function Alerts() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user, role, updateProfile } = useAuth();
+  const [togglingPref, setTogglingPref] = useState(null);
+  const [prefSuccess, setPrefSuccess] = useState('');
+  const [prefError, setPrefError] = useState('');
+
+  const handleTogglePreference = async (type) => {
+    setTogglingPref(type);
+    setPrefSuccess('');
+    setPrefError('');
+    try {
+      if (type === 'email') {
+        const nextValue = !user.emailAlertsEnabled;
+        await updateProfile({ emailAlertsEnabled: nextValue });
+        setPrefSuccess(`Email alerts successfully ${nextValue ? 'enabled' : 'disabled'}.`);
+      } else if (type === 'telegram') {
+        const nextValue = !user.telegramAlertsEnabled;
+        await updateProfile({ telegramAlertsEnabled: nextValue });
+        setPrefSuccess(`Telegram alerts successfully ${nextValue ? 'enabled' : 'disabled'}.`);
+      }
+      setTimeout(() => setPrefSuccess(''), 4000);
+    } catch (err) {
+      setPrefError(err.message || 'Failed to update preferences.');
+      setTimeout(() => setPrefError(''), 4000);
+    } finally {
+      setTogglingPref(null);
+    }
+  };
+
   const initialDeviceId = searchParams.get('device_id') || '';
   const initialResolved = searchParams.get('resolved') || 'false';
 
@@ -135,6 +164,39 @@ export default function Alerts() {
               <option value="true">Resolved</option>
             </select>
           </div>
+
+          {/* Preferences inline (Only for ADMIN and USER) */}
+          {user && (role === 'ADMIN' || role === 'USER') && (
+            <div className="alerts-preferences-inline">
+              <div className="form-group">
+                <label>📧 Email Alerts</label>
+                <button
+                  type="button"
+                  className={`pref-toggle-btn ${user.emailAlertsEnabled ? 'enabled' : 'disabled'}`}
+                  onClick={() => handleTogglePreference('email')}
+                  disabled={togglingPref === 'email'}
+                >
+                  {user.emailAlertsEnabled ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
+              <div className="form-group" style={{ position: 'relative' }}>
+                <label>🤖 Telegram Alerts</label>
+                <button
+                  type="button"
+                  className={`pref-toggle-btn ${user.telegramAlertsEnabled ? 'enabled' : 'disabled'}`}
+                  onClick={() => handleTogglePreference('telegram')}
+                  disabled={togglingPref === 'telegram'}
+                >
+                  {user.telegramAlertsEnabled ? 'Enabled' : 'Disabled'}
+                </button>
+                {(prefSuccess || prefError) && (
+                  <div className={`pref-inline-feedback ${prefSuccess ? 'success' : 'error'}`}>
+                    {prefSuccess || prefError}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

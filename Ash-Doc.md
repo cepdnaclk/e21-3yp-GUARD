@@ -118,3 +118,17 @@ We optimized the ordering flow, improved the landing page visual consistency, an
   - Added a "Generate" button that automatically creates a secure 16-character alphanumeric key.
   - Aligned all form fields (Tank ID, Product Key generator, and submit button) horizontally on the same line.
 
+---
+
+## 11. Profile Page Merge Conflict Fixes & Inline Alert Preference Toggles
+- **Profile Page Conflict Resolution** ([Profile.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/pages/Profile.jsx)):
+  - Removed duplicate declarations of `handlePhotoUpload` and `handlePhotoDelete` handlers.
+  - Cleaned up a duplicate and incorrect `handleConfirmEmailOtp` handler to restore clean syntax compiling.
+- **Toggleable Email/Telegram Alert Settings** ([Alerts.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/pages/Alerts.jsx)):
+  - Extended the database schema to support boolean settings `emailAlertsEnabled` and `telegramAlertsEnabled` (defaulting to `true`).
+  - Added toggle controls in the filters card layout at the top of the Notifications page, aligned cleanly to the right-hand side using inline form groups.
+  - Embedded micro-feedback popups inside the toggle headers to report save success/error status asynchronously.
+  - Hooked toggles to user update APIs to persist preferences in MongoDB, and updated the MQTT alert worker to respect them when sending warning triggers.
+- **About Page Illustration Update** ([About.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/pages/Landing/About.jsx)):
+  - Replaced the placeholder software image wrapper with a real, high-resolution platform dashboard screenshot illustration (`dashboardMockup`).
+

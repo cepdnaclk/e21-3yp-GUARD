@@ -4,6 +4,8 @@ import '../../styles/landing.css';
 import '../../styles/about.css';
 import tempSensor from '../../assets/temp.jpg';
 import PublicNav from '../../components/PublicNav';
+import dashboardMockup from '../../assets/dashboard.png';
+
 
 const SENSORS = [
   {
@@ -199,15 +201,16 @@ export default function About() {
             </p>
           </Reveal>
 
-          <Reveal direction="right" className="software-visual">
-            <div className="software-image-placeholder">
-              <div className="software-image-glow" />
-              <div className="software-image-label">
-                <span>Image placeholder</span>
-                <p>Replace this with a software dashboard or platform illustration.</p>
-              </div>
-            </div>
-          </Reveal>
+          {/* Replace lines 203 to 209 */}
+<Reveal direction="right" className="software-visual">
+  <img 
+    src={dashboardMockup} 
+    alt="GUARD Software Dashboard Illustration" 
+    className="software-dashboard-img" 
+    style={{ width: '100%', borderRadius: '12px', boxShadow: 'var(--shadow-lg)' }}
+  />
+</Reveal>
+
         </div>
       </section>
 

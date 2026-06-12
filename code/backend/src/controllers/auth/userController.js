@@ -55,6 +55,8 @@ const USER_SELECT_FIELDS = {
   phoneVerified: true,
   telegramChatId: true,
   createdAt: true,
+  emailAlertsEnabled: true,
+  telegramAlertsEnabled: true,
 };
 
 export const getMe = asyncHandler(async (req, res) => {
@@ -68,7 +70,7 @@ export const getMe = asyncHandler(async (req, res) => {
 
 export const updateMe = asyncHandler(async (req, res) => {
   const { userId } = req.user;
-  const { fullName, email, phoneNumber, address, username } = req.body;
+  const { fullName, email, phoneNumber, address, username, emailAlertsEnabled, telegramAlertsEnabled } = req.body;
 
   const current = await prisma.user.findUnique({ where: { id: userId } });
   if (!current) throw new AppError("User not found.", 404);
@@ -92,6 +94,8 @@ export const updateMe = asyncHandler(async (req, res) => {
     data: {
       ...(fullName ? { fullName } : {}),
       ...(address !== undefined ? { address } : {}),
+      ...(emailAlertsEnabled !== undefined ? { emailAlertsEnabled: Boolean(emailAlertsEnabled) } : {}),
+      ...(telegramAlertsEnabled !== undefined ? { telegramAlertsEnabled: Boolean(telegramAlertsEnabled) } : {}),
     },
     select: USER_SELECT_FIELDS,
   });

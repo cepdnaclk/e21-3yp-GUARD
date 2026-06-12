@@ -260,8 +260,8 @@ async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue
     const tank = await prisma.tank.findUnique({
         where: { tankId },
         include: {
-            admin: { select: { email: true, telegramChatId: true, phoneVerified: true } },
-            workers: { select: { email: true, telegramChatId: true, phoneVerified: true } },
+            admin: { select: { email: true, telegramChatId: true, phoneVerified: true, emailAlertsEnabled: true, telegramAlertsEnabled: true } },
+            workers: { select: { email: true, telegramChatId: true, phoneVerified: true, emailAlertsEnabled: true, telegramAlertsEnabled: true } },
         },
     });
 
@@ -295,8 +295,8 @@ async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue
     // ── Send Telegram Alerts ──────────────────────────────────────────
     if (tank.isRegistered && tank.admin) {
         const telegramChats = [...new Set([
-            tank.admin.phoneVerified && tank.admin.telegramChatId ? tank.admin.telegramChatId : null,
-            ...tank.workers.map((w) => w.phoneVerified && w.telegramChatId ? w.telegramChatId : null),
+            tank.admin.telegramAlertsEnabled && tank.admin.phoneVerified && tank.admin.telegramChatId ? tank.admin.telegramChatId : null,
+            ...tank.workers.map((w) => w.telegramAlertsEnabled && w.phoneVerified && w.telegramChatId ? w.telegramChatId : null),
         ].filter(Boolean))];
 
         if (telegramChats.length > 0) {
@@ -323,8 +323,8 @@ async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue
     }
 
     const emails = [...new Set([
-        tank.admin.email.toLowerCase(),
-        ...tank.workers.map((w) => w.email?.toLowerCase()),
+        tank.admin.emailAlertsEnabled ? tank.admin.email.toLowerCase() : null,
+        ...tank.workers.map((w) => w.emailAlertsEnabled ? w.email?.toLowerCase() : null),
     ].filter(Boolean))];
 
     if (emails.length > 0) {
