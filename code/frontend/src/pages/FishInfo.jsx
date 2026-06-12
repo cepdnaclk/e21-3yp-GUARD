@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { fishApi, deviceApi, getImageUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import '../styles/fish-info.css';
@@ -17,6 +17,19 @@ function isCompatible(value, min, max) {
   if (value == null) return null;
   if (min != null && value < min) return false;
   if (max != null && value > max) return false;
+  return true;
+}
+
+function isThresholdCompatible(tankMin, tankMax, fishMin, fishMax) {
+  if (tankMin == null || tankMax == null) return null;
+  if (fishMin != null && tankMin < fishMin) return false;
+  if (fishMax != null && tankMax > fishMax) return false;
+  return true;
+}
+
+function isMaxThresholdCompatible(tankMax, fishMax) {
+  if (tankMax == null) return null;
+  if (fishMax != null && tankMax > fishMax) return false;
   return true;
 }
 
@@ -243,7 +256,7 @@ function AddEditModal({ initial, onSave, onClose }) {
 /* ────────────────────────────────────────────────────────────────
    FishDetailDrawer
    ──────────────────────────────────────────────────────────────── */
-function FishDetailDrawer({ fish, tanks, role, onClose, onEdit, onDelete }) {
+function FishDetailDrawer({ fish, tanks, role, onClose, onEdit, onDelete, onRefreshTanks }) {
   const [selectedTankId, setSelectedTankId] = useState('');
   const [presetBusy, setPresetBusy]         = useState(false);
   const [presetMsg, setPresetMsg]           = useState(null);
@@ -263,10 +276,54 @@ function FishDetailDrawer({ fish, tanks, role, onClose, onEdit, onDelete }) {
   const canPreset    = role === 'ADMIN' && selectedTankId;
 
   const compatRows = selectedTank ? [
-    { label: 'Temperature', icon: '🌡', unit: '°C',  value: selectedTank.currentStats?.temp,      min: fish.tempMin,  max: fish.tempMax,      range: fmtRange(fish.tempMin, fish.tempMax, '°C') },
-    { label: 'pH',          icon: '⚗', unit: '',     value: selectedTank.currentStats?.pH,        min: fish.phMin,    max: fish.phMax,        range: fmtRange(fish.phMin, fish.phMax) },
-    { label: 'TDS',         icon: '💧', unit: ' ppm', value: selectedTank.currentStats?.tds,       min: fish.tdsMin,   max: fish.tdsMax,       range: fmtRange(fish.tdsMin, fish.tdsMax, ' ppm') },
-    { label: 'Turbidity',   icon: '🌊', unit: ' NTU', value: selectedTank.currentStats?.turbidity, min: null,          max: fish.turbidityMax, range: fish.turbidityMax != null ? `≤ ${fish.turbidityMax} NTU` : '—' },
+    { 
+      label: 'Temperature', 
+      icon: '🌡', 
+      unit: '',  
+      value: selectedTank.thresholds?.tempMin !== undefined 
+        ? `${selectedTank.thresholds.tempMin} – ${selectedTank.thresholds.tempMax}°C` 
+        : '—',      
+      min: fish.tempMin,  
+      max: fish.tempMax,      
+      range: fmtRange(fish.tempMin, fish.tempMax, '°C'),
+      ok: isThresholdCompatible(selectedTank.thresholds?.tempMin, selectedTank.thresholds?.tempMax, fish.tempMin, fish.tempMax)
+    },
+    { 
+      label: 'pH',          
+      icon: '⚗', 
+      unit: '',     
+      value: selectedTank.thresholds?.phMin !== undefined 
+        ? `${selectedTank.thresholds.phMin} – ${selectedTank.thresholds.phMax}` 
+        : '—',        
+      min: fish.phMin,    
+      max: fish.phMax,        
+      range: fmtRange(fish.phMin, fish.phMax),
+      ok: isThresholdCompatible(selectedTank.thresholds?.phMin, selectedTank.thresholds?.phMax, fish.phMin, fish.phMax)
+    },
+    { 
+      label: 'TDS',         
+      icon: '💧', 
+      unit: '', 
+      value: selectedTank.thresholds?.tdsMin !== undefined 
+        ? `${selectedTank.thresholds.tdsMin} – ${selectedTank.thresholds.tdsMax} ppm` 
+        : '—',       
+      min: fish.tdsMin,   
+      max: fish.tdsMax,       
+      range: fmtRange(fish.tdsMin, fish.tdsMax, ' ppm'),
+      ok: isThresholdCompatible(selectedTank.thresholds?.tdsMin, selectedTank.thresholds?.tdsMax, fish.tdsMin, fish.tdsMax)
+    },
+    { 
+      label: 'Turbidity',   
+      icon: '🌊', 
+      unit: '', 
+      value: selectedTank.thresholds?.turbidityMax !== undefined 
+        ? `≤ ${selectedTank.thresholds.turbidityMax} NTU` 
+        : '—', 
+      min: null,          
+      max: fish.turbidityMax, 
+      range: fish.turbidityMax != null ? `≤ ${fish.turbidityMax} NTU` : '—',
+      ok: isMaxThresholdCompatible(selectedTank.thresholds?.turbidityMax, fish.turbidityMax)
+    },
   ] : [];
 
   async function handleApplyPreset() {
@@ -282,6 +339,9 @@ function FishDetailDrawer({ fish, tanks, role, onClose, onEdit, onDelete }) {
       if (fish.tdsMax       != null) payload.tdsMax       = fish.tdsMax;
       if (fish.turbidityMax != null) payload.turbidityMax = fish.turbidityMax;
       await deviceApi.updateThresholds(selectedTankId, payload);
+      if (onRefreshTanks) {
+        await onRefreshTanks();
+      }
       setPresetMsg({ type: 'success', text: `Thresholds for "${selectedTank.deviceName || selectedTankId}" updated to match ${fish.name} requirements!` });
     } catch (err) {
       setPresetMsg({ type: 'error', text: err.message || 'Failed to apply preset.' });
@@ -392,7 +452,7 @@ function FishDetailDrawer({ fish, tanks, role, onClose, onEdit, onDelete }) {
                     </thead>
                     <tbody>
                       {compatRows.map(row => {
-                        const ok = isCompatible(row.value, row.min, row.max);
+                        const ok = row.ok;
                         return (
                           <tr key={row.label} className={ok === true ? 'compat-ok' : ok === false ? 'compat-bad' : ''}>
                             <td><strong>{row.icon} {row.label}</strong></td>
@@ -480,6 +540,15 @@ export default function FishInfo() {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
+  const refreshTanks = useCallback(async () => {
+    try {
+      const tl = await deviceApi.list();
+      setTanks(tl);
+    } catch (err) {
+      console.error('Failed to refresh tanks:', err);
+    }
+  }, []);
+
   const filtered = fishList.filter(f => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -562,6 +631,7 @@ export default function FishInfo() {
           onClose={() => setSelected(null)}
           onEdit={openEdit}
           onDelete={handleDeleted}
+          onRefreshTanks={refreshTanks}
         />
       )}
 

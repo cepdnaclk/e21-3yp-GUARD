@@ -42,6 +42,17 @@ function toDeviceFromTank(tank) {
       waterLevel: tank.lastWaterLevel,
       lastReadingTime: tank.lastReadingTime,
     },
+    thresholds: {
+      tempMin: tank.tempMin,
+      tempMax: tank.tempMax,
+      phMin: tank.phMin,
+      phMax: tank.phMax,
+      tdsMin: tank.tdsMin,
+      tdsMax: tank.tdsMax,
+      turbidityMax: tank.turbidityMax,
+      waterLevelThreshold: tank.waterLevelThreshold,
+      waterStopThreshold: tank.waterStopThreshold,
+    },
   };
 }
 

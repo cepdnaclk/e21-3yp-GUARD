@@ -132,3 +132,14 @@ We optimized the ordering flow, improved the landing page visual consistency, an
 - **About Page Illustration Update** ([About.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/pages/Landing/About.jsx)):
   - Replaced the placeholder software image wrapper with a real, high-resolution platform dashboard screenshot illustration (`dashboardMockup`).
 
+---
+
+## 12. Tank Threshold Compatibility Checking & Auto-Sync
+- **Threshold Compatibility Comparison** ([FishInfo.jsx](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/pages/FishInfo.jsx)):
+  - Modified the **Tank Compatibility Checker** to evaluate whether the **Tank's configured alert thresholds** (e.g., `tempMin/tempMax` and `phMin/phMax`) are compatible with the fish species' recommended ranges, rather than just checking current real-time telemetry sensor values.
+  - Added helper methods `isThresholdCompatible` and `isMaxThresholdCompatible` to validate range overlapping and boundary compliance.
+- **Data Model Mapping** ([api.js](file:///c:/Users/ravin/Documents/Projects/e21-3yp-GUARD/code/frontend/src/services/api.js)):
+  - Updated `toDeviceFromTank` to include and map the tank's `thresholds` properties in the returned JSON object, exposing them to the checker.
+- **Auto-Sync Callback**:
+  - Implemented `onRefreshTanks` callback triggers using `useCallback` (importing it at the top of the file to resolve a `ReferenceError`) so that clicking "Apply Preset" in the drawer automatically fetches the updated configurations and refreshes the checker table inline instantly.
+
