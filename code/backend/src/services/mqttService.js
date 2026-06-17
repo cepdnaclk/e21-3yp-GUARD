@@ -62,6 +62,9 @@ export const initMqtt = (ioInstance) => {
                 });
                 if (tank) {
                     const { publishThresholdsToDevice } = await import('./thresholdService.js');
+                    // ── pH Offset: add +2.3 back when sending thresholds to ESP32 ──
+                    // The hardware reads pH 2.3 units too high, so to get the device
+                    // to alert at the correct real-world threshold we must compensate.
                     const mqttUpdates = {
                         temp_min: tank.tempMin,
                         temp_max: tank.tempMax,
@@ -69,6 +72,8 @@ export const initMqtt = (ioInstance) => {
                         tds_max: tank.tdsMax,
                         water_level: tank.waterLevelThreshold,
                         water_stop: tank.waterStopThreshold,
+                        ph_min: parseFloat((tank.phMin + 2.3).toFixed(2)),
+                        ph_max: parseFloat((tank.phMax + 2.3).toFixed(2)),
                     };
                     await publishThresholdsToDevice(tankId, mqttUpdates);
                     console.log(`✅ Sent current DB thresholds to device ${tankId}`);
@@ -106,37 +111,69 @@ export const initMqtt = (ioInstance) => {
                 return;
             }
 
-            const sensorValue = parseFloat(payload.value);
+            let sensorValue = parseFloat(payload.value);
             if (Number.isNaN(sensorValue)) {
                 console.warn(`⚠️ Invalid sensor value for ${tankId}/${sensorType}: ${payload.value}`);
                 return;
             }
 
+            // ── pH Hardware Offset Correction ──────────────────────────────
+            // The TDS and pH sensors share a common ground which causes a
+            // fixed +2.3 offset on all pH readings from the hardware.
+            // We correct it here at the point of ingestion so the rest of the
+            // system always works with the true calibrated value.
+            if (sensorType === 'ph') {
+                sensorValue = parseFloat((sensorValue - 2.3).toFixed(2));
+            }
+
             const [mongoField, influxField] = mapping;
             const readingTime = payload.time ? new Date(payload.time) : new Date();
+
+            // ── Water Level: convert raw distance (cm) → percentage ─────────
+            // The ultrasonic sensor measures distance from the sensor to the water
+            // surface. A smaller distance = more water = higher level.
+            //   0%   → distance == waterLevelThreshold (tank is low/empty)
+            //   100% → distance == waterStopThreshold  (tank is full)
+            // We store the percentage in MongoDB so the dashboard shows a human-
+            // readable value, but keep the raw distance for InfluxDB and alert
+            // logic which already compares against distance thresholds.
+            let valueToStore = sensorValue; // raw value for all other sensors
+            if (sensorType === 'waterlevel') {
+                const tankMeta = await prisma.tank.findUnique({
+                    where: { tankId },
+                    select: { waterLevelThreshold: true, waterStopThreshold: true },
+                });
+                if (tankMeta) {
+                    const range = tankMeta.waterLevelThreshold - tankMeta.waterStopThreshold;
+                    if (range > 0) {
+                        const pct = ((tankMeta.waterLevelThreshold - sensorValue) / range) * 100;
+                        valueToStore = parseFloat(Math.max(0, Math.min(100, pct)).toFixed(1));
+                    }
+                }
+            }
 
             // Single DB call: update returns error if tank doesn't exist
             try {
                 const updatedTank = await prisma.tank.update({
                     where: { tankId },
                     data: { 
-                        [mongoField]: sensorValue, 
+                        [mongoField]: valueToStore,   // % for waterlevel, raw for others
                         status: 'online',
                         lastReadingTime: readingTime 
                     },
                 });
 
-                // Real-time update via Socket.io
+                // Real-time update via Socket.io — emit the same value shown on dashboard
                 if (io) {
                     io.emit('sensor_data', { 
                         tankId, 
                         sensorType, 
-                        value: sensorValue,
+                        value: valueToStore,          // % for waterlevel, raw for others
                         timestamp: payload.time || updatedTank.updatedAt
                     });
                 }
 
-                // NEW: Auto-resolve logic
+                // Alert logic uses the raw distance so thresholds remain in cm units
                 await checkAndAutoResolve(updatedTank, sensorType, sensorValue);
 
             } catch (updateErr) {
@@ -147,7 +184,7 @@ export const initMqtt = (ioInstance) => {
                 throw updateErr;
             }
 
-            // Write to InfluxDB with the actual reading time
+            // Write RAW distance to InfluxDB — alert logic depends on cm values
             const point = new Point('water_quality')
                 .tag('tankId', tankId)
                 .floatField(influxField, sensorValue)
