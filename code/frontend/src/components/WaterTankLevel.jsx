@@ -11,18 +11,17 @@ export default function WaterTankLevel({
   rangeMax = 200,
   isPersistentAlert = false
 }) {
-  // Normalize value to percentage (0 = Empty, 100 = Full)
-  // Distance: rangeMax (200) = 0%, rangeMin (0) = 100%
-  const clamped = Math.max(rangeMin, Math.min(rangeMax, value));
-  const fillPercent = ((rangeMax - clamped) / (rangeMax - rangeMin)) * 100;
+  // The backend now stores & emits water level as a 0–100% value.
+  // Simply clamp it and use it directly as the fill height.
+  const fillPercent = Math.max(0, Math.min(100, value));
 
-  // Threshold indicators as percentages from bottom
-  const lowThresholdPercent = minThreshold !== undefined ? ((rangeMax - minThreshold) / (rangeMax - rangeMin)) * 100 : null;
-  const highThresholdPercent = maxThreshold !== undefined ? ((rangeMax - maxThreshold) / (rangeMax - rangeMin)) * 100 : null;
+  // Threshold indicators: minThreshold and maxThreshold are now also in %
+  const lowThresholdPercent = minThreshold !== undefined ? Math.max(0, Math.min(100, minThreshold)) : null;
+  const highThresholdPercent = maxThreshold !== undefined ? Math.max(0, Math.min(100, maxThreshold)) : null;
 
   const isAlert = isPersistentAlert || 
-                  (minThreshold !== undefined && value > minThreshold) || 
-                  (maxThreshold !== undefined && value < maxThreshold);
+                  (minThreshold !== undefined && value < minThreshold) ||
+                  (maxThreshold !== undefined && value > maxThreshold);
 
   return (
     <div className={`water-tank-wrapper ${isAlert ? 'tank-alert' : ''}`}>
