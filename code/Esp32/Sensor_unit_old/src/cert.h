@@ -1,7 +1,7 @@
 #ifndef CERT_H
 #define CERT_H
 
-static const char *root_ca = R"EOF(
+static const char* root_ca = R"EOF(
 -----BEGIN CERTIFICATE-----
 MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
 TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
