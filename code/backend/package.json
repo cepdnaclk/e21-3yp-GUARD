@@ -4,7 +4,7 @@
   "description": "G.U.A.R.D IoT Backend — Express + Prisma + MQTT + InfluxDB",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
     "start": "NODE_ENV=production node src/index.js",
     "dev": "nodemon src/index.js",
     "seed": "node seed.js",
@@ -33,7 +33,9 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@vitest/ui": "^4.1.10",
+    "nodemon": "^3.1.14",
+    "vitest": "^4.1.10"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
