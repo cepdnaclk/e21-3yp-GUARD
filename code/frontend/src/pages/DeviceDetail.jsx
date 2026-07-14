@@ -99,10 +99,29 @@ export default function DeviceDetail() {
         }
       };
 
+      const handleDeviceStatus = (data) => {
+        if (data.tankId === id) {
+          setDevice(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              status: data.status,
+              currentStats: {
+                ...prev.currentStats,
+                lastReadingTime: data.status === 'online' ? new Date().toISOString() : '1970-01-01T00:00:00.000Z'
+              }
+            };
+          });
+        }
+      };
+
       socket.on('sensor_data', handleSensorData);
+      socket.on('device_status', handleDeviceStatus);
+
       return () => {
         clearInterval(timer);
         socket.off('sensor_data', handleSensorData);
+        socket.off('device_status', handleDeviceStatus);
       };
     }
 

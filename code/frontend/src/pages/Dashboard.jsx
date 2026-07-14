@@ -169,14 +169,33 @@ export default function Dashboard() {
       });
     };
 
+    const handleDeviceStatus = (data) => {
+      const { tankId, status } = data;
+      setDevices(prev => prev.map(d => {
+        if (d.deviceId === tankId) {
+          return {
+            ...d,
+            status,
+            currentStats: {
+              ...d.currentStats,
+              lastReadingTime: status === 'online' ? new Date().toISOString() : '1970-01-01T00:00:00.000Z'
+            }
+          };
+        }
+        return d;
+      }));
+    };
+
     socket.on('sensor_data', handleSensorData);
     socket.on('alert_resolved_auto', handleAlertResolved);
     socket.on('alert_resolved_all', handleAlertResolved);
+    socket.on('device_status', handleDeviceStatus);
 
     return () => {
       socket.off('sensor_data', handleSensorData);
       socket.off('alert_resolved_auto', handleAlertResolved);
       socket.off('alert_resolved_all', handleAlertResolved);
+      socket.off('device_status', handleDeviceStatus);
     };
   }, []);
 

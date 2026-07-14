@@ -26,14 +26,13 @@ export default function useOnlineStatus(initialLastTime) {
 
   // Sync with a new initialLastTime when the prop changes (e.g. after a poll).
   useEffect(() => {
-    if (!initialLastTime) return;
+    if (!initialLastTime) {
+      setLastSeen(null);
+      return;
+    }
     const d = initialLastTime instanceof Date ? initialLastTime : new Date(initialLastTime);
     if (!Number.isNaN(d.getTime())) {
-      setLastSeen((prev) => {
-        // Only update if the new time is more recent than the current one.
-        if (!prev || d > prev) return d;
-        return prev;
-      });
+      setLastSeen(d);
     }
   }, [initialLastTime]);
 

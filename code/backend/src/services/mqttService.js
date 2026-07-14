@@ -44,14 +44,41 @@ export const initMqtt = (ioInstance) => {
         client.subscribe({ 
             'sensor/+/+': { qos: 1 }, 
             'alert/+/+': { qos: 1 },
-            'device/+/request_thresholds': { qos: 1 }
+            'device/+/request_thresholds': { qos: 1 },
+            'device/+/status': { qos: 1 }
         }, (err) => { 
-            if (!err) console.log('✅ Listening for sensor, alert, and threshold request topics...'); 
+            if (!err) console.log('✅ Listening for sensor, alert, threshold request, and device status topics...'); 
         });
     });
 
     client.on('message', async (topic, message, packet) => {
         const [prefix, tankId, sensorType] = topic.split('/');
+
+        // Handle device status topic: device/{tankId}/status
+        if (prefix === 'device' && sensorType === 'status') {
+            const newStatus = message.toString().trim(); // "online" or "offline"
+            console.log(`📡 Device ${tankId} status updated: ${newStatus}`);
+            try {
+                const updatedTank = await prisma.tank.update({
+                    where: { tankId },
+                    data: { 
+                        status: newStatus,
+                        lastReadingTime: new Date()
+                    }
+                });
+
+                if (io) {
+                    io.emit('device_status', { tankId, status: newStatus });
+                }
+                console.log(`✅ DB updated status of device ${tankId} to ${newStatus}`);
+            } catch (err) {
+                if (err.code === 'P2025') {
+                    return; // silently ignore unregistered tanks
+                }
+                console.error(`❌ Failed to update status for device ${tankId}:`, err.message);
+            }
+            return;
+        }
 
         // Handle threshold request topic: device/{tankId}/request_thresholds
         if (prefix === 'device' && sensorType === 'request_thresholds') {
