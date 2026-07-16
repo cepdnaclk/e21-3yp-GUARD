@@ -1,0 +1,38 @@
+name: CI Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            code/backend/package-lock.json
+            test_data_flow/package-lock.json
+
+      - name: Install backend deps
+        run: npm ci
+        working-directory: code/backend
+
+      - name: Install test harness deps
+        run: npm ci
+        working-directory: test_data_flow
+
+      - name: Run Node native tests
+        run: node --test Tests/**/*.test.mjs
+        working-directory: test_data_flow
+
+      - name: Run Vitest tests
+        run: npx vitest run Tests/mqttIntegration.test.js Tests/thresholdController.test.js Tests/thresholdService.test.js
+        working-directory: test_data_flow

@@ -3,17 +3,26 @@ import prisma from "../../lib/prisma.js";
 import { AppError } from "../../lib/AppError.js";
 import { sendVerificationEmail } from "../../services/emailService.js";
 
+const defaultDeps = {
+  prisma,
+  bcrypt,
+  sendVerificationEmail,
+  now: () => Date.now(),
+  random: () => Math.random(),
+};
+
 /**
  * Check that both username and email are not already taken.
  * Throws AppError(409) if a conflict is found.
  */
-export const ensureUniqueUser = async (username, email, phoneNumber) => {
+export const ensureUniqueUser = async (username, email, phoneNumber, deps = defaultDeps) => {
+  const { prisma: prismaClient } = deps;
   const queryConditions = [{ username }, { email }];
   if (phoneNumber && phoneNumber.trim()) {
     queryConditions.push({ phoneNumber: phoneNumber.trim() });
   }
 
-  const existing = await prisma.user.findFirst({
+  const existing = await prismaClient.user.findFirst({
     where: {
       OR: queryConditions,
     },
@@ -54,17 +63,25 @@ export async function createUser({
   adminId = null,
   address,
   phoneNumber,
-}) {
+}, deps = defaultDeps) {
+  const {
+    prisma: prismaClient,
+    bcrypt: bcryptClient,
+    sendVerificationEmail: sendVerificationEmailFn,
+    now,
+    random,
+  } = deps;
+
   const resolvedEmail = email || buildFallbackEmail(username);
   const isRealEmail = !resolvedEmail.endsWith("@local.guard");
 
-  await ensureUniqueUser(username, resolvedEmail, phoneNumber);
+  await ensureUniqueUser(username, resolvedEmail, phoneNumber, deps);
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+  const hashedPassword = await bcryptClient.hash(password, 10);
+  const verificationCode = Math.floor(100000 + random() * 900000).toString();
+  const verificationTokenExpiry = new Date(now() + 24 * 60 * 60 * 1000); // 24h
 
-  const user = await prisma.user.create({
+  const user = await prismaClient.user.create({
     data: {
       username,
       email: resolvedEmail,
@@ -83,7 +100,7 @@ export async function createUser({
   // Send verification email only if a real email was provided
   if (isRealEmail) {
     try {
-      await sendVerificationEmail(resolvedEmail, fullName, verificationCode);
+      await sendVerificationEmailFn(resolvedEmail, fullName, verificationCode);
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError.message);
       // Don't block account creation if email sending fails — user can request resend
