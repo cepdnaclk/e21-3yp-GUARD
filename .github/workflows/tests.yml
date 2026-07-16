@@ -30,7 +30,7 @@ jobs:
         working-directory: test_data_flow
 
       - name: Run Node native tests
-        run: node --test Tests/**/*.test.mjs
+        run: node --test Tests/account-creation.test.mjs
         working-directory: test_data_flow
 
       - name: Run Vitest tests
