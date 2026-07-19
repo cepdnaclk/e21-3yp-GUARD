@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { deviceApi, sensorApi } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
@@ -43,7 +43,10 @@ export default function DashboardScreen({ navigation }) {
   const [sensorData, setSensorData] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { logout } = useAuth();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [fabVisible, setFabVisible] = useState(false);
+  const { logout, role, user, hasRole } = useAuth();
+  const isAdmin = hasRole(['ADMIN', 'SUPER_ADMIN']);
 
   const loadData = useCallback(async () => {
     try {
@@ -130,6 +133,12 @@ export default function DashboardScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <View style={styles.topHeader}>
+        <Text style={styles.topHeaderTitle}>Welcome, {user?.username || 'User'}</Text>
+        <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.burgerButton}>
+          <Text style={styles.burgerIcon}>☰</Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={devices}
         keyExtractor={item => item.deviceId}
@@ -144,9 +153,37 @@ export default function DashboardScreen({ navigation }) {
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={<Text style={styles.noData}>No devices found.</Text>}
       />
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-        <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
+
+      <Modal transparent={true} visible={menuVisible} animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
+          <View style={styles.menuContainer}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); navigation.navigate('Profile'); }}>
+              <Text style={styles.menuItemText}>My Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); logout(); }}>
+              <Text style={[styles.menuItemText, { color: '#ef4444' }]}>Log Out</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {isAdmin && (
+        <>
+          {fabVisible && (
+            <View style={styles.fabOptions}>
+              <TouchableOpacity style={styles.fabOption} onPress={() => { setFabVisible(false); navigation.navigate('AddTank'); }}>
+                <Text style={styles.fabOptionText}>Add Tank</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.fabOption} onPress={() => { setFabVisible(false); navigation.navigate('AddUser'); }}>
+                <Text style={styles.fabOptionText}>Add Worker</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <TouchableOpacity style={styles.fabMain} onPress={() => setFabVisible(!fabVisible)}>
+            <Text style={styles.fabIcon}>{fabVisible ? '×' : '+'}</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
@@ -154,6 +191,18 @@ export default function DashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f172a' },
   centered: { justifyContent: 'center', alignItems: 'center' },
+  topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#1e293b',
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  topHeaderTitle: { color: '#f8fafc', fontSize: 18, fontWeight: 'bold' },
+  burgerButton: { padding: 4 },
+  burgerIcon: { color: '#f8fafc', fontSize: 24, fontWeight: 'bold' },
   listContainer: { padding: 16 },
   card: {
     backgroundColor: '#1e293b',
@@ -190,12 +239,58 @@ const styles = StyleSheet.create({
   sensorLabel: { color: '#94a3b8', fontSize: 12, marginBottom: 4 },
   sensorValue: { color: '#38bdf8', fontSize: 16, fontWeight: 'bold' },
   noData: { color: '#64748b', textAlign: 'center', marginTop: 24 },
-  logoutButton: {
-    margin: 16,
-    padding: 16,
-    backgroundColor: '#ef4444',
-    borderRadius: 8,
-    alignItems: 'center',
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
   },
-  logoutText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  menuContainer: {
+    backgroundColor: '#1e293b',
+    width: 200,
+    marginTop: 60,
+    marginRight: 16,
+    borderRadius: 8,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  menuItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  menuItemText: { color: '#f8fafc', fontSize: 16 },
+  fabMain: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#38bdf8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  fabIcon: { color: '#0f172a', fontSize: 32, fontWeight: 'bold', lineHeight: 34 },
+  fabOptions: {
+    position: 'absolute',
+    right: 24,
+    bottom: 90,
+    alignItems: 'flex-end',
+  },
+  fabOption: {
+    backgroundColor: '#1e293b',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginBottom: 12,
+    elevation: 4,
+  },
+  fabOptionText: { color: '#f8fafc', fontWeight: 'bold' },
 });

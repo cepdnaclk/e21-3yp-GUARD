@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
 import { deviceApi, sensorApi } from '../services/api';
 import { getSocket } from '../services/socket';
 import { SENSOR_META } from '../constants/sensorConstants';
+import { useAuth } from '../context/AuthContext';
 
-export default function DeviceDetailScreen({ route }) {
+export default function DeviceDetailScreen({ route, navigation }) {
   const { deviceId } = route.params;
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole(['ADMIN', 'SUPER_ADMIN']);
   const [device, setDevice] = useState(null);
   const [readings, setReadings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +83,43 @@ export default function DeviceDetailScreen({ route }) {
           <Text style={styles.noData}>No sensor data available.</Text>
         )}
       </View>
+
+      {isAdmin && device.thresholds && (
+        <>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Thresholds & Limits</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('EditThresholds', { deviceId, currentThresholds: device.thresholds })}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoText}>Temp: {device.thresholds.tempMin} - {device.thresholds.tempMax} °C</Text>
+            <Text style={styles.infoText}>pH: {device.thresholds.phMin} - {device.thresholds.phMax}</Text>
+            <Text style={styles.infoText}>TDS: {device.thresholds.tdsMin} - {device.thresholds.tdsMax} ppm</Text>
+            <Text style={styles.infoText}>Turbidity Max: {device.thresholds.turbidityMax} NTU</Text>
+          </View>
+        </>
+      )}
+
+      {isAdmin && (
+        <>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Assigned Workers</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('AssignWorker', { deviceId, currentWorkers: device.workers })}>
+              <Text style={styles.editButtonText}>Manage</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.infoCard}>
+            {device.workers && device.workers.length > 0 ? (
+              device.workers.map(w => (
+                <Text key={w.id} style={styles.infoText}>• {w.username}</Text>
+              ))
+            ) : (
+              <Text style={styles.infoText}>No workers assigned.</Text>
+            )}
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -105,4 +145,26 @@ const styles = StyleSheet.create({
   sensorValue: { color: '#38bdf8', fontSize: 32, fontWeight: 'bold' },
   sensorUnit: { color: '#64748b', fontSize: 14, marginTop: 4 },
   noData: { color: '#64748b', textAlign: 'center', padding: 16 },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  editButtonText: {
+    color: '#38bdf8',
+    fontWeight: 'bold',
+  },
+  infoCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  infoText: {
+    color: '#e2e8f0',
+    fontSize: 16,
+    marginBottom: 8,
+  },
 });

@@ -86,6 +86,9 @@ export const authApi = {
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   getMe: () => request('/auth/me'),
+  updateProfile: (body) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
+  createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
+  getWorkers: () => request('/auth/workers'),
 };
 
 export const deviceApi = {
@@ -108,6 +111,18 @@ export const deviceApi = {
       thresholds: status.thresholds || {},
     };
   },
+
+  // POST /api/tanks/register
+  register: (body) => request('/tanks/register', { method: 'POST', body: JSON.stringify(body) }),
+  
+  // PATCH /api/tanks/:tankId/thresholds
+  updateThresholds: (tankId, body) => request(`/tanks/${tankId}/thresholds`, { method: 'PATCH', body: JSON.stringify(body) }),
+  
+  // POST /api/tanks/:tankId/assign-user
+  assignWorker: (tankId, body) => request(`/tanks/${tankId}/assign-user`, { method: 'POST', body: JSON.stringify(body) }),
+  
+  // POST /api/tanks/:tankId/unassign-user
+  unassignWorker: (tankId, body) => request(`/tanks/${tankId}/unassign-user`, { method: 'POST', body: JSON.stringify(body) }),
 };
 
 export const sensorApi = {
