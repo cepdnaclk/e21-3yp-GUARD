@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const { login } = useAuth();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -33,7 +37,7 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Username"
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={theme.textSecondary}
           autoCapitalize="none"
           value={username}
           onChangeText={setUsername}
@@ -41,37 +45,39 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Password"
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={theme.textSecondary}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={busy}>
-        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log In</Text>}
+      <TouchableOpacity onPress={handleLogin} disabled={busy}>
+        <LinearGradient colors={theme.gradientPrimary} style={styles.button}>
+          {busy ? <ActivityIndicator color={theme.iconColor} /> : <Text style={styles.buttonText}>Log In</Text>}
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: theme.background,
     justifyContent: 'center',
     padding: 24,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#38bdf8',
+    color: theme.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: theme.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -79,21 +85,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   input: {
-    backgroundColor: '#1e293b',
-    color: '#f8fafc',
+    backgroundColor: theme.inputBg,
+    color: theme.text,
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   button: {
-    backgroundColor: '#38bdf8',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
   },
   buttonText: {
-    color: '#0f172a',
+    color: theme.iconColor,
     fontSize: 18,
     fontWeight: 'bold',
   },

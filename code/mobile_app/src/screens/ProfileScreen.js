@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ProfileScreen({ navigation }) {
   const { user, refreshUser } = useAuth();
+  const { theme, isDark, toggleTheme } = useTheme();
+  const styles = getStyles(theme);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -44,60 +49,94 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Your Profile</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Your Profile</Text>
+        <View style={styles.themeToggle}>
+          <Ionicons name="sunny" size={20} color={theme.textSecondary} />
+          <Switch
+            value={isDark}
+            onValueChange={toggleTheme}
+            trackColor={{ false: theme.border, true: theme.primary }}
+            thumbColor={theme.card}
+            style={{ marginHorizontal: 8 }}
+          />
+          <Ionicons name="moon" size={20} color={theme.textSecondary} />
+        </View>
+      </View>
 
       <Text style={styles.label}>Username</Text>
-      <TextInput
-        style={styles.input}
-        value={formData.username}
-        onChangeText={t => setFormData({ ...formData, username: t })}
-        placeholderTextColor="#94a3b8"
-      />
+      <View style={styles.inputContainer}>
+        <Ionicons name="person-outline" size={20} color={theme.textSecondary} style={styles.icon} />
+        <TextInput
+          style={styles.input}
+          value={formData.username}
+          onChangeText={t => setFormData({ ...formData, username: t })}
+          placeholderTextColor={theme.textSecondary}
+        />
+      </View>
 
       <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        value={formData.email}
-        onChangeText={t => setFormData({ ...formData, email: t })}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        placeholderTextColor="#94a3b8"
-      />
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail-outline" size={20} color={theme.textSecondary} style={styles.icon} />
+        <TextInput
+          style={styles.input}
+          value={formData.email}
+          onChangeText={t => setFormData({ ...formData, email: t })}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          placeholderTextColor={theme.textSecondary}
+        />
+      </View>
 
       <Text style={styles.label}>Phone Number</Text>
-      <TextInput
-        style={styles.input}
-        value={formData.phone}
-        onChangeText={t => setFormData({ ...formData, phone: t })}
-        keyboardType="phone-pad"
-        placeholderTextColor="#94a3b8"
-      />
+      <View style={styles.inputContainer}>
+        <Ionicons name="call-outline" size={20} color={theme.textSecondary} style={styles.icon} />
+        <TextInput
+          style={styles.input}
+          value={formData.phone}
+          onChangeText={t => setFormData({ ...formData, phone: t })}
+          keyboardType="phone-pad"
+          placeholderTextColor={theme.textSecondary}
+        />
+      </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleUpdate} disabled={loading}>
-        {loading ? <ActivityIndicator color="#0f172a" /> : <Text style={styles.buttonText}>Save Changes</Text>}
+      <TouchableOpacity onPress={handleUpdate} disabled={loading}>
+        <LinearGradient colors={theme.gradientPrimary} style={styles.button}>
+          {loading ? <ActivityIndicator color={theme.iconColor} /> : <Text style={styles.buttonText}>Save Changes</Text>}
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a', padding: 24 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#f8fafc', marginBottom: 24 },
-  label: { color: '#94a3b8', marginBottom: 8, fontSize: 14 },
-  input: {
-    backgroundColor: '#1e293b',
-    color: '#f8fafc',
+const getStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background, padding: 24 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  title: { fontSize: 24, fontWeight: 'bold', color: theme.text },
+  themeToggle: { flexDirection: 'row', alignItems: 'center' },
+  label: { color: theme.textSecondary, marginBottom: 8, fontSize: 14 },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.inputBg,
     borderRadius: 8,
-    padding: 16,
     marginBottom: 24,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  icon: { marginRight: 12 },
+  input: {
+    flex: 1,
+    color: theme.text,
+    paddingVertical: 16,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#38bdf8',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     marginTop: 16,
   },
-  buttonText: { color: '#0f172a', fontSize: 18, fontWeight: 'bold' },
+  buttonText: { color: theme.iconColor, fontSize: 18, fontWeight: 'bold' },
 });

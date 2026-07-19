@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { deviceApi } from '../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../context/ThemeContext';
 
 export default function EditThresholdsScreen({ route, navigation }) {
   const { deviceId, currentThresholds } = route.params;
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     tempMin: currentThresholds?.tempMin?.toString() || '0',
@@ -50,7 +54,7 @@ export default function EditThresholdsScreen({ route, navigation }) {
         value={form[key]}
         onChangeText={val => setForm({ ...form, [key]: val })}
         keyboardType="numeric"
-        placeholderTextColor="#94a3b8"
+        placeholderTextColor={theme.textSecondary}
       />
     </View>
   );
@@ -76,34 +80,37 @@ export default function EditThresholdsScreen({ route, navigation }) {
         <View style={styles.inputGroup} />
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleUpdate} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save Changes</Text>}
+      <TouchableOpacity onPress={handleUpdate} disabled={loading}>
+        <LinearGradient colors={theme.gradientPrimary} style={styles.button}>
+          {loading ? <ActivityIndicator color={theme.iconColor} /> : <Text style={styles.buttonText}>Save Changes</Text>}
+        </LinearGradient>
       </TouchableOpacity>
       <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a', padding: 24 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#f8fafc', marginBottom: 24 },
+const getStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background, padding: 24 },
+  title: { fontSize: 24, fontWeight: 'bold', color: theme.text, marginBottom: 24 },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   inputGroup: { flex: 1, marginHorizontal: 4 },
-  label: { color: '#94a3b8', marginBottom: 8, fontSize: 14 },
+  label: { color: theme.textSecondary, marginBottom: 8, fontSize: 14 },
   input: {
-    backgroundColor: '#1e293b',
-    color: '#f8fafc',
+    backgroundColor: theme.inputBg,
+    color: theme.text,
     borderRadius: 8,
     padding: 16,
     marginBottom: 20,
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   button: {
-    backgroundColor: '#38bdf8',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     marginTop: 16,
   },
-  buttonText: { color: '#0f172a', fontSize: 18, fontWeight: 'bold' },
+  buttonText: { color: theme.iconColor, fontSize: 18, fontWeight: 'bold' },
 });

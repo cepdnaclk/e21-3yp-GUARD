@@ -4,10 +4,14 @@ import { deviceApi, sensorApi } from '../services/api';
 import { getSocket } from '../services/socket';
 import { SENSOR_META } from '../constants/sensorConstants';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function DeviceDetailScreen({ route, navigation }) {
   const { deviceId } = route.params;
   const { hasRole } = useAuth();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const isAdmin = hasRole(['ADMIN', 'SUPER_ADMIN']);
   const [device, setDevice] = useState(null);
   const [readings, setReadings] = useState([]);
@@ -53,7 +57,7 @@ export default function DeviceDetailScreen({ route, navigation }) {
   if (loading || !device) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#38bdf8" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -72,8 +76,11 @@ export default function DeviceDetailScreen({ route, navigation }) {
           const meta = SENSOR_META[name];
           if (!meta) return null;
 
+          const iconName = name.includes('temp') ? 'thermometer' : name.includes('ph') ? 'flask-outline' : name.includes('tds') ? 'water-outline' : name.includes('turb') ? 'waves' : 'chart-bubble';
+
           return (
             <View key={r.sensorId} style={styles.sensorCard}>
+              <MaterialCommunityIcons name={iconName} size={28} color={theme.primary} style={{ marginBottom: 8 }} />
               <Text style={styles.sensorLabel}>{meta.label}</Text>
               <Text style={styles.sensorValue}>{r.value !== null ? r.value : '--'}</Text>
               <Text style={styles.sensorUnit}>{meta.unit}</Text>
@@ -88,7 +95,8 @@ export default function DeviceDetailScreen({ route, navigation }) {
         <>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Thresholds & Limits</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('EditThresholds', { deviceId, currentThresholds: device.thresholds })}>
+            <TouchableOpacity onPress={() => navigation.navigate('EditThresholds', { deviceId, currentThresholds: device.thresholds })} style={styles.editButton}>
+              <Ionicons name="create-outline" size={18} color={theme.primary} style={{ marginRight: 4 }} />
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           </View>
@@ -105,7 +113,8 @@ export default function DeviceDetailScreen({ route, navigation }) {
         <>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Assigned Workers</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('AssignWorker', { deviceId, currentWorkers: device.workers })}>
+            <TouchableOpacity onPress={() => navigation.navigate('AssignWorker', { deviceId, currentWorkers: device.workers })} style={styles.editButton}>
+              <Ionicons name="people-outline" size={18} color={theme.primary} style={{ marginRight: 4 }} />
               <Text style={styles.editButtonText}>Manage</Text>
             </TouchableOpacity>
           </View>
@@ -124,46 +133,50 @@ export default function DeviceDetailScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a' },
+const getStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   centered: { justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 24, backgroundColor: '#1e293b', borderBottomWidth: 1, borderBottomColor: '#334155' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#f8fafc' },
-  subtitle: { fontSize: 14, color: '#94a3b8', marginTop: 4, textTransform: 'capitalize' },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#e2e8f0', margin: 16 },
+  header: { padding: 24, backgroundColor: theme.card, borderBottomWidth: 1, borderBottomColor: theme.border },
+  title: { fontSize: 24, fontWeight: 'bold', color: theme.text },
+  subtitle: { fontSize: 14, color: theme.textSecondary, marginTop: 4, textTransform: 'capitalize' },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: theme.text, margin: 16 },
   sensorGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8 },
   sensorCard: {
     width: (Dimensions.get('window').width / 2) - 24,
-    backgroundColor: '#1e293b',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 16,
     margin: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sensorLabel: { color: '#94a3b8', fontSize: 14, marginBottom: 8 },
-  sensorValue: { color: '#38bdf8', fontSize: 32, fontWeight: 'bold' },
-  sensorUnit: { color: '#64748b', fontSize: 14, marginTop: 4 },
-  noData: { color: '#64748b', textAlign: 'center', padding: 16 },
+  sensorLabel: { color: theme.textSecondary, fontSize: 14, marginBottom: 8 },
+  sensorValue: { color: theme.primary, fontSize: 32, fontWeight: 'bold' },
+  sensorUnit: { color: theme.textSecondary, fontSize: 14, marginTop: 4 },
+  noData: { color: theme.textSecondary, textAlign: 'center', padding: 16 },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginRight: 16,
   },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   editButtonText: {
-    color: '#38bdf8',
+    color: theme.primary,
     fontWeight: 'bold',
   },
   infoCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
   },
   infoText: {
-    color: '#e2e8f0',
+    color: theme.text,
     fontSize: 16,
     marginBottom: 8,
   },

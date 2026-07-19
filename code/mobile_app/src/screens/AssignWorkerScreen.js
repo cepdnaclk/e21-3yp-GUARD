@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { authApi, deviceApi } from '../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 export default function AssignWorkerScreen({ route, navigation }) {
   const { deviceId, currentWorkers = [] } = route.params;
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const loadWorkers = useCallback(async () => {
     try {
@@ -42,7 +47,7 @@ export default function AssignWorkerScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#38bdf8" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -57,13 +62,17 @@ export default function AssignWorkerScreen({ route, navigation }) {
           const isAssigned = currentWorkers.some(w => w.id === item.id);
           return (
             <View style={styles.workerRow}>
-              <Text style={styles.workerName}>{item.username}</Text>
-              <TouchableOpacity
-                style={[styles.actionButton, isAssigned ? styles.removeButton : styles.addButton]}
-                onPress={() => toggleWorker(item.id, isAssigned)}
-                disabled={processing}
-              >
-                <Text style={styles.actionText}>{isAssigned ? 'Remove' : 'Assign'}</Text>
+              <View style={styles.workerInfo}>
+                <Ionicons name="person-circle-outline" size={32} color={theme.textSecondary} style={{ marginRight: 12 }} />
+                <Text style={styles.workerName}>{item.username}</Text>
+              </View>
+              <TouchableOpacity onPress={() => toggleWorker(item.id, isAssigned)} disabled={processing}>
+                <LinearGradient 
+                  colors={isAssigned ? theme.gradientDanger : theme.gradientPrimary} 
+                  style={styles.actionButton}
+                >
+                  <Text style={styles.actionText}>{isAssigned ? 'Remove' : 'Assign'}</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           );
@@ -74,23 +83,22 @@ export default function AssignWorkerScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a', padding: 24 },
+const getStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background, padding: 24 },
   centered: { justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#f8fafc', marginBottom: 24 },
+  title: { fontSize: 24, fontWeight: 'bold', color: theme.text, marginBottom: 24 },
   workerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1e293b',
+    backgroundColor: theme.card,
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
   },
-  workerName: { color: '#f8fafc', fontSize: 16 },
+  workerInfo: { flexDirection: 'row', alignItems: 'center' },
+  workerName: { color: theme.text, fontSize: 16, fontWeight: '500' },
   actionButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  addButton: { backgroundColor: '#38bdf8' },
-  removeButton: { backgroundColor: '#ef4444' },
-  actionText: { color: '#0f172a', fontWeight: 'bold' },
-  noData: { color: '#64748b', textAlign: 'center', marginTop: 24 },
+  actionText: { color: theme.iconColor, fontWeight: 'bold' },
+  noData: { color: theme.textSecondary, textAlign: 'center', marginTop: 24 },
 });
