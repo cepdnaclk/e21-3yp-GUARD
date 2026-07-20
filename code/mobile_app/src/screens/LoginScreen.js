@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const { login } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark, toggleTheme } = useTheme();
   const styles = getStyles(theme);
 
   const handleLogin = async () => {
@@ -30,8 +32,20 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>G.U.A.R.D System</Text>
-      <Text style={styles.subtitle}>Sign in to your account</Text>
+      <View style={styles.themeToggleContainer}>
+        <Ionicons name="sunny" size={20} color={theme.textSecondary} />
+        <Switch
+          value={isDark}
+          onValueChange={toggleTheme}
+          trackColor={{ false: theme.border, true: theme.primary }}
+          thumbColor={theme.card}
+          style={{ marginHorizontal: 8 }}
+        />
+        <Ionicons name="moon" size={20} color={theme.textSecondary} />
+      </View>
+
+      <Text style={styles.title}>Welcome Back</Text>
+      <Text style={styles.subtitle}>Sign in to G.U.A.R.D Dashboard</Text>
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -42,14 +56,30 @@ export default function LoginScreen() {
           value={username}
           onChangeText={setUsername}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor={theme.textSecondary}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={[styles.input, styles.passwordInput]}
+            placeholder="Password"
+            placeholderTextColor={theme.textSecondary}
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={24}
+              color={theme.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotPasswordContainer}>
+          <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity onPress={handleLogin} disabled={busy}>
@@ -67,6 +97,13 @@ const getStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.background,
     justifyContent: 'center',
     padding: 24,
+  },
+  themeToggleContainer: {
+    position: 'absolute',
+    top: 60,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,
@@ -93,6 +130,34 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: theme.border,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.inputBg,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginBottom: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    borderWidth: 0,
+    marginBottom: 0,
+    backgroundColor: 'transparent',
+  },
+  eyeIcon: {
+    padding: 10,
+    paddingRight: 16,
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    color: theme.primary,
+    fontSize: 14,
+    fontWeight: '500',
   },
   button: {
     borderRadius: 8,

@@ -163,10 +163,10 @@ export default function DashboardScreen({ navigation }) {
         data={devices}
         keyExtractor={item => item.deviceId}
         renderItem={({ item }) => (
-          <TankCard 
-            device={item} 
-            readings={sensorData[item.deviceId] || []} 
-            onPress={() => navigation.navigate('DeviceDetail', { deviceId: item.deviceId })} 
+          <TankCard
+            device={item}
+            readings={sensorData[item.deviceId] || []}
+            onPress={() => navigation.navigate('DeviceDetail', { deviceId: item.deviceId })}
           />
         )}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
@@ -177,10 +177,6 @@ export default function DashboardScreen({ navigation }) {
       <Modal transparent={true} visible={menuVisible} animationType="fade" onRequestClose={() => setMenuVisible(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
           <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); navigation.navigate('Profile'); }}>
-              <Ionicons name="person-outline" size={20} color={theme.text} style={{ marginRight: 12 }} />
-              <Text style={styles.menuItemText}>My Profile</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); logout(); }}>
               <Ionicons name="log-out-outline" size={20} color={theme.danger} style={{ marginRight: 12 }} />
               <Text style={[styles.menuItemText, { color: theme.danger }]}>Log Out</Text>
@@ -195,13 +191,13 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.fabOptions}>
               <TouchableOpacity style={styles.fabOption} onPress={() => { setFabVisible(false); navigation.navigate('AddTank'); }}>
                 <LinearGradient colors={theme.gradientCard} style={styles.fabOptionInner}>
-                  <Ionicons name="hardware-chip-outline" size={20} color={theme.primary} style={{marginRight: 8}}/>
+                  <Ionicons name="hardware-chip-outline" size={20} color={theme.primary} style={{ marginRight: 8 }} />
                   <Text style={styles.fabOptionText}>Add Tank</Text>
                 </LinearGradient>
               </TouchableOpacity>
               <TouchableOpacity style={styles.fabOption} onPress={() => { setFabVisible(false); navigation.navigate('AddUser'); }}>
                 <LinearGradient colors={theme.gradientCard} style={styles.fabOptionInner}>
-                  <Ionicons name="person-add-outline" size={20} color={theme.primary} style={{marginRight: 8}}/>
+                  <Ionicons name="person-add-outline" size={20} color={theme.primary} style={{ marginRight: 8 }} />
                   <Text style={styles.fabOptionText}>Add Worker</Text>
                 </LinearGradient>
               </TouchableOpacity>

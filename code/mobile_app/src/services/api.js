@@ -89,6 +89,10 @@ export const authApi = {
   updateProfile: (body) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
   createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
   getWorkers: () => request('/auth/workers'),
+  forgotPasswordInit: (username) => request('/auth/forgot-password/init', { method: 'POST', body: JSON.stringify({ username }) }),
+  forgotPasswordVerifyEmail: (username, email) => request('/auth/forgot-password/verify-email', { method: 'POST', body: JSON.stringify({ username, email }) }),
+  forgotPasswordVerifyCode: (username, code) => request('/auth/forgot-password/verify-code', { method: 'POST', body: JSON.stringify({ username, code }) }),
+  forgotPasswordReset: (username, code, newPassword) => request('/auth/forgot-password/reset', { method: 'POST', body: JSON.stringify({ username, code, newPassword }) }),
 };
 
 export const deviceApi = {
@@ -114,15 +118,23 @@ export const deviceApi = {
 
   // POST /api/tanks/register
   register: (body) => request('/tanks/register', { method: 'POST', body: JSON.stringify(body) }),
-  
+
   // PATCH /api/tanks/:tankId/thresholds
   updateThresholds: (tankId, body) => request(`/tanks/${tankId}/thresholds`, { method: 'PATCH', body: JSON.stringify(body) }),
-  
+
   // POST /api/tanks/:tankId/assign-user
   assignWorker: (tankId, body) => request(`/tanks/${tankId}/assign-user`, { method: 'POST', body: JSON.stringify(body) }),
-  
+
   // POST /api/tanks/:tankId/unassign-user
   unassignWorker: (tankId, body) => request(`/tanks/${tankId}/unassign-user`, { method: 'POST', body: JSON.stringify(body) }),
+};
+
+export const alertApi = {
+  list: (params = {}) => {
+    const qs = Object.keys(params).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`).join('&');
+    return request(`/alerts${qs ? '?' + qs : ''}`);
+  },
+  resolve: (alertId) => request('/alerts/resolve', { method: 'POST', body: JSON.stringify({ alertId }) }),
 };
 
 export const sensorApi = {
@@ -149,5 +161,33 @@ export const sensorApi = {
     }
 
     return latestReadings;
+  },
+
+  history: async ({ deviceId, sensorId, from, to }) => {
+    const query = [];
+    if (from) {
+      const parsedFrom = new Date(from);
+      if (!Number.isNaN(parsedFrom.getTime())) query.push(`from=${parsedFrom.toISOString()}`);
+    }
+    if (to) {
+      const parsedTo = new Date(to);
+      if (!Number.isNaN(parsedTo.getTime())) query.push(`to=${parsedTo.toISOString()}`);
+    }
+    const queryStr = query.length > 0 ? `?${query.join('&')}` : '';
+    const rows = await request(`/sensors/history/${encodeURIComponent(deviceId)}${queryStr}`);
+    
+    if (!Array.isArray(rows)) return [];
+
+    const historyReadings = [];
+    for (const row of rows) {
+      const readings = toReadingRows(row, deviceId);
+      for (const reading of readings) {
+        if (sensorId && reading.sensorId !== sensorId && reading.sensorType.sensorName !== sensorId) {
+          continue;
+        }
+        historyReadings.push(reading);
+      }
+    }
+    return historyReadings;
   },
 };

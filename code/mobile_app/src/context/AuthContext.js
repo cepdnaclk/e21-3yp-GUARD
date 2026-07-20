@@ -13,18 +13,39 @@ function normalizeUserFromAuthResponse(data, fallback = {}) {
       ...data.user,
       id: data.user.id ?? fallback.id,
       email: data.user.email ?? data.email ?? fallback.email ?? '',
+      address: data.user.address ?? data.address ?? fallback.address ?? '',
+      phoneNumber: data.user.phoneNumber ?? data.phoneNumber ?? fallback.phoneNumber ?? '',
+      profilePicture: data.user.profilePicture ?? data.profilePicture ?? fallback.profilePicture ?? null,
+      phoneVerified: data.user.phoneVerified ?? data.phoneVerified ?? fallback.phoneVerified ?? false,
+      emailVerified: data.user.emailVerified ?? data.emailVerified ?? fallback.emailVerified ?? false,
+      telegramVerified: data.user.telegramVerified ?? data.telegramVerified ?? fallback.telegramVerified ?? false,
+      telegramChatId: data.user.telegramChatId ?? data.telegramChatId ?? fallback.telegramChatId ?? null,
+      createdAt: data.user.createdAt ?? data.createdAt ?? fallback.createdAt ?? null,
+      role: data.user.role ?? data.role ?? fallback.role ?? null,
       fullName: data.user.fullName ?? data.fullName ?? fallback.fullName ?? '',
       username: data.user.username ?? fallback.username ?? '',
-      role: data.user.role ?? data.role ?? fallback.role ?? null,
+      emailAlertsEnabled: data.user.emailAlertsEnabled ?? data.emailAlertsEnabled ?? fallback.emailAlertsEnabled ?? true,
+      telegramAlertsEnabled: data.user.telegramAlertsEnabled ?? data.telegramAlertsEnabled ?? fallback.telegramAlertsEnabled ?? true,
     };
   }
 
   return {
+    ...data,
     id: data?.id ?? fallback.id,
     username: data?.username ?? fallback.username ?? '',
     email: data?.email ?? fallback.email ?? '',
     fullName: data?.fullName ?? fallback.fullName ?? '',
+    address: data?.address ?? fallback.address ?? '',
+    phoneNumber: data?.phoneNumber ?? fallback.phoneNumber ?? '',
+    profilePicture: data?.profilePicture ?? fallback.profilePicture ?? null,
+    phoneVerified: data?.phoneVerified ?? fallback.phoneVerified ?? false,
+    emailVerified: data?.emailVerified ?? fallback.emailVerified ?? false,
+    telegramVerified: data?.telegramVerified ?? fallback.telegramVerified ?? false,
+    telegramChatId: data?.telegramChatId ?? fallback.telegramChatId ?? null,
+    createdAt: data?.createdAt ?? fallback.createdAt ?? null,
     role: data?.role ?? fallback.role ?? null,
+    emailAlertsEnabled: data?.emailAlertsEnabled ?? data.user?.emailAlertsEnabled ?? fallback.emailAlertsEnabled ?? true,
+    telegramAlertsEnabled: data?.telegramAlertsEnabled ?? data.user?.telegramAlertsEnabled ?? fallback.telegramAlertsEnabled ?? true,
   };
 }
 
@@ -98,13 +119,34 @@ export function AuthProvider({ children }) {
       fullName: authData.fullName,
     });
 
+    try {
+      const me = await authApi.getMe();
+      nextUser = normalizeUserFromAuthResponse(me, nextUser);
+    } catch {
+      // Keep lightweight payload if /auth/me fails
+    }
+
     if (nextUser.role) {
       await AsyncStorage.setItem(ROLE_KEY, nextUser.role);
       setRoleState(nextUser.role);
     }
-    
+
     setUser(nextUser);
     connectSocket();
+  };
+
+  const refreshUser = async () => {
+    try {
+      const data = await authApi.getMe();
+      const nextUser = normalizeUserFromAuthResponse(data, user || {});
+      setUser(nextUser);
+      if (nextUser.role) {
+        await AsyncStorage.setItem(ROLE_KEY, nextUser.role);
+        setRoleState(nextUser.role);
+      }
+    } catch (err) {
+      console.log('Failed to refresh user:', err.message);
+    }
   };
 
   const logout = async () => {
@@ -121,7 +163,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, hasRole, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, role, hasRole, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
