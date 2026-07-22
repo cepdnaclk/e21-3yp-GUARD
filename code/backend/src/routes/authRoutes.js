@@ -27,6 +27,7 @@ import {
   confirmEmailOtp,
   sendPhoneOtp,
   confirmPhoneOtp,
+  savePushToken,
 } from "../controllers/auth/index.js";
 import { verifyToken, requireRole, requireAnyRole } from "../middleware/authMiddleware.js";
 
@@ -171,6 +172,13 @@ router.post(
   verifyToken,
   requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
   confirmPhoneOtp
+);
+
+router.post(
+  "/push-token",
+  verifyToken,
+  requireAnyRole(["SUPER_ADMIN", "ADMIN", "USER"]),
+  savePushToken
 );
 
 export default router;

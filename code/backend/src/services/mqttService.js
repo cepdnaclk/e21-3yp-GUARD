@@ -4,6 +4,9 @@ import { Point } from '@influxdata/influxdb-client';
 import { writeApi } from '../lib/influx.js';
 import { sendAlertEmail } from './emailService.js';
 import { sendTelegramMessage } from './telegramService.js';
+import { Expo } from 'expo-server-sdk';
+
+const expo = new Expo();
 
 let io = null;
 
@@ -287,8 +290,8 @@ async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue
     const tank = await prisma.tank.findUnique({
         where: { tankId },
         include: {
-            admin: { select: { email: true, telegramChatId: true, phoneVerified: true, emailAlertsEnabled: true, telegramAlertsEnabled: true } },
-            workers: { select: { email: true, telegramChatId: true, phoneVerified: true, emailAlertsEnabled: true, telegramAlertsEnabled: true } },
+            admin: { select: { email: true, telegramChatId: true, phoneVerified: true, emailAlertsEnabled: true, telegramAlertsEnabled: true, expoPushToken: true } },
+            workers: { select: { email: true, telegramChatId: true, phoneVerified: true, emailAlertsEnabled: true, telegramAlertsEnabled: true, expoPushToken: true } },
         },
     });
 
@@ -362,6 +365,41 @@ async function _processAlertImpl(tankId, normalizedParam, alertType, sensorValue
             )
         );
         console.log(`✅ ${emails.length} email(s) sent.`);
+    }
+
+    // ── Send Push Notifications ──────────────────────────────────────
+    const pushTokens = [...new Set([
+        tank.admin?.expoPushToken,
+        ...tank.workers.map(w => w.expoPushToken)
+    ].filter(Boolean))];
+
+    if (pushTokens.length > 0) {
+        let messages = [];
+        for (let pushToken of pushTokens) {
+            if (!Expo.isExpoPushToken(pushToken)) {
+                console.error(`Push token ${pushToken} is not a valid Expo push token`);
+                continue;
+            }
+            messages.push({
+                to: pushToken,
+                sound: 'default',
+                title: `🚨 CRITICAL: ${tank.name}`,
+                body: `${normalizedParam.toUpperCase()} is ${alertType} (${sensorValue})`,
+                data: { tankId, alertType: normalizedParam },
+            });
+        }
+        
+        let chunks = expo.chunkPushNotifications(messages);
+        (async () => {
+            for (let chunk of chunks) {
+                try {
+                    await expo.sendPushNotificationsAsync(chunk);
+                } catch (error) {
+                    console.error('Error sending push chunk', error);
+                }
+            }
+        })();
+        console.log(`✅ Sent ${pushTokens.length} push notification(s).`);
     }
 }
 

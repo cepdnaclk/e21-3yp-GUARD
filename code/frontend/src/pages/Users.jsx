@@ -234,12 +234,14 @@ export default function Users() {
       {/* Action Bar */}
       <div className="card users-actions-card">
         <div className="devices-actions">
-          <button
-            type="button" className="btn action-btn"
-            onClick={() => { closeAll(); setMode('admin'); }}
-            disabled={!canCreateAdmin || busy}
-            title={canCreateAdmin ? 'Create ADMIN account' : 'Only SUPER_ADMIN can create admins'}
-          >Add Admin</button>
+          {canCreateAdmin && (
+            <button
+              type="button" className="btn action-btn"
+              onClick={() => { closeAll(); setMode('admin'); }}
+              disabled={busy}
+              title="Create ADMIN account"
+            >Add Admin</button>
+          )}
 
           {canCreateUser && (
             <button

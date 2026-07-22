@@ -87,6 +87,7 @@ export const authApi = {
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   getMe: () => request('/auth/me'),
   updateProfile: (body) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
+  savePushToken: (token) => request('/auth/push-token', { method: 'POST', body: JSON.stringify({ token }) }),
   createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
   getWorkers: () => request('/auth/workers'),
   forgotPasswordInit: (username) => request('/auth/forgot-password/init', { method: 'POST', body: JSON.stringify({ username }) }),
@@ -127,6 +128,9 @@ export const deviceApi = {
 
   // POST /api/tanks/:tankId/unassign-user
   unassignWorker: (tankId, body) => request(`/tanks/${tankId}/unassign-user`, { method: 'POST', body: JSON.stringify(body) }),
+
+  // POST /api/tanks/:tankId/actuators
+  sendCommand: (tankId, command) => request(`/tanks/${tankId}/actuators`, { method: 'POST', body: JSON.stringify({ command }) }),
 };
 
 export const alertApi = {

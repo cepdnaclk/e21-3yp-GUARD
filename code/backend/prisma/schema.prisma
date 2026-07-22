@@ -30,6 +30,7 @@ model User {
   telegramChatId String?
   emailAlertsEnabled      Boolean  @default(true)
   telegramAlertsEnabled   Boolean  @default(true)
+  expoPushToken           String?
   
   // Pending verification details
   pendingEmail    String?

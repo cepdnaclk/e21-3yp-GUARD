@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import { deviceApi, sensorApi } from '../services/api';
 import { getSocket } from '../services/socket';
 import { SENSOR_META } from '../constants/sensorConstants';
@@ -16,6 +16,31 @@ export default function DeviceDetailScreen({ route, navigation }) {
   const [device, setDevice] = useState(null);
   const [readings, setReadings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sendingCommand, setSendingCommand] = useState(false);
+
+  const handleCommand = async (commandName) => {
+    Alert.alert(
+      `Confirm ${commandName.replace('_', ' ').toUpperCase()}`,
+      `Are you sure you want to send the '${commandName.replace('_', ' ').toUpperCase()}' command to this tank?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Send', 
+          onPress: async () => {
+            setSendingCommand(true);
+            try {
+              await deviceApi.sendCommand(deviceId, commandName);
+              Alert.alert('Success', `Command '${commandName}' sent successfully.`);
+            } catch (err) {
+              Alert.alert('Error', err.message || 'Failed to send command.');
+            } finally {
+              setSendingCommand(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -67,6 +92,34 @@ export default function DeviceDetailScreen({ route, navigation }) {
       <View style={styles.header}>
         <Text style={styles.title}>{device.deviceName || `Tank ${deviceId}`}</Text>
         <Text style={styles.subtitle}>Status: {device.status || 'unknown'}</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>Manual Actions</Text>
+      <View style={styles.actionsContainer}>
+        <TouchableOpacity 
+          style={[styles.actionButton, { backgroundColor: theme.primary }]} 
+          onPress={() => handleCommand('feed')}
+          disabled={sendingCommand}
+        >
+          <MaterialCommunityIcons name="fish" size={24} color={theme.iconColor} />
+          <Text style={styles.actionButtonText}>Feed</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, { backgroundColor: theme.success }]} 
+          onPress={() => handleCommand('pump_on')}
+          disabled={sendingCommand}
+        >
+          <MaterialCommunityIcons name="water-pump" size={24} color={theme.iconColor} />
+          <Text style={styles.actionButtonText}>Pump On</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, { backgroundColor: theme.danger }]} 
+          onPress={() => handleCommand('pump_off')}
+          disabled={sendingCommand}
+        >
+          <MaterialCommunityIcons name="water-pump-off" size={24} color={theme.iconColor} />
+          <Text style={styles.actionButtonText}>Pump Off</Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.sectionTitle}>Current Readings</Text>
@@ -139,6 +192,17 @@ const getStyles = (theme) => StyleSheet.create({
   header: { padding: 24, backgroundColor: theme.card, borderBottomWidth: 1, borderBottomColor: theme.border },
   title: { fontSize: 24, fontWeight: 'bold', color: theme.text },
   subtitle: { fontSize: 14, color: theme.textSecondary, marginTop: 4, textTransform: 'capitalize' },
+  actionsContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 16, marginBottom: 8 },
+  actionButton: { 
+    flex: 1, 
+    marginHorizontal: 4, 
+    paddingVertical: 12, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    flexDirection: 'column'
+  },
+  actionButtonText: { color: theme.iconColor, fontWeight: 'bold', marginTop: 4 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: theme.text, margin: 16 },
   sensorGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8 },
   sensorCard: {

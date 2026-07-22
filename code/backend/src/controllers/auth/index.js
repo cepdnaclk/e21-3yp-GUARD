@@ -24,4 +24,5 @@ export {
   confirmEmailOtp,
   sendPhoneOtp,
   confirmPhoneOtp,
+  savePushToken,
 } from "./userController.js";

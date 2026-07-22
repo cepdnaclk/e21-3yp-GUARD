@@ -481,7 +481,6 @@ void loop() {
     if (currentTemp == DEVICE_DISCONNECTED_C) {
       tempFault = true;
       tempAlert = false;
-      sharedTempAlert = false;
       tempPumpDemand = false;
       Serial.println("🚨 [FAULT] Temperature sensor probe disconnected!");
     } else {
@@ -496,7 +495,6 @@ void loop() {
       }
 
       tempAlert = isAlertNow;
-      sharedTempAlert = isAlertNow;
       tempPumpDemand = isAlertNow;
     }
     if (!commandManualPumpMode) applyPumpControl();
@@ -525,7 +523,6 @@ void loop() {
       }
 
       waterAlert = isAlertNow;
-      sharedWaterAlert = isAlertNow;
     }
     if (!commandManualPumpMode) applyPumpControl();
   }
@@ -551,7 +548,6 @@ void loop() {
     if (rawAdc <= 5.0f || rawAdc >= 4090.0f) {
       tdsFault = true;
       tdsAlert = false;
-      sharedTdsAlert = false;
       tdsPumpDemand = false;
       Serial.println("🚨 [FAULT] TDS Sensor returned out-of-bounds ADC reading!");
     } else {
@@ -584,7 +580,6 @@ void loop() {
       }
 
       tdsAlert = isAlertNow;
-      sharedTdsAlert = isAlertNow;
       tdsPumpDemand = isAlertNow;
     }
     if (!commandManualPumpMode) applyPumpControl();
@@ -621,7 +616,6 @@ void loop() {
     if (avgADC <= 5.0f || avgADC >= 4090.0f) {
       phFault = true;
       phAlert = false;
-      sharedPhAlert = false;
       phPumpDemand = false;
       Serial.println("🚨 [FAULT] pH Sensor returned out-of-bounds ADC reading!");
     } else {
@@ -652,7 +646,6 @@ void loop() {
       }
 
       phAlert = isAlertNow;
-      sharedPhAlert = isAlertNow;
       phPumpDemand = isAlertNow;
     }
     if (!commandManualPumpMode) applyPumpControl();
@@ -672,7 +665,6 @@ void loop() {
     if (avgADC <= 5.0f) {
       turbFault = true;
       turbAlert = false;
-      sharedTurbidityAlert = false;
       turbPumpDemand = false;
       Serial.println("🚨 [FAULT] Turbidity Sensor returned 0 ADC!");
     } else {
@@ -718,7 +710,6 @@ void loop() {
       }
 
       turbAlert = isAlertNow;
-      sharedTurbidityAlert = isAlertNow;
       turbPumpDemand = isAlertNow;
     }
     if (!commandManualPumpMode) applyPumpControl();
@@ -858,11 +849,11 @@ void networkTask(void *pvParameters) {
       float phVal = sharedPh;
       float turbVal = sharedTurbidity;
 
-      bool tAlert = sharedTempAlert;
-      bool wAlert = sharedWaterAlert;
-      bool tdsAlertState = sharedTdsAlert;
-      bool phAlertState = sharedPhAlert;
-      bool turbAlertState = sharedTurbidityAlert;
+      bool tAlert = tempAlert;
+      bool wAlert = waterAlert;
+      bool tdsAlertState = tdsAlert;
+      bool phAlertState = phAlert;
+      bool turbAlertState = turbAlert;
 
       // A. Temperature
       if (!tempFault) {

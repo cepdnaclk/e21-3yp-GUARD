@@ -351,3 +351,17 @@ export const confirmPhoneOtp = asyncHandler(async (req, res) => {
     user: updatedUser,
   });
 });
+
+export const savePushToken = asyncHandler(async (req, res) => {
+  const { userId } = req.user;
+  const { token } = req.body;
+
+  if (!token) throw new AppError("Push token is required", 400);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { expoPushToken: token }
+  });
+
+  return res.status(200).json({ message: "Push token saved successfully" });
+});
