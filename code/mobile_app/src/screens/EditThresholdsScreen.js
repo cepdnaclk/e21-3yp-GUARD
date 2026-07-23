@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { deviceApi } from '../services/api';
+import { deviceApi, fishApi } from '../services/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 
@@ -20,6 +20,41 @@ export default function EditThresholdsScreen({ route, navigation }) {
     waterLevelThreshold: currentThresholds?.waterLevelThreshold?.toString() || '0',
     waterStopThreshold: currentThresholds?.waterStopThreshold?.toString() || '0',
   });
+
+  // Listen for a selected fish returned from FishLibraryScreen
+  useEffect(() => {
+    if (route.params?.selectedFish) {
+      const fish = route.params.selectedFish;
+      applyPreset(fish);
+      // Clear the param so it doesn't trigger again if the component re-renders
+      navigation.setParams({ selectedFish: undefined });
+    }
+  }, [route.params?.selectedFish]);
+
+  const applyPreset = (fish) => {
+    Alert.alert(
+      `Apply ${fish.name} Preset`,
+      `This will overwrite your current threshold inputs with the recommended safe ranges for ${fish.name}. Proceed?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Apply', 
+          onPress: () => {
+            setForm(prev => ({
+              ...prev,
+              tempMin: fish.tempMin !== null ? fish.tempMin.toString() : prev.tempMin,
+              tempMax: fish.tempMax !== null ? fish.tempMax.toString() : prev.tempMax,
+              phMin: fish.phMin !== null ? fish.phMin.toString() : prev.phMin,
+              phMax: fish.phMax !== null ? fish.phMax.toString() : prev.phMax,
+              tdsMin: fish.tdsMin !== null ? fish.tdsMin.toString() : prev.tdsMin,
+              tdsMax: fish.tdsMax !== null ? fish.tdsMax.toString() : prev.tdsMax,
+              turbidityMax: fish.turbidityMax !== null ? fish.turbidityMax.toString() : prev.turbidityMax,
+            }));
+          } 
+        }
+      ]
+    );
+  };
 
   const handleUpdate = async () => {
     setLoading(true);
@@ -63,6 +98,21 @@ export default function EditThresholdsScreen({ route, navigation }) {
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Edit Limits</Text>
       
+      {/* Presets Section */}
+      <View style={styles.presetSection}>
+        <Text style={styles.sectionTitle}>Apply a Preset (Fish Species)</Text>
+        <TouchableOpacity 
+          style={styles.browseButton}
+          onPress={() => navigation.navigate('FishLibrary', { 
+            deviceId, 
+            currentThresholds 
+          })}
+        >
+          <Text style={styles.browseButtonText}>Browse Fish Library</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.sectionTitle}>Manual Thresholds</Text>
       <View style={styles.row}>
         {renderInput('Temp Min', 'tempMin')}
         {renderInput('Temp Max', 'tempMax')}
@@ -92,7 +142,29 @@ export default function EditThresholdsScreen({ route, navigation }) {
 
 const getStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background, padding: 24 },
-  title: { fontSize: 24, fontWeight: 'bold', color: theme.text, marginBottom: 24 },
+  title: { fontSize: 24, fontWeight: 'bold', color: theme.text, marginBottom: 16 },
+  presetSection: {
+    backgroundColor: theme.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: theme.textSecondary, marginBottom: 8 },
+  browseButton: {
+    backgroundColor: theme.inputBg,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.primary,
+  },
+  browseButtonText: {
+    color: theme.primary,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   inputGroup: { flex: 1, marginHorizontal: 4 },
   label: { color: theme.textSecondary, marginBottom: 8, fontSize: 14 },

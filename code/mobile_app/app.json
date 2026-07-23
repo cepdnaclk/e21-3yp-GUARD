@@ -2,7 +2,7 @@
   "expo": {
     "name": "mobile_app",
     "slug": "mobile_app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,11 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.thisen_2002.mobile_app"
+      "package": "com.thisen_2002.mobile_app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,6 +33,11 @@
           "cameraPermission": "Allow G.U.A.R.D to access your camera to scan QR codes."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7aea644c-f796-4136-a614-831442a3fd9d"
+      }
+    }
   }
 }

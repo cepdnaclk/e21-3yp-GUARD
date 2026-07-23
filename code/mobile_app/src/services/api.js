@@ -1,8 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SENSOR_FIELDS } from '../constants/sensorConstants';
 
-const API_ENV = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.100:5000'; // Replace with local IP
-const BASE_URL = `${API_ENV}/api`;
+export let API_ENV = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.100:5000'; // Replace with local IP
+export let BASE_URL = `${API_ENV}/api`;
+
+export const setCustomApiUrl = async (url) => {
+  API_ENV = url;
+  BASE_URL = `${API_ENV}/api`;
+  await AsyncStorage.setItem('custom_api_url', url);
+};
+
+export const loadCustomApiUrl = async () => {
+  try {
+    const customUrl = await AsyncStorage.getItem('custom_api_url');
+    if (customUrl) {
+      API_ENV = customUrl;
+      BASE_URL = `${API_ENV}/api`;
+    }
+  } catch (err) {
+    console.warn('Failed to load custom API URL', err);
+  }
+};
 
 // Sends one request to the backend and automatically adds the JWT token.
 async function request(endpoint, options = {}) {
@@ -194,4 +212,9 @@ export const sensorApi = {
     }
     return historyReadings;
   },
+};
+
+export const fishApi = {
+  list: () => request('/fish'),
+  get: (id) => request(`/fish/${id}`),
 };

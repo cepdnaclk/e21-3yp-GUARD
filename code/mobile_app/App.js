@@ -7,17 +7,23 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { authApi } from './src/services/api';
+import { authApi, loadCustomApiUrl } from './src/services/api';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// In SDK 53, Expo Go no longer supports Push Notifications on Android and throws a fatal error.
+// We must skip setting up the notification handler if running inside Expo Go.
+const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
+
+if (!isExpoGo) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 import LoginScreen from './src/screens/LoginScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
@@ -28,6 +34,7 @@ import NotificationsScreen from './src/screens/NotificationsScreen';
 import AddTankScreen from './src/screens/AddTankScreen';
 import AddUserScreen from './src/screens/AddUserScreen';
 import EditThresholdsScreen from './src/screens/EditThresholdsScreen';
+import FishLibraryScreen from './src/screens/FishLibraryScreen';
 import AssignWorkerScreen from './src/screens/AssignWorkerScreen';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -66,7 +73,7 @@ function RootNavigator() {
   const { theme } = useTheme();
 
   React.useEffect(() => {
-    if (user) {
+    if (user && !isExpoGo) {
       registerForPushNotificationsAsync().then(token => {
         if (token) {
           authApi.savePushToken(token).catch(err => console.warn('Failed to save push token:', err));
@@ -92,6 +99,7 @@ function RootNavigator() {
           <Stack.Screen name="AddTank" component={AddTankScreen} options={{ title: 'Register Tank' }} />
           <Stack.Screen name="AddUser" component={AddUserScreen} options={{ title: 'Create Worker' }} />
           <Stack.Screen name="EditThresholds" component={EditThresholdsScreen} options={{ title: 'Edit Limits' }} />
+          <Stack.Screen name="FishLibrary" component={FishLibraryScreen} options={{ title: 'Fish Library' }} />
           <Stack.Screen name="AssignWorker" component={AssignWorkerScreen} options={{ title: 'Manage Workers' }} />
         </>
       ) : (
@@ -105,6 +113,18 @@ function RootNavigator() {
 }
 
 export default function App() {
+  const [isReady, setIsReady] = React.useState(false);
+
+  React.useEffect(() => {
+    async function init() {
+      await loadCustomApiUrl();
+      setIsReady(true);
+    }
+    init();
+  }, []);
+
+  if (!isReady) return null;
+
   return (
     <ThemeProvider>
       <AuthProvider>

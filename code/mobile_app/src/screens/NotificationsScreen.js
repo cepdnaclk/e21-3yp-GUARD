@@ -10,19 +10,22 @@ function AlertCard({ item, onResolve, theme }) {
   const isResolved = item.status === 'resolved';
 
   const getAlertIcon = (type) => {
-    if (type.includes('temp')) return 'thermometer-outline';
-    if (type.includes('ph')) return 'flask-outline';
-    if (type.includes('tds')) return 'water-outline';
-    if (type.includes('turb')) return 'waves-outline';
-    if (type.includes('level')) return 'swap-vertical-outline';
+    const t = (type || '').toLowerCase();
+    if (t.includes('temp')) return 'thermometer-outline';
+    if (t.includes('ph')) return 'flask-outline';
+    if (t.includes('tds')) return 'water-outline';
+    if (t.includes('turb')) return 'water';
+    if (t.includes('level')) return 'swap-vertical-outline';
     return 'alert-circle-outline';
   };
+
+  const formattedType = item.type ? item.type.charAt(0).toUpperCase() + item.type.slice(1) : 'Alert';
 
   return (
     <View style={[styles.card, isResolved && styles.cardResolved]}>
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>
-          <Ionicons name={getAlertIcon(item.alertType || '')} size={20} color={isResolved ? theme.textSecondary : theme.danger} style={{marginRight: 8}} />
+          <Ionicons name={getAlertIcon(item.type)} size={20} color={isResolved ? theme.textSecondary : theme.danger} style={{marginRight: 8}} />
           <Text style={[styles.cardTitle, isResolved && {color: theme.textSecondary}]}>
             {item.tank?.name || `Tank ${item.tankId}`}
           </Text>
@@ -34,7 +37,13 @@ function AlertCard({ item, onResolve, theme }) {
         </View>
       </View>
       
-      <Text style={[styles.message, isResolved && {color: theme.textSecondary}]}>{item.message}</Text>
+      <View style={styles.detailsContainer}>
+        <Text style={[styles.typeText, isResolved && {color: theme.textSecondary}]}>
+          {formattedType}: <Text style={styles.valueText}>{item.value}</Text>
+        </Text>
+        <Text style={[styles.message, isResolved && {color: theme.textSecondary}]}>{item.message}</Text>
+      </View>
+
       <Text style={styles.time}>{new Date(item.createdAt).toLocaleString()}</Text>
 
       {!isResolved && (
@@ -55,7 +64,7 @@ export default function NotificationsScreen() {
 
   const loadAlerts = useCallback(async () => {
     try {
-      const data = await alertApi.list();
+      const data = await alertApi.list({ resolved: 'false' });
       setAlerts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load alerts:', err);
@@ -77,7 +86,7 @@ export default function NotificationsScreen() {
   const handleResolve = async (id) => {
     try {
       await alertApi.resolve(id);
-      setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'resolved' } : a));
+      setAlerts(prev => prev.filter(a => a.id !== id));
     } catch (err) {
       console.error('Failed to resolve alert:', err);
     }
@@ -146,7 +155,10 @@ const getStyles = (theme) => StyleSheet.create({
   cardTitle: { color: theme.text, fontSize: 16, fontWeight: 'bold' },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   badgeText: { fontSize: 10, fontWeight: 'bold' },
-  message: { color: theme.text, fontSize: 14, marginBottom: 8, lineHeight: 20 },
+  detailsContainer: { marginBottom: 8 },
+  typeText: { color: theme.text, fontSize: 15, fontWeight: 'bold', marginBottom: 2 },
+  valueText: { color: theme.primary, fontWeight: 'bold' },
+  message: { color: theme.textSecondary, fontSize: 14, lineHeight: 20 },
   time: { color: theme.textSecondary, fontSize: 12, marginBottom: 12 },
   resolveButton: {
     backgroundColor: theme.primary + '20',

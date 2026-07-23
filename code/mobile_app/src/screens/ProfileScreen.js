@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, Switch } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +18,8 @@ export default function ProfileScreen({ navigation }) {
     fullName: '',
     address: '',
     phoneNumber: '',
+    emailAlertsEnabled: true,
+    telegramAlertsEnabled: true,
   });
 
   useEffect(() => {
@@ -26,6 +28,8 @@ export default function ProfileScreen({ navigation }) {
         fullName: user.fullName || '',
         address: user.address || '',
         phoneNumber: user.phoneNumber || '',
+        emailAlertsEnabled: user.emailAlertsEnabled ?? true,
+        telegramAlertsEnabled: user.telegramAlertsEnabled ?? true,
       });
     }
   }, [user]);
@@ -37,6 +41,8 @@ export default function ProfileScreen({ navigation }) {
         fullName: formData.fullName,
         address: formData.address,
         phoneNumber: formData.phoneNumber,
+        emailAlertsEnabled: formData.emailAlertsEnabled,
+        telegramAlertsEnabled: formData.telegramAlertsEnabled,
       });
       if (refreshUser) {
         await refreshUser();
@@ -56,6 +62,8 @@ export default function ProfileScreen({ navigation }) {
         fullName: user.fullName || '',
         address: user.address || '',
         phoneNumber: user.phoneNumber || '',
+        emailAlertsEnabled: user.emailAlertsEnabled ?? true,
+        telegramAlertsEnabled: user.telegramAlertsEnabled ?? true,
       });
     }
     setIsEditing(false);
@@ -158,6 +166,37 @@ export default function ProfileScreen({ navigation }) {
             editable={isEditing}
             keyboardType="phone-pad"
             placeholderTextColor={theme.textSecondary}
+          />
+        </View>
+
+        {/* Notification Preferences */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeaderText}>Notification Preferences</Text>
+        </View>
+
+        <View style={[styles.switchRow, !isEditing && styles.readOnlyInput]}>
+          <View style={styles.switchLabelContainer}>
+            <Ionicons name="mail-outline" size={20} color={theme.text} style={{marginRight: 8}} />
+            <Text style={styles.switchLabel}>Email Alerts</Text>
+          </View>
+          <Switch
+            value={formData.emailAlertsEnabled}
+            onValueChange={(val) => setFormData(prev => ({...prev, emailAlertsEnabled: val}))}
+            disabled={!isEditing}
+            trackColor={{ false: theme.border, true: theme.primary }}
+          />
+        </View>
+
+        <View style={[styles.switchRow, !isEditing && styles.readOnlyInput]}>
+          <View style={styles.switchLabelContainer}>
+            <Ionicons name="paper-plane-outline" size={20} color={theme.text} style={{marginRight: 8}} />
+            <Text style={styles.switchLabel}>Telegram Alerts</Text>
+          </View>
+          <Switch
+            value={formData.telegramAlertsEnabled}
+            onValueChange={(val) => setFormData(prev => ({...prev, telegramAlertsEnabled: val}))}
+            disabled={!isEditing}
+            trackColor={{ false: theme.border, true: theme.primary }}
           />
         </View>
 
@@ -281,6 +320,38 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 32,
+  },
+  sectionHeader: {
+    marginTop: 24,
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  sectionHeaderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.text,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: theme.inputBg,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  switchLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  switchLabel: {
+    fontSize: 16,
+    color: theme.text,
+    fontWeight: '500',
   },
   button: {
     borderRadius: 8,

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Switch, Modal } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { API_ENV, setCustomApiUrl } from '../services/api';
 
 export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
@@ -13,6 +14,14 @@ export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
   const { theme, isDark, toggleTheme } = useTheme();
   const styles = getStyles(theme);
+
+  // Developer settings state
+  const [showDevModal, setShowDevModal] = useState(false);
+  const [devPassword, setDevPassword] = useState('');
+  const [devApiUrl, setDevApiUrl] = useState(API_ENV);
+  const [devUnlocked, setDevUnlocked] = useState(false);
+
+  const DEV_PASSWORD = 'guardadmindev';
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -30,8 +39,32 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const handleDevLogin = () => {
+    if (devPassword === DEV_PASSWORD) {
+      setDevUnlocked(true);
+      setDevApiUrl(API_ENV);
+    } else {
+      Alert.alert('Access Denied', 'Incorrect developer password');
+    }
+  };
+
+  const handleSaveDevSettings = async () => {
+    await setCustomApiUrl(devApiUrl);
+    Alert.alert('Success', 'API URL updated. App will now use this backend.');
+    setShowDevModal(false);
+    setDevUnlocked(false);
+    setDevPassword('');
+  };
+
   return (
     <View style={styles.container}>
+      <TouchableOpacity 
+        style={styles.devButton} 
+        onPress={() => setShowDevModal(true)}
+      >
+        <Ionicons name="construct" size={24} color={theme.border} />
+      </TouchableOpacity>
+
       <View style={styles.themeToggleContainer}>
         <Ionicons name="sunny" size={20} color={theme.textSecondary} />
         <Switch
@@ -87,6 +120,61 @@ export default function LoginScreen({ navigation }) {
           {busy ? <ActivityIndicator color={theme.iconColor} /> : <Text style={styles.buttonText}>Log In</Text>}
         </LinearGradient>
       </TouchableOpacity>
+
+      {/* Developer Modal */}
+      <Modal visible={showDevModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Developer Settings</Text>
+            
+            {!devUnlocked ? (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Developer Password"
+                  placeholderTextColor={theme.textSecondary}
+                  secureTextEntry
+                  value={devPassword}
+                  onChangeText={setDevPassword}
+                />
+                <TouchableOpacity onPress={handleDevLogin}>
+                  <LinearGradient colors={theme.gradientPrimary} style={styles.button}>
+                    <Text style={styles.buttonText}>Unlock</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={{color: theme.text, marginBottom: 8}}>API URL:</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="http://192.168.x.x:5000"
+                  placeholderTextColor={theme.textSecondary}
+                  autoCapitalize="none"
+                  value={devApiUrl}
+                  onChangeText={setDevApiUrl}
+                />
+                <TouchableOpacity onPress={handleSaveDevSettings}>
+                  <LinearGradient colors={theme.gradientPrimary} style={styles.button}>
+                    <Text style={styles.buttonText}>Save Changes</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </>
+            )}
+
+            <TouchableOpacity 
+              style={[styles.button, { backgroundColor: theme.border, marginTop: 16 }]} 
+              onPress={() => {
+                setShowDevModal(false);
+                setDevUnlocked(false);
+                setDevPassword('');
+              }}
+            >
+              <Text style={[styles.buttonText, { color: theme.text }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -97,6 +185,12 @@ const getStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.background,
     justifyContent: 'center',
     padding: 24,
+  },
+  devButton: {
+    position: 'absolute',
+    top: 60,
+    left: 24,
+    padding: 4,
   },
   themeToggleContainer: {
     position: 'absolute',
@@ -168,5 +262,25 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.iconColor,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: theme.card,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginBottom: 24,
+    textAlign: 'center',
   },
 });
