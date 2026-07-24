@@ -69,6 +69,14 @@ export default function ActuatorPanel({ tankId }) {
                         >
                             {loading === 'pump_off' ? '...' : 'OFF'}
                         </button>
+                        <button 
+                            className={`btn btn-primary actuator-btn ${loading === 'pump_auto' ? 'loading' : ''}`}
+                            onClick={() => handleCommand('pump_auto')}
+                            disabled={loading !== null}
+                            style={{ backgroundColor: '#17a2b8', borderColor: '#17a2b8' }}
+                        >
+                            {loading === 'pump_auto' ? '...' : 'AUTO'}
+                        </button>
                     </div>
                 </div>
             </div>

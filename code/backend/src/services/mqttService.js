@@ -116,6 +116,11 @@ export const initMqtt = (ioInstance) => {
             return;
         }
 
+        // Ignore the JSON health status topic to prevent "Unknown sensor topic" warnings
+        if (prefix === 'sensor' && sensorType === 'status') {
+            return;
+        }
+
         try {
             const payload = JSON.parse(message.toString());
 

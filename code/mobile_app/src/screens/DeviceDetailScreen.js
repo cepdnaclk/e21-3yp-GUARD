@@ -120,6 +120,14 @@ export default function DeviceDetailScreen({ route, navigation }) {
           <MaterialCommunityIcons name="water-pump-off" size={24} color={theme.iconColor} />
           <Text style={styles.actionButtonText}>Pump Off</Text>
         </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, { backgroundColor: theme.info || '#17a2b8' }]} 
+          onPress={() => handleCommand('pump_auto')}
+          disabled={sendingCommand}
+        >
+          <MaterialCommunityIcons name="autorenew" size={24} color={theme.iconColor} />
+          <Text style={styles.actionButtonText}>Auto</Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.sectionTitle}>Current Readings</Text>

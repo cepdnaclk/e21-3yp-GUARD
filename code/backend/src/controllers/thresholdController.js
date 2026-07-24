@@ -13,10 +13,13 @@ const THRESHOLD_MQTT_MAP = {
   tdsMax:              "tds_max",
   waterLevelThreshold: "water_level",
   waterStopThreshold:  "water_stop",
+  phMin:               "ph_min",
+  phMax:               "ph_max",
+  turbidityMax:        "turb_max",
 };
 
 // Threshold keys that are DB-only (not sent to ESP32)
-const DB_ONLY_THRESHOLDS = ["phMin", "phMax", "turbidityMax"];
+const DB_ONLY_THRESHOLDS = [];
 
 const ALL_THRESHOLD_KEYS = [...Object.keys(THRESHOLD_MQTT_MAP), ...DB_ONLY_THRESHOLDS];
 

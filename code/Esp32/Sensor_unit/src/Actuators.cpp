@@ -40,6 +40,10 @@ void setPumpStates(bool fillOn, bool drainOn, const String &source) {
 void applyPumpControl() {
   if (commandManualPumpMode) return; // Bypassed in manual override
 
+  // State machine for hysteresis
+  static bool isFilling = false;
+  static bool isDraining = false;
+
   bool desiredFillOn = false;
   bool desiredDrainOn = false;
 
@@ -51,19 +55,40 @@ void applyPumpControl() {
       (!turbFault && turbPumpDemand);
 
   if (sharedHasValidWater && !waterFault) {
+    float safeMidpoint = (waterLevelThreshold + waterLevelStopThreshold) / 2.0f;
+
+    // Drain Logic (Emergency Overflow)
     if (sharedWaterDistance <= waterLevelStopThreshold) {
-      desiredFillOn = false;
-      desiredDrainOn = true;
-    } else if (sharedWaterDistance >= waterLevelThreshold) {
-      desiredFillOn = true;
-      desiredDrainOn = false;
-    } else if (qualityDemand) {
+      isDraining = true;
+      isFilling = false; // Mutually exclusive
+    } else if (isDraining && sharedWaterDistance >= safeMidpoint) {
+      isDraining = false;
+    }
+
+    // Fill Logic (Auto-Top-Off)
+    if (sharedWaterDistance >= waterLevelThreshold) {
+      isFilling = true;
+      isDraining = false; // Mutually exclusive
+    } else if (isFilling && sharedWaterDistance <= safeMidpoint) {
+      isFilling = false;
+    }
+
+    desiredFillOn = isFilling;
+    desiredDrainOn = isDraining;
+
+    // Override level logic if emergency water quality cycling is needed
+    if (qualityDemand) {
       desiredFillOn = true;
       desiredDrainOn = true;
     }
-  } else if (qualityDemand) {
-    desiredFillOn = true;
-    desiredDrainOn = true;
+  } else {
+    // Sensor fault: reset state machine to prevent runaway
+    isFilling = false;
+    isDraining = false;
+    if (qualityDemand) {
+      desiredFillOn = true;
+      desiredDrainOn = true;
+    }
   }
 
   setPumpStates(desiredFillOn, desiredDrainOn, "AUTO");

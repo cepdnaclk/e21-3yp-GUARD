@@ -52,8 +52,8 @@ router.post(
       .isString()
       .trim()
       .toLowerCase()
-      .isIn(["feed", "pump_on", "pump_off"])
-      .withMessage("command must be one of feed, pump_on, pump_off."),
+      .isIn(["feed", "pump_on", "pump_off", "pump_auto"])
+      .withMessage("command must be one of feed, pump_on, pump_off, pump_auto."),
   ],
   validateRequest,
   sendActuatorCommand

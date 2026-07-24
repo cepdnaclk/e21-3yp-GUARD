@@ -2,7 +2,7 @@ import prisma from "../lib/prisma.js";
 import { findAccessibleTank } from "../lib/tankAccess.js";
 import { publishActuatorCommand } from "./mqttService.js";
 
-const SUPPORTED_COMMANDS = ["feed", "pump_on", "pump_off"];
+const SUPPORTED_COMMANDS = ["feed", "pump_on", "pump_off", "pump_auto"];
 
 const assertTankAccess = async (tankId, user) => {
   const tank = await findAccessibleTank(tankId, user);
@@ -18,7 +18,7 @@ export const publishTankActuatorCommand = async (tankId, command, user) => {
   await assertTankAccess(tankId, user);
 
   if (!SUPPORTED_COMMANDS.includes(command)) {
-    const error = new Error("Invalid command. Use feed, pump_on, or pump_off.");
+    const error = new Error("Invalid command. Use feed, pump_on, pump_off, or pump_auto.");
     error.status = 400;
     throw error;
   }
