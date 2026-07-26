@@ -1,8 +1,8 @@
 /* ========== Enhanced Profile Stylesheet ========== */
 
 .profile-page {
-  background: var(--bg);
-  min-height: calc(100vh - 56px);
+  background: transparent;
+  min-height: calc(100vh - 62px);
   padding: 2rem;
   display: flex;
   flex-direction: column;
@@ -27,11 +27,13 @@
 }
 
 .profile-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 2.5rem;
-  box-shadow: var(--shadow-lg);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-lg);
+  padding: 2.75rem;
+  box-shadow: var(--glass-shadow-lg);
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -39,11 +41,12 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Glassmorphism accent layer in Dark Mode */
+/* Dark mode deepens the glass tint */
 [data-theme='dark'] .profile-card {
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(12px);
+  background: rgba(13, 20, 35, 0.82);
+  backdrop-filter: blur(20px);
   border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.50);
 }
 
 /* Profile Header Section with Avatar */
@@ -197,12 +200,14 @@
 /* Input Fields and Buttons */
 .profile-field-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
+  padding: 0.8rem 1rem;
+  border: 1.5px solid var(--glass-border-subtle);
+  background: var(--glass-bg-subtle);
+  backdrop-filter: var(--glass-blur-sm);
   color: var(--text);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.95rem;
+  font-family: 'Outfit', sans-serif;
   transition: all 0.2s ease;
 }
 

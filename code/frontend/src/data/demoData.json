@@ -1,0 +1,113 @@
+{
+  "devices": [
+    {
+      "deviceId": "GUARD-D01",
+      "deviceName": "Tilapia Tank Alpha",
+      "status": "online",
+      "createdAt": "2025-12-01T08:00:00.000Z",
+      "phMin": 6.5, "phMax": 8.5,
+      "tempMin": 24, "tempMax": 30,
+      "tdsMin": 100, "tdsMax": 800,
+      "turbidityMax": 50,
+      "waterLevelThreshold": 20, "waterStopThreshold": 90,
+      "tempOk": true, "waterOk": true, "tdsOk": true, "phOk": true, "turbOk": true,
+      "workers": [{ "id": "w-001", "fullName": "Kavindu Perera", "username": "kavindu_p" }],
+      "currentStats": { "lastReadingTime": "2026-07-26T17:50:00.000Z" }
+    },
+    {
+      "deviceId": "GUARD-D02",
+      "deviceName": "Ornamental Pond Beta",
+      "status": "online",
+      "createdAt": "2025-12-15T10:30:00.000Z",
+      "phMin": 7.0, "phMax": 8.0,
+      "tempMin": 22, "tempMax": 28,
+      "tdsMin": 50, "tdsMax": 500,
+      "turbidityMax": 30,
+      "waterLevelThreshold": 30, "waterStopThreshold": 85,
+      "tempOk": true, "waterOk": true, "tdsOk": true, "phOk": true, "turbOk": true,
+      "workers": [{ "id": "w-002", "fullName": "Nimesha Silva", "username": "nimesha_s" }],
+      "currentStats": { "lastReadingTime": "2026-07-26T17:48:00.000Z" }
+    },
+    {
+      "deviceId": "GUARD-D03",
+      "deviceName": "Shrimp Nursery Gamma",
+      "status": "online",
+      "createdAt": "2026-01-10T06:15:00.000Z",
+      "phMin": 7.5, "phMax": 8.5,
+      "tempMin": 25, "tempMax": 29,
+      "tdsMin": 200, "tdsMax": 600,
+      "turbidityMax": 20,
+      "waterLevelThreshold": 40, "waterStopThreshold": 80,
+      "tempOk": true, "waterOk": true, "tdsOk": true, "phOk": true, "turbOk": true,
+      "workers": [],
+      "currentStats": { "lastReadingTime": "2026-07-26T17:52:00.000Z" }
+    }
+  ],
+  "sensorReadings": {
+    "GUARD-D01": [
+      { "sensorId": "ph",          "sensorTypeName": "pH",          "value": 7.2,  "readingTime": "2026-07-26T17:50:00.000Z" },
+      { "sensorId": "temperature", "sensorTypeName": "Temperature",  "value": 27.4, "readingTime": "2026-07-26T17:50:00.000Z" },
+      { "sensorId": "waterlevel",  "sensorTypeName": "Water Level",  "value": 68,   "readingTime": "2026-07-26T17:50:00.000Z" },
+      { "sensorId": "turbidity",   "sensorTypeName": "Turbidity",    "value": 12.5, "readingTime": "2026-07-26T17:50:00.000Z" },
+      { "sensorId": "tds",         "sensorTypeName": "TDS",          "value": 340,  "readingTime": "2026-07-26T17:50:00.000Z" }
+    ],
+    "GUARD-D02": [
+      { "sensorId": "ph",          "sensorTypeName": "pH",          "value": 7.6,  "readingTime": "2026-07-26T17:48:00.000Z" },
+      { "sensorId": "temperature", "sensorTypeName": "Temperature",  "value": 25.1, "readingTime": "2026-07-26T17:48:00.000Z" },
+      { "sensorId": "waterlevel",  "sensorTypeName": "Water Level",  "value": 74,   "readingTime": "2026-07-26T17:48:00.000Z" },
+      { "sensorId": "turbidity",   "sensorTypeName": "Turbidity",    "value": 8.3,  "readingTime": "2026-07-26T17:48:00.000Z" },
+      { "sensorId": "tds",         "sensorTypeName": "TDS",          "value": 210,  "readingTime": "2026-07-26T17:48:00.000Z" }
+    ],
+    "GUARD-D03": [
+      { "sensorId": "ph",          "sensorTypeName": "pH",          "value": 8.1,  "readingTime": "2026-07-26T17:52:00.000Z" },
+      { "sensorId": "temperature", "sensorTypeName": "Temperature",  "value": 26.8, "readingTime": "2026-07-26T17:52:00.000Z" },
+      { "sensorId": "waterlevel",  "sensorTypeName": "Water Level",  "value": 55,   "readingTime": "2026-07-26T17:52:00.000Z" },
+      { "sensorId": "turbidity",   "sensorTypeName": "Turbidity",    "value": 5.1,  "readingTime": "2026-07-26T17:52:00.000Z" },
+      { "sensorId": "tds",         "sensorTypeName": "TDS",          "value": 410,  "readingTime": "2026-07-26T17:52:00.000Z" }
+    ]
+  },
+  "alerts": [
+    { "id": "alert-demo-001", "type": "Temperature", "message": "Temperature exceeded upper threshold of 30\u00b0C", "value": "31.2", "tankId": "GUARD-D01", "createdAt": "2026-07-26T14:20:00.000Z", "resolved": false, "tank": { "name": "Tilapia Tank Alpha" } },
+    { "id": "alert-demo-002", "type": "Turbidity",   "message": "Turbidity exceeded safe limit of 30 NTU",         "value": "38.7", "tankId": "GUARD-D02", "createdAt": "2026-07-26T11:05:00.000Z", "resolved": true,  "tank": { "name": "Ornamental Pond Beta" } },
+    { "id": "alert-demo-003", "type": "pH",          "message": "pH dropped below minimum threshold of 7.5",       "value": "7.1",  "tankId": "GUARD-D03", "createdAt": "2026-07-25T22:40:00.000Z", "resolved": true,  "tank": { "name": "Shrimp Nursery Gamma" } }
+  ],
+  "users": [
+    { "id": "w-001", "username": "kavindu_p", "fullName": "Kavindu Perera",    "email": "kavindu@guard.local", "role": "USER", "createdAt": "2026-01-05T09:00:00.000Z", "assignedTanks": ["GUARD-D01"] },
+    { "id": "w-002", "username": "nimesha_s", "fullName": "Nimesha Silva",      "email": "nimesha@guard.local", "role": "USER", "createdAt": "2026-02-12T11:30:00.000Z", "assignedTanks": ["GUARD-D02"] },
+    { "id": "w-003", "username": "sachini_r", "fullName": "Sachini Rajapaksha", "email": "sachini@guard.local", "role": "USER", "createdAt": "2026-03-20T08:15:00.000Z", "assignedTanks": [] }
+  ],
+  "fish": [
+    { "id": "fish-001", "name": "Nile Tilapia", "scientificName": "Oreochromis niloticus", "description": "Hardy, fast-growing freshwater fish widely farmed across tropical regions.", "phMin": 6.0, "phMax": 9.0, "tempMin": 20, "tempMax": 35, "tdsMin": 0,   "tdsMax": 2000, "turbidityMax": 100, "imageUrl": null },
+    { "id": "fish-002", "name": "Koi Carp",      "scientificName": "Cyprinus rubrofuscus",  "description": "Ornamental carp prized for vivid colour patterns. Popular in garden ponds.", "phMin": 6.8, "phMax": 8.2, "tempMin": 15, "tempMax": 25, "tdsMin": 0,   "tdsMax": 1000, "turbidityMax": 40,  "imageUrl": null },
+    { "id": "fish-003", "name": "Cherry Shrimp", "scientificName": "Neocaridina davidi",    "description": "Small freshwater shrimp, sensitive to water quality. Popular in planted tanks.", "phMin": 6.5, "phMax": 7.5, "tempMin": 20, "tempMax": 28, "tdsMin": 150, "tdsMax": 400,  "turbidityMax": 10,  "imageUrl": null }
+  ],
+  "sensorHistory": {
+    "GUARD-D01": [
+      { "readingTime": "2026-07-26T08:00:00.000Z", "sensorId": "temperature", "value": 25.8 },
+      { "readingTime": "2026-07-26T08:00:00.000Z", "sensorId": "pH",          "value": 7.1  },
+      { "readingTime": "2026-07-26T08:00:00.000Z", "sensorId": "tds",         "value": 320  },
+      { "readingTime": "2026-07-26T08:00:00.000Z", "sensorId": "turbidity",   "value": 11.2 },
+      { "readingTime": "2026-07-26T08:00:00.000Z", "sensorId": "waterLevel",  "value": 65   },
+      { "readingTime": "2026-07-26T10:00:00.000Z", "sensorId": "temperature", "value": 26.4 },
+      { "readingTime": "2026-07-26T10:00:00.000Z", "sensorId": "pH",          "value": 7.2  },
+      { "readingTime": "2026-07-26T10:00:00.000Z", "sensorId": "tds",         "value": 330  },
+      { "readingTime": "2026-07-26T10:00:00.000Z", "sensorId": "turbidity",   "value": 12.0 },
+      { "readingTime": "2026-07-26T10:00:00.000Z", "sensorId": "waterLevel",  "value": 66   },
+      { "readingTime": "2026-07-26T12:00:00.000Z", "sensorId": "temperature", "value": 28.1 },
+      { "readingTime": "2026-07-26T12:00:00.000Z", "sensorId": "pH",          "value": 7.3  },
+      { "readingTime": "2026-07-26T12:00:00.000Z", "sensorId": "tds",         "value": 345  },
+      { "readingTime": "2026-07-26T12:00:00.000Z", "sensorId": "turbidity",   "value": 13.5 },
+      { "readingTime": "2026-07-26T12:00:00.000Z", "sensorId": "waterLevel",  "value": 67   },
+      { "readingTime": "2026-07-26T14:00:00.000Z", "sensorId": "temperature", "value": 30.5 },
+      { "readingTime": "2026-07-26T14:00:00.000Z", "sensorId": "pH",          "value": 7.4  },
+      { "readingTime": "2026-07-26T14:00:00.000Z", "sensorId": "tds",         "value": 338  },
+      { "readingTime": "2026-07-26T14:00:00.000Z", "sensorId": "turbidity",   "value": 12.8 },
+      { "readingTime": "2026-07-26T14:00:00.000Z", "sensorId": "waterLevel",  "value": 68   },
+      { "readingTime": "2026-07-26T16:00:00.000Z", "sensorId": "temperature", "value": 27.9 },
+      { "readingTime": "2026-07-26T16:00:00.000Z", "sensorId": "pH",          "value": 7.2  },
+      { "readingTime": "2026-07-26T16:00:00.000Z", "sensorId": "tds",         "value": 340  },
+      { "readingTime": "2026-07-26T16:00:00.000Z", "sensorId": "turbidity",   "value": 12.5 },
+      { "readingTime": "2026-07-26T16:00:00.000Z", "sensorId": "waterLevel",  "value": 68   }
+    ]
+  }
+}

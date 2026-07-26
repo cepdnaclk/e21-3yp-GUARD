@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import guardLogo from '../assets/guard-logo.png';
 import '../styles/layout.css';
+import '../styles/tour.css';
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -16,6 +17,14 @@ export default function Layout() {
   const { user, role, logout } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+
+  /** Reset tour flag and send user to /demo to retake the tour */
+  function handleTakeTour() {
+    if (user?.id) {
+      localStorage.removeItem(`guard_tour_${user.id}`);
+    }
+    navigate('/demo');
+  }
 
   const navItems = role === 'SUPER_ADMIN'
     ? [{ to: '/users', label: 'Users' }, { to: '/fish', label: 'Fish Info' }] // Users and Fish Info
@@ -48,6 +57,15 @@ export default function Layout() {
           ))}
         </div>
         <div className="topnav-user">
+          {/* Take a Tour button — resets and restarts the onboarding demo */}
+          <button
+            className="take-tour-btn"
+            onClick={handleTakeTour}
+            title="Restart the guided onboarding tour"
+          >
+            🗺️ Tour
+          </button>
+
           <button className="theme-toggle-switch" title="Toggle Theme" onClick={toggleTheme} aria-label="Toggle Dark Mode">
             <span className="theme-toggle-circle"></span>
           </button>

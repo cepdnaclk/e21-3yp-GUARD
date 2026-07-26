@@ -74,20 +74,34 @@
 
 /* ── Individual Fish Card ───────────────────────────────────── */
 .fish-card {
-  background: var(--surface);
-  border-radius: 14px;
-  border: 1px solid var(--border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 2px 8px var(--c-rgba-0-0-0-0-08);
+              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.22s ease;
+  box-shadow: var(--glass-shadow);
   position: relative;
 }
 
+[data-theme='dark'] .fish-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 .fish-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.18), 0 2px 8px var(--c-rgba-0-0-0-0-08);
+  transform: translateY(-7px);
+  box-shadow: 0 16px 40px rgba(14, 165, 233, 0.20), var(--glass-shadow);
+  border-color: rgba(14, 165, 233, 0.40);
+}
+
+[data-theme='dark'] .fish-card:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 16px 40px rgba(14, 165, 233, 0.18), 0 0 20px rgba(56, 189, 248, 0.10);
 }
 
 .fish-card:hover .fish-card-img {
@@ -120,7 +134,7 @@
 }
 
 .fish-card-body {
-  padding: 1rem;
+  padding: 1.25rem;
 }
 
 .fish-card-name {
@@ -154,9 +168,16 @@
   font-weight: 600;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
-  background: var(--c-eff6ff);
+  background: rgba(14, 165, 233, 0.08);
   color: var(--primary);
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  backdrop-filter: blur(4px);
+}
+
+[data-theme='dark'] .fish-param-chip {
+  background: rgba(56, 189, 248, 0.08);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.18);
 }
 
 /* ── Detail Drawer Overlay ──────────────────────────────────── */
@@ -183,12 +204,21 @@
   max-width: 100vw;
   height: 100vh;
   overflow-y: auto;
-  background: var(--surface);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-left: 1px solid var(--glass-border);
   z-index: 1001;
-  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.2);
+  box-shadow: -12px 0 50px rgba(0, 0, 0, 0.22);
   animation: drawerSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
   display: flex;
   flex-direction: column;
+}
+
+[data-theme='dark'] .fish-drawer {
+  background: rgba(10, 18, 30, 0.92);
+  border-left-color: rgba(255, 255, 255, 0.08);
+  box-shadow: -12px 0 50px rgba(0, 0, 0, 0.60);
 }
 
 @keyframes drawerSlideIn {

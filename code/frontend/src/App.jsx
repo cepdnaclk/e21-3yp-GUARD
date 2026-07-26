@@ -15,6 +15,7 @@ import Users from './pages/Users';
 import VerifyEmail from './pages/VerifyEmail';
 import About from './pages/Landing/About';
 import FishInfo from './pages/FishInfo';
+import DemoPage from './pages/DemoPage';
 
 /* ── Scrolls to top of page on every route change ── */
 function ScrollToTop() {
@@ -64,6 +65,20 @@ function RoleRoute({ children, allowedRoles, fallback = '/' }) {
   return children;
 }
 
+/**
+ * SmartRedirect — used as the catch-all (*) route.
+ * Authenticated users who haven't completed the tour go to /demo.
+ * Everyone else goes to /dashboard (or /login if unauthenticated).
+ */
+function SmartRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="loading-screen">Loading...</div>;
+  if (!user) return <Navigate to="/login" />;
+  const key = `guard_tour_${user.id}`;
+  const done = localStorage.getItem(key) === 'true';
+  return done ? <Navigate to="/dashboard" /> : <Navigate to="/demo" />;
+}
+
 export default function App() {
   return (
     <>
@@ -75,6 +90,11 @@ export default function App() {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
+
+        {/* Demo sandbox — full sub-tree handled inside DemoPage */}
+        <Route path="/demo/*" element={<PrivateRoute><DemoPage /></PrivateRoute>} />
+
+        {/* Production app */}
         <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route path="/dashboard" element={<RoleRoute allowedRoles={['ADMIN', 'USER']} fallback="/users"><Dashboard /></RoleRoute>} />
           <Route path="/devices" element={<RoleRoute allowedRoles={['ADMIN', 'USER']}><Devices /></RoleRoute>} />
@@ -85,7 +105,9 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/fish" element={<RoleRoute allowedRoles={['ADMIN', 'USER', 'SUPER_ADMIN']}><FishInfo /></RoleRoute>} />
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+
+        {/* Smart catch-all: tour-aware redirect */}
+        <Route path="*" element={<SmartRedirect />} />
       </Routes>
     </>
   );

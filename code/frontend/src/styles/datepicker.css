@@ -1,0 +1,324 @@
+/* ═══════════════════════════════════════════════════════════
+   Glass Date Picker — react-day-picker custom styles
+   Uses [data-theme='dark'] for dark mode overrides
+   ═══════════════════════════════════════════════════════════ */
+
+/* Wrapper */
+.gdp-wrapper {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;   /* own stacking context so dropdown layers above siblings */
+  z-index: 50;          /* lift entire picker above surrounding card content */
+}
+
+/* Trigger input */
+.gdp-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--glass-border-subtle);
+  border-radius: 10px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  white-space: nowrap;
+  min-width: 180px;
+  user-select: none;
+}
+
+.gdp-input:hover {
+  border-color: var(--primary);
+  background: var(--glass-bg-strong);
+}
+
+.gdp-input.open {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+[data-theme='dark'] .gdp-input {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: #e6edf3;
+}
+
+[data-theme='dark'] .gdp-input:hover,
+[data-theme='dark'] .gdp-input.open {
+  border-color: #38bdf8;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.gdp-input-icon {
+  font-size: 1rem;
+  opacity: 0.65;
+}
+
+.gdp-input-text {
+  flex: 1;
+}
+
+.gdp-input-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0.55;
+  padding: 0 0.1rem;
+  color: var(--text);
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+
+.gdp-input-clear:hover {
+  opacity: 1;
+}
+
+/* Dropdown Calendar Panel */
+.gdp-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 9999;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow-lg);
+  padding: 1rem;
+  animation: gdp-fadein 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  min-width: 300px;
+}
+
+[data-theme='dark'] .gdp-dropdown {
+  background: rgba(13, 20, 35, 0.90);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.60), 0 0 1px rgba(56, 189, 248, 0.10);
+}
+
+@keyframes gdp-fadein {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* react-day-picker root */
+.rdp {
+  --rdp-accent-color: #0ea5e9;
+  --rdp-accent-color-dark: #38bdf8;
+  --rdp-background-color: rgba(14, 165, 233, 0.10);
+  --rdp-outline: 2px solid var(--rdp-accent-color);
+  --rdp-outline-selected: 2px solid var(--rdp-accent-color);
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+}
+
+/* Caption (month + year title) */
+.rdp-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem 0.75rem;
+  border-bottom: 1px solid var(--glass-border-subtle);
+  margin-bottom: 0.5rem;
+}
+
+.rdp-caption_label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+[data-theme='dark'] .rdp-caption_label {
+  color: #e6edf3;
+}
+
+/* Nav buttons */
+.rdp-nav_button {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border-subtle);
+  background: var(--glass-bg-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  color: var(--text-muted);
+}
+
+.rdp-nav_button:hover {
+  background: var(--glass-bg-strong);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+[data-theme='dark'] .rdp-nav_button {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #8b949e;
+}
+
+[data-theme='dark'] .rdp-nav_button:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+/* Table head */
+.rdp-head_cell {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding-bottom: 0.5rem;
+}
+
+/* Day cells */
+.rdp-day {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.12s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.rdp-day:hover:not([disabled]):not(.rdp-day_selected) {
+  background: rgba(14, 165, 233, 0.10);
+  color: var(--primary);
+}
+
+[data-theme='dark'] .rdp-day {
+  color: #e6edf3;
+}
+
+[data-theme='dark'] .rdp-day:hover:not([disabled]):not(.rdp-day_selected) {
+  background: rgba(56, 189, 248, 0.10);
+  color: #38bdf8;
+}
+
+/* Selected day */
+.rdp-day_selected,
+.rdp-day_selected:focus,
+.rdp-day_selected:hover {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.40);
+  border-radius: 8px;
+}
+
+[data-theme='dark'] .rdp-day_selected,
+[data-theme='dark'] .rdp-day_selected:hover {
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9) !important;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.40);
+}
+
+/* Today */
+.rdp-day_today:not(.rdp-day_selected) {
+  border: 1.5px solid var(--primary) !important;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+[data-theme='dark'] .rdp-day_today:not(.rdp-day_selected) {
+  border-color: #38bdf8 !important;
+  color: #38bdf8;
+}
+
+/* Outside month days */
+.rdp-day_outside {
+  opacity: 0.3;
+}
+
+/* Disabled */
+.rdp-day_disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* Time input section */
+.gdp-time-section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--glass-border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+[data-theme='dark'] .gdp-time-section {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+.gdp-time-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.gdp-time-input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1.5px solid var(--glass-border-subtle);
+  border-radius: 8px;
+  background: var(--glass-bg-subtle);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.gdp-time-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+
+[data-theme='dark'] .gdp-time-input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #e6edf3;
+}
+
+/* Apply button */
+.gdp-apply-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.30);
+}
+
+.gdp-apply-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.40);
+}
+
+[data-theme='dark'] .gdp-apply-btn {
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.30);
+}
