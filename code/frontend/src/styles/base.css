@@ -52,7 +52,7 @@ a { color: var(--primary); text-decoration: none; }
 }
 
 /* ========== Forms ========== */
-.form-group { margin-bottom: 1rem; }
+.form-group { position: relative; margin-bottom: 1rem; }
 .form-group label {
   display: block;
   font-weight: 600;
@@ -188,15 +188,25 @@ a { color: var(--primary); text-decoration: none; }
    GLASS CARDS — Milky Frost (Light) / Tinted (Dark)
    ═══════════════════════════════════════════════════════════ */
 .card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  position: relative;
+  background: var(--glass-bg-strong);
   border-radius: var(--glass-radius);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   padding: 1.5rem;
   margin-bottom: 1.25rem;
   transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.card:focus-within,
+.card:has(.gdp-dropdown),
+.card:has(.gdp-input.open) {
+  z-index: 100;
+}
+
+/* Allow datepicker / dropdown popups inside cards and filter rows to overflow cleanly */
+.card, .filters, .form-group {
+  overflow: visible;
 }
 
 [data-theme='dark'] .card {

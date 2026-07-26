@@ -7,8 +7,7 @@
 .gdp-wrapper {
   position: relative;
   display: inline-block;
-  isolation: isolate;   /* own stacking context so dropdown layers above siblings */
-  z-index: 50;          /* lift entire picker above surrounding card content */
+  z-index: 1000;         /* lift entire picker above surrounding card content & sibling containers */
 }
 
 /* Trigger input */
