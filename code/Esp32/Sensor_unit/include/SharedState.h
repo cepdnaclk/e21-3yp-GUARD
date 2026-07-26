@@ -2,8 +2,8 @@
 #ifndef SHARED_STATE_H
 #define SHARED_STATE_H
 
-#include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
+#include <Arduino.h>
 #include <DallasTemperature.h>
 #include <ESP32Servo.h>
 #include <OneWire.h>
@@ -20,7 +20,7 @@
 #else
 #define RGB_LED_PIN 48
 #endif
-#define NUMPIXELS 1
+#define NUMPIXELS 4
 extern const int servoPin;
 extern const int pumpInPin;
 extern const int pumpOutPin;
@@ -29,12 +29,12 @@ extern const int pumpOutPin;
 
 #ifdef BOARD_ESP32_WROOM
 #define TDS_PIN 34
-#define TDS_POWER_PIN 14
+#define TDS_POWER_PIN 18
 #define PH_PIN 32
 #define TURBIDITY_PIN 33
 #else
 #define TDS_PIN 12
-#define TDS_POWER_PIN 14
+#define TDS_POWER_PIN 18
 #define PH_PIN 7
 #define TURBIDITY_PIN 6
 #endif

@@ -110,6 +110,13 @@ model Tank {
   lastWaterLevel Float?  
   lastReadingTime DateTime?
   status         String   @default("offline")
+
+  // Hardware Health Status
+  tempOk         Boolean  @default(true)
+  waterOk        Boolean  @default(true)
+  tdsOk          Boolean  @default(true)
+  phOk           Boolean  @default(true)
+  turbOk         Boolean  @default(true)
   
   // Relations & Metadata
   updatedAt    DateTime @updatedAt

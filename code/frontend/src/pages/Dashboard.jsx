@@ -21,6 +21,25 @@ function TankCard({ device, readings, recentAlerts, onSensorUpdate, onMarkSeen }
           <span className="tank-name">{device.deviceName || `Tank ${device.deviceId}`}</span>
           <span className={`tank-status-dot ${isOnline ? 'active' : 'offline'}`} />
         </div>
+        
+        {/* Hardware Fault Banner */}
+        {(() => {
+          const brokenSensors = [];
+          if (device.tempOk === false) brokenSensors.push('Temp');
+          if (device.waterOk === false) brokenSensors.push('Water Level');
+          if (device.tdsOk === false) brokenSensors.push('TDS');
+          if (device.phOk === false) brokenSensors.push('pH');
+          if (device.turbOk === false) brokenSensors.push('Turbidity');
+          
+          if (brokenSensors.length > 0) {
+            return (
+              <div className="hardware-fault-banner" style={{backgroundColor: '#ff4444', color: 'white', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid #cc0000'}}>
+                <span>🔌 Hardware Fault: {brokenSensors.join(', ')} disconnected</span>
+              </div>
+            );
+          }
+          return null;
+        })()}
         <div className="sensor-tile-grid">
           {readings.length > 0 ? (
             readings.map((r) => {
@@ -156,6 +175,20 @@ export default function Dashboard() {
           return r;
         })
       }));
+
+      // Update the device's lastReadingTime so the online dot turns green instantly
+      setDevices(prev => prev.map(d => {
+        if (d.deviceId === data.tankId) {
+          return {
+            ...d,
+            currentStats: {
+              ...d.currentStats,
+              lastReadingTime: data.timestamp
+            }
+          };
+        }
+        return d;
+      }));
     };
 
     const handleAlertResolved = (data) => {
@@ -186,16 +219,35 @@ export default function Dashboard() {
       }));
     };
 
+    const handleSensorHealth = (data) => {
+      const { tankId, health } = data;
+      setDevices(prev => prev.map(d => {
+        if (d.deviceId === tankId) {
+          return {
+            ...d,
+            tempOk: health.temp_ok ?? true,
+            waterOk: health.water_ok ?? true,
+            tdsOk: health.tds_ok ?? true,
+            phOk: health.ph_ok ?? true,
+            turbOk: health.turb_ok ?? true
+          };
+        }
+        return d;
+      }));
+    };
+
     socket.on('sensor_data', handleSensorData);
     socket.on('alert_resolved_auto', handleAlertResolved);
     socket.on('alert_resolved_all', handleAlertResolved);
     socket.on('device_status', handleDeviceStatus);
+    socket.on('sensor_health', handleSensorHealth);
 
     return () => {
       socket.off('sensor_data', handleSensorData);
       socket.off('alert_resolved_auto', handleAlertResolved);
       socket.off('alert_resolved_all', handleAlertResolved);
       socket.off('device_status', handleDeviceStatus);
+      socket.off('sensor_health', handleSensorHealth);
     };
   }, []);
 

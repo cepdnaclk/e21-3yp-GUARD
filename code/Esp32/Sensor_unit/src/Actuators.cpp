@@ -111,31 +111,32 @@ void handleServo() {
 }
 
 void updateLED() {
+  uint32_t color = pixels.Color(0, 255, 0); // Default to 🟢 GREEN
+  
   if (WiFi.status() != WL_CONNECTED || !client.connected()) {
     // 1. NETWORK ERROR (Wi-Fi or MQTT disconnected)
-    pixels.setPixelColor(0, pixels.Color(255, 255, 0)); // 🟡 YELLOW
+    color = pixels.Color(255, 255, 0); // 🟡 YELLOW
   } else if (tempFault || waterFault || tdsFault || phFault || turbFault) {
     // 1.5 SENSOR FAULT INDICATOR
-    pixels.setPixelColor(0, pixels.Color(255, 255, 255)); // ⚪ WHITE
+    color = pixels.Color(255, 255, 255); // ⚪ WHITE
   } else if (waterAlert) {
     // 2. WATER LEVEL ERROR
-    pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // 🔴 RED
+    color = pixels.Color(255, 0, 0); // 🔴 RED
   } else if (tempAlert) {
     // 3. TEMPERATURE ERROR
-    pixels.setPixelColor(0, pixels.Color(255, 0, 255)); // 🟣 PURPLE
+    color = pixels.Color(255, 0, 255); // 🟣 PURPLE
   } else if (tdsAlert) {
     // 4. TDS / QUALITY ERROR
-    pixels.setPixelColor(0, pixels.Color(0, 0, 255)); // 🔵 BLUE
+    color = pixels.Color(0, 0, 255); // 🔵 BLUE
   } else if (phAlert) {
     // 5. pH LEVEL ERROR
-    pixels.setPixelColor(0, pixels.Color(255, 165, 0)); // 🟠 ORANGE
+    color = pixels.Color(255, 165, 0); // 🟠 ORANGE
   } else if (turbAlert) {
     // 6. TURBIDITY ERROR
-    pixels.setPixelColor(0, pixels.Color(0, 255, 255)); // 🩵 CYAN
-  } else {
-    // 7. SYSTEM NORMAL
-    pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // 🟢 GREEN
+    color = pixels.Color(0, 255, 255); // 🩵 CYAN
   }
 
+  // Light up ALL LEDs on the strip!
+  pixels.fill(color, 0, NUMPIXELS);
   pixels.show();
 }

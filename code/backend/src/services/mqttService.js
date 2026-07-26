@@ -116,8 +116,30 @@ export const initMqtt = (ioInstance) => {
             return;
         }
 
-        // Ignore the JSON health status topic to prevent "Unknown sensor topic" warnings
+        // Handle the JSON health status topic to sync hardware faults
         if (prefix === 'sensor' && sensorType === 'status') {
+            try {
+                const health = JSON.parse(message.toString());
+                
+                await prisma.tank.update({
+                    where: { tankId },
+                    data: {
+                        tempOk: health.temp_ok ?? true,
+                        waterOk: health.water_ok ?? true,
+                        tdsOk: health.tds_ok ?? true,
+                        phOk: health.ph_ok ?? true,
+                        turbOk: health.turb_ok ?? true
+                    }
+                });
+
+                if (io) {
+                    io.emit('sensor_health', { tankId, health });
+                }
+            } catch (err) {
+                if (err.code !== 'P2025') {
+                    console.error(`❌ Failed to update health for device ${tankId}:`, err.message);
+                }
+            }
             return;
         }
 

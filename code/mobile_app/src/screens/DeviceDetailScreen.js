@@ -75,8 +75,27 @@ export default function DeviceDetailScreen({ route, navigation }) {
       }));
     };
 
+    const handleSensorHealth = (data) => {
+      if (data.tankId !== deviceId) return;
+      setDevice(prev => ({
+        ...prev,
+        hardwareHealth: {
+          tempOk: data.health.temp_ok ?? true,
+          waterOk: data.health.water_ok ?? true,
+          tdsOk: data.health.tds_ok ?? true,
+          phOk: data.health.ph_ok ?? true,
+          turbOk: data.health.turb_ok ?? true
+        }
+      }));
+    };
+
     socket.on('sensor_data', handleSensorData);
-    return () => socket.off('sensor_data', handleSensorData);
+    socket.on('sensor_health', handleSensorHealth);
+    
+    return () => {
+      socket.off('sensor_data', handleSensorData);
+      socket.off('sensor_health', handleSensorHealth);
+    };
   }, [loadData, deviceId]);
 
   if (loading || !device) {
@@ -93,6 +112,29 @@ export default function DeviceDetailScreen({ route, navigation }) {
         <Text style={styles.title}>{device.deviceName || `Tank ${deviceId}`}</Text>
         <Text style={styles.subtitle}>Status: {device.status || 'unknown'}</Text>
       </View>
+
+      {/* Hardware Fault Banner */}
+      {(() => {
+        const hh = device.hardwareHealth || {};
+        const brokenSensors = [];
+        if (hh.tempOk === false) brokenSensors.push('Temp');
+        if (hh.waterOk === false) brokenSensors.push('Water Level');
+        if (hh.tdsOk === false) brokenSensors.push('TDS');
+        if (hh.phOk === false) brokenSensors.push('pH');
+        if (hh.turbOk === false) brokenSensors.push('Turbidity');
+        
+        if (brokenSensors.length > 0) {
+          return (
+            <View style={{ backgroundColor: theme.danger, padding: 12, marginHorizontal: 16, marginTop: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="warning" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: 'bold', flex: 1 }}>
+                Hardware Fault: {brokenSensors.join(', ')} disconnected
+              </Text>
+            </View>
+          );
+        }
+        return null;
+      })()}
 
       <Text style={styles.sectionTitle}>Manual Actions</Text>
       <View style={styles.actionsContainer}>

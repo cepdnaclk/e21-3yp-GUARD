@@ -216,6 +216,13 @@ export const getTankStatus = asyncHandler(async (req, res) => {
       waterLevel: tank.lastWaterLevel,
       lastReadingTime: tank.lastReadingTime,
     },
+    hardwareHealth: {
+      tempOk: tank.tempOk,
+      waterOk: tank.waterOk,
+      tdsOk: tank.tdsOk,
+      phOk: tank.phOk,
+      turbOk: tank.turbOk,
+    },
     thresholds: {
       tempMin:             tank.tempMin,
       tempMax:             tank.tempMax,
