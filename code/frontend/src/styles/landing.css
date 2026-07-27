@@ -123,6 +123,12 @@
   gap: 1rem;
 }
 
+.hero-mobile-app-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
 .hero-actions .landing-btn {
   width: auto;
   white-space: nowrap;

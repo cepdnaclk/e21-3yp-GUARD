@@ -6,6 +6,7 @@ import { Reveal, ScrollProgress } from '../../utils/animations';
 import { deviceRequestApi } from '../../services/api';
 import '../../styles/landing.css';
 import PublicNav from '../../components/PublicNav';
+import '../../styles/navigation.css';
 
 import cloudImg from '../../assets/Image-1.png';
 import dashboardImg from '../../assets/Image-2.png';
@@ -34,6 +35,29 @@ function HeroParticles() {
         />
       ))}
     </div>
+  );
+}
+const MOBILE_APP = { to: '/mobile-download', label: 'Download Mobile App' };
+
+/* Download glyph matching the blue app-icon artwork: bars, arrow and tray with a partial progress ring */
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="mobile-app-btn-icon-svg" aria-hidden="true">
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        fill="none"
+        stroke="rgba(255,255,255,0.45)"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeDasharray="46 17"
+        strokeDashoffset="-8"
+      />
+      <path d="M9 6h6M9 8.4h6" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M12 9.6v6.4m0 0-3-3m3 3 3-3" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d="M7.5 18.4h9" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -117,6 +141,14 @@ export default function Landing() {
                 <Link to="/register" className="btn btn-outline landing-btn-outline">Sign Up</Link>
               </>
             )}
+          </div>
+          <div className="hero-mobile-app-cta hero-actions-animated">
+            <Link to={MOBILE_APP.to} className="mobile-app-btn">
+              <span className="mobile-app-btn-icon" aria-hidden="true">
+                <DownloadIcon />
+              </span>
+              <span className="mobile-app-btn-label">{MOBILE_APP.label}</span>
+            </Link>
           </div>
         </div>
         <div className="hero-scroll-indicator" aria-hidden="true">

@@ -1,16 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import ReactECharts from 'echarts-for-react';
 import { sensorApi } from '../services/api';
 import { SENSOR_LINE_CONFIG } from '../constants/sensorConstants';
+import { useTheme } from '../context/ThemeContext';
 
 const SERIES = Object.values(SENSOR_LINE_CONFIG);
 
@@ -27,12 +19,71 @@ function formatFullTime(value) {
   });
 }
 
-function formatTooltipValue(value, name) {
-  if (value === null || value === undefined) return ['N/A', name];
-  return [value, name];
+function buildSeriesOption(series, chartData, isDark) {
+  const textColor = isDark ? '#ffffff' : '#334155';
+  const titleColor = isDark ? '#ffffff' : '#0f172a';
+  const axisLineColor = isDark ? '#30363d' : '#d8e0eb';
+  const tooltipBg = isDark ? '#161b22' : '#ffffff';
+  const tooltipBorder = isDark ? '1px solid #30363d' : '1px solid #f1f5f9';
+
+  return {
+    grid: { top: 20, right: 24, bottom: 70, left: 50 },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: tooltipBg,
+      borderWidth: 0,
+      extraCssText: 'border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); padding: 12px;',
+      textStyle: { color: textColor },
+      formatter: (params) => {
+        if (!params || params.length === 0) return '';
+        const point = params[0];
+        const raw = chartData[point.dataIndex];
+        const title = raw ? raw.fullTime : point.axisValueLabel;
+        const value = point.data === null || point.data === undefined ? 'N/A' : point.data;
+        const unitSuffix = series.unit ? ' ' + series.unit : '';
+        return '<div style="font-weight:700;margin-bottom:8px;border-bottom:' + tooltipBorder + ';padding-bottom:4px;color:' + titleColor + ';">' + title + '</div>' +
+          '<div style="padding:2px 0;font-weight:500;color:' + textColor + ';">' + series.label + ': ' + value + unitSuffix + '</div>';
+      }
+    },
+    legend: {
+      data: [series.label],
+      top: 0,
+      textStyle: { color: textColor }
+    },
+    xAxis: {
+      type: 'category',
+      data: chartData.map((row) => row.displayTime),
+      axisLabel: {
+        color: textColor,
+        fontSize: 11,
+        rotate: 30,
+        hideOverlap: true
+      },
+      axisLine: { lineStyle: { color: axisLineColor } }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: textColor, fontSize: 12 },
+      splitLine: { lineStyle: { color: axisLineColor, type: 'dashed' } }
+    },
+    series: [
+      {
+        name: series.label,
+        type: 'line',
+        smooth: true,
+        showSymbol: false,
+        connectNulls: true,
+        lineStyle: { color: series.color, width: 2 },
+        itemStyle: { color: series.color },
+        data: chartData.map((row) => row[series.key] ?? null)
+      }
+    ]
+  };
 }
 
 export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, isOnline = true }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -134,62 +185,16 @@ export default function TankTimeSeriesChart({ deviceId, autoRefreshMs = 30000, i
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(45%, 1fr))', gap: '1.5rem', padding: '1rem' }}>
           {SERIES.map((series) => (
             <div key={series.key} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem' }}>
-              <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: '#334155' }}>
+              <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: isDark ? '#ffffff' : '#334155' }}>
                 {series.label}
               </h4>
               <div style={{ width: '100%', height: 300 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#d8e0eb" />
-                    <XAxis
-                      dataKey="displayTime"
-                      tick={{ fill: '#334155', fontSize: 11 }}
-                      angle={-30}
-                      textAnchor="end"
-                      height={70}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis tick={{ fill: '#334155', fontSize: 12 }} />
-                    <Tooltip
-                      formatter={formatTooltipValue}
-                      labelFormatter={(label, payload) => {
-                        if (payload && payload[0]) {
-                          return payload[0].payload.fullTime;
-                        }
-                        return label;
-                      }}
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        borderRadius: '12px',
-                        border: 'none',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-                        padding: '12px'
-                      }}
-                      labelStyle={{
-                        color: '#0f172a',
-                        fontWeight: '700',
-                        marginBottom: '8px',
-                        display: 'block',
-                        borderBottom: '1px solid #f1f5f9',
-                        paddingBottom: '4px'
-                      }}
-                      itemStyle={{
-                        padding: '2px 0',
-                        fontWeight: '500'
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey={series.key}
-                      name={`${series.label}${series.unit ? ` (${series.unit})` : ''}`}
-                      stroke={series.color}
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls={true}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <ReactECharts
+                  option={buildSeriesOption(series, chartData, isDark)}
+                  style={{ width: '100%', height: '100%' }}
+                  notMerge={true}
+                  lazyUpdate={true}
+                />
               </div>
             </div>
           ))}
