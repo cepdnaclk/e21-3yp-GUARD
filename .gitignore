@@ -18,3 +18,4 @@ Doc_for_fish_info.md
 /code/backend/scratch
 code/backend/verify_data.js
 test_data_flow/mock_devices.js
+dist/
