@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import PublicNav from '../components/PublicNav';
 import '../styles/mobile-app-download.css';
+import qr from '../assets/qr.jpg';
 
 export default function MobileAppDownload() {
   return (
@@ -18,7 +19,7 @@ export default function MobileAppDownload() {
           </p>
 
           <div className="mad-qr-holder" aria-label="QR code placeholder">
-            <span className="mad-qr-holder-text">QR code coming soon</span>
+            <img src={qr} alt="QR code" />
           </div>
 
           <Link to="/" className="mad-back-link">

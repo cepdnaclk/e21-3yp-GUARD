@@ -19,7 +19,8 @@
 .mad-card {
   width: 100%;
   max-width: 600px;
-  background-color: var(--c-ffffff);
+  background-color: transparent;
+  border: 2px solid #7cc6e8;
   border-radius: 20px;
   box-shadow: 0 18px 40px rgba(9, 40, 70, 0.12);
   padding: 2.75rem 2.25rem;
@@ -30,12 +31,12 @@
   margin: 0 0 0.75rem;
   font-size: 2rem;
   font-weight: 800;
-  color: #063a67;
+  color: #ffffff;
 }
 
 .mad-desc {
   margin: 0 0 2rem;
-  color: var(--c-355f80);
+  color: #ffffff;
   font-size: 1.2rem;
   line-height: 1.5;
 }
@@ -60,15 +61,23 @@
 }
 
 .mad-qr-holder {
-  width: 200px;
-  height: 200px;
+  width: min(260px, 70vw);
+  aspect-ratio: 1 / 1;
   margin: 0 auto 2rem;
-  border: 2px dashed var(--c-bfd5e6);
-  border-radius: 16px;
+  padding: 0.65rem;
+  border-radius: 14px;
+  background-color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--c-edf5fb);
+  overflow: hidden;
+}
+
+.mad-qr-holder img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .mad-qr-holder-text {
@@ -88,4 +97,18 @@
 
 .mad-back-link:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .mad-card {
+    padding: 2rem 1.25rem;
+  }
+
+  .mad-title {
+    font-size: 1.65rem;
+  }
+
+  .mad-desc {
+    font-size: 1.02rem;
+  }
 }

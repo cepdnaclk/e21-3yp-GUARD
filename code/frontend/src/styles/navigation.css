@@ -82,7 +82,8 @@
   padding: 0.4rem 1.1rem 0.4rem 0.4rem;
   border-radius: 999px;
   text-decoration: none;
-  background: linear-gradient(135deg, #3fa9f5 0%, #1466e8 55%, #0d47c4 100%);
+  background: transparent;
+  border: linear-gradient(135deg, #3fa9f5 0%, #1466e8 55%, #0d47c4 100%);
   color: var(--c-ffffff);
   font-size: 0.88rem;
   font-weight: 700;
