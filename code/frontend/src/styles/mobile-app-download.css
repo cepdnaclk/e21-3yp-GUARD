@@ -1,0 +1,91 @@
+/* ── Mobile App Download page ── */
+.mad-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9f9;
+}
+
+.mad-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: #041829;
+}
+
+
+.mad-card {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--c-ffffff);
+  border-radius: 20px;
+  box-shadow: 0 18px 40px rgba(9, 40, 70, 0.12);
+  padding: 2.75rem 2.25rem;
+  text-align: center;
+}
+
+.mad-title {
+  margin: 0 0 0.75rem;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #063a67;
+}
+
+.mad-desc {
+  margin: 0 0 2rem;
+  color: var(--c-355f80);
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+.scan-qr-text {
+  margin: 0 0 2rem;
+  color: #7cc6e8;  
+  font-size: 2rem;
+  line-height: 1.5;
+  font-weight: 700;
+  animation: scan-qr-pulse 2.4s ease-out infinite;
+}
+@keyframes scan-qr-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.mad-qr-holder {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 2rem;
+  border: 2px dashed var(--c-bfd5e6);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--c-edf5fb);
+}
+
+.mad-qr-holder-text {
+  color: var(--c-5b92b8);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 1rem;
+}
+
+.mad-back-link {
+  display: inline-block;
+  color: var(--c-0e567f);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.mad-back-link:hover {
+  text-decoration: underline;
+}
