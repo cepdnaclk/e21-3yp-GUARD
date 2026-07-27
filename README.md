@@ -1,8 +1,8 @@
 # G.U.A.R.D — General Unit for Aquatic Risk Detection
 
-> Smart IoT monitoring & alert system for multi-tank ornamental fish shops.
+> Smart IoT monitoring & alert system for multi-tank aquatic facilities — featuring a Glassmorphism Dual-Mode UI, role-based access control, real-time WebSocket telemetry, and a guided onboarding tour.
 
-**Third Year Project — Team 08**
+**Third Year Project — Team 08 · Department of Computer Engineering, University of Peradeniya**
 
 | Index    | Name     |
 | -------- | -------- |
@@ -19,84 +19,100 @@
 2. [System Architecture](#system-architecture)
 3. [Repository Structure](#repository-structure)
 4. [Tech Stack](#tech-stack)
-5. [Database Schema](#database-schema)
-6. [API Reference](#api-reference)
-7. [MQTT Protocol](#mqtt-protocol)
-8. [WebSocket Events](#websocket-events)
-9. [Alert Rules & Thresholds](#alert-rules--thresholds)
-10. [Ports & Services](#ports--services)
-11. [Environment Variables](#environment-variables)
-12. [Getting Started — Backend](#getting-started--backend)
-13. [Getting Started — Frontend](#getting-started--frontend)
-14. [Google OAuth Setup](#google-oauth-setup)
-15. [ESP32 / Firmware Integration](#esp32--firmware-integration)
-16. [Docker (optional)](#docker-optional)
+5. [Onboarding Tour & Demo Environment](#onboarding-tour--demo-environment)
+6. [Database Schema](#database-schema)
+7. [API Reference](#api-reference)
+8. [MQTT Protocol](#mqtt-protocol)
+9. [WebSocket Events](#websocket-events)
+10. [Alert Rules & Thresholds](#alert-rules--thresholds)
+11. [Ports & Services](#ports--services)
+12. [Environment Variables](#environment-variables)
+13. [Developer Helper Scripts](#developer-helper-scripts)
+14. [Getting Started — Quick Start](#getting-started--quick-start)
+15. [Getting Started — Backend](#getting-started--backend)
+16. [Getting Started — Frontend](#getting-started--frontend)
+17. [ESP32 / Firmware Integration](#esp32--firmware-integration)
+18. [Docker Support](#docker-support)
 
 ---
 
 ## What is G.U.A.R.D?
 
-G.U.A.R.D is a real-time aquaculture monitoring system that continuously measures water quality across multiple tanks and immediately alerts the owner before fish are harmed.
+G.U.A.R.D is an enterprise-grade aquaculture real-time monitoring and alerting system designed for commercial ornamental fish shops, hatcheries, and multi-tank aquatic facilities. It measures water quality parameters in real-time across tanks and delivers immediate alerts before fish health is compromised.
 
 **Problems it solves:**
 
-- Manual water testing is slow, reactive, and error-prone
-- Continuous human monitoring across many tanks is impossible
-- Existing single-tank solutions don't scale to commercial fish shops
+- **Manual Testing Delay:** Replaces slow, manual water testing with automated real-time telemetry.
+- **24/7 Multi-Tank Surveillance:** Continuous monitoring across dozens of tanks simultaneously.
+- **Alert Flooding Prevention:** Built-in in-memory throttling and database-level alert deduplication.
+- **Hardware Disconnection Detection:** Real-time health check for individual sensors (Temp, pH, TDS, Turbidity, Water Level).
+- **Onboarding Paradox:** First-time users are never dropped into an empty dashboard — a guided tour runs in a fully-populated demo sandbox.
 
 **Key capabilities:**
 
-- Continuous sensor readings (temperature, pH, TDS, turbidity, water level)
-- Rule-based threshold alerts with deduplication
-- Multi-channel notifications (dashboard WebSocket, email)
-- Multi-tank, multi-location hierarchy
-- ESP32 device authentication with bcrypt-hashed secrets
+- **Real-Time Telemetry Gauges:** Dynamic SVG arc gauges for Temperature (°C), pH, TDS (ppm), Turbidity (NTU), and Water Level (%).
+- **Glassmorphism Dual-Mode UI:** "Milky Frost" light mode and "Obsidian Glow" dark mode using a Windows 11 Fluent Design glass system.
+- **Multi-Channel Alerts:** Real-time WebSocket alerts (`socket.io`), visual toast notifications, and SMTP email delivery.
+- **Role-Based Access Control:** `SUPER_ADMIN`, `ADMIN`, and `USER` account management with tank assignment.
+- **Interactive Analytics:** Sensor history visualization powered by Recharts with a custom glass date picker (`react-day-picker`).
+- **Fish Species Knowledge Base:** Comprehensive fish species library with optimal water parameter ranges cross-referenced against tank thresholds.
+- **Guided Onboarding Tour:** Role-aware `driver.js` tour across a `/demo` sandbox environment — separate from live data, auto-skippable, and resumable via the "🗺️ Tour" button.
+- **ESP32 Device Security:** Device authentication with bcrypt-hashed device secrets.
 
 ---
 
 ## System Architecture
 
 ```
-                                ┌─────────────────────────────────────┐
-  ESP32 Devices                 │           G.U.A.R.D Backend         │
-  (per tank)                    │         Node.js / Express           │
-  ┌──────────┐  MQTT publish    │                                     │
+                                ┌──────────────────────────────────────┐
+  ESP32 Devices                 │          G.U.A.R.D Backend           │
+  (per tank)                    │        Node.js / Express             │
+  ┌──────────┐  MQTT publish    │                                      │
   │ Tank 1   │─────────────────▶│  ┌───────────┐  ┌───────────────┐  │
   └──────────┘                  │  │MQTT Client│  │  REST API     │  │
   ┌──────────┐                  │  └─────┬─────┘  └───────┬───────┘  │
   │ Tank 2   │─────────────────▶│        │                │           │
   └──────────┘  topic:          │        ▼                ▼           │
-  ┌──────────┐  aquamonitor/    │  ┌─────────────────────────────┐   │
-  │ Tank N   │─────────────────▶│  │       Prisma ORM            │   │
-  └──────────┘  devices/<uid>   │  └─────────────┬───────────────┘   │
-                /data           │                │                    │
-                                │      ┌─────────▼──────────┐        │
-┌────────────────┐              │      │   PostgreSQL DB     │        │
-│  Mosquitto     │              │      │   port 5432         │        │
-│  MQTT Broker   │              │      └─────────────────────┘        │
-│  port 1883     │              │                                     │
-└────────────────┘              │  ┌──────────────────────────────┐  │
+  ┌──────────┐  aquamonitor/    │  ┌──────────────────────────────┐   │
+  │ Tank N   │─────────────────▶│  │        Prisma ORM            │   │
+  └──────────┘  devices/<uid>   │  └──────────────┬───────────────┘   │
+                /data           │                 │                    │
+                                │      ┌──────────▼─────────┐        │
+┌────────────────┐              │      │     MongoDB         │        │
+│  HiveMQ Cloud  │              │      │   port 27017        │        │
+│  / Mosquitto   │              │      └────────────────────┘        │
+│  port 1883/8883│              │  ┌─────────────────────────────┐   │
+└────────────────┘              │  │  InfluxDB (Time-Series)     │   │
+                                │  │   port 8086                 │   │
+                                │  └─────────────────────────────┘   │
+                                │  ┌──────────────────────────────┐  │
                                 │  │  Alert Engine (rule-based)   │  │
                                 │  └──────────┬───────────────────┘  │
-                                └─────────────┼───────────────────────┘
+                                └─────────────┼──────────────────────┘
                                               │ WebSocket (socket.io)
                                               │ REST API (JWT-protected)
                                               ▼
-                                ┌─────────────────────────┐
-                                │   React Dashboard        │
-                                │   (Frontend — TBD)       │
-                                │   port 5173 (Vite dev)   │
-                                └─────────────────────────┘
+                                ┌─────────────────────────────────┐
+                                │      React Dashboard UI         │
+                                │  Glassmorphism Dual-Mode        │
+                                │  port 5173 (Vite dev)           │
+                                │                                  │
+                                │  ┌──────────────────────────┐   │
+                                │  │  /demo  Onboarding Tour  │   │
+                                │  │  (driver.js + demoData)  │   │
+                                │  └──────────────────────────┘   │
+                                └─────────────────────────────────┘
 ```
 
 **End-to-end data flow:**
 
-1. An ESP32 reads sensors and publishes JSON to `aquamonitor/devices/<deviceUid>/data` via MQTT.
-2. The backend MQTT client receives the message, looks up the device by `deviceUid`, and verifies its `deviceSecret` (bcrypt compare).
-3. If authentic, a `SensorReading` row is inserted into PostgreSQL.
-4. The alert engine checks all 6 threshold rules against the new reading. If a threshold is breached and no unresolved alert of the same type already exists for that device, a new `Alert` is created.
-5. The alert is immediately broadcast to all connected React dashboard clients via WebSocket (`socket.io`), and optionally sent by email.
-6. The React dashboard consumes the REST API (JWT-authenticated) for all other operations: listing devices, viewing sensor history, resolving alerts, and managing locations/tanks.
+1. An ESP32 reads sensors and publishes JSON telemetry to `aquamonitor/devices/<deviceUid>/data` via MQTT.
+2. The backend MQTT client ingests the payload, verifies the device using `deviceUid` and `deviceSecret` (bcrypt authentication), and records telemetry.
+3. State data is stored via Prisma ORM in MongoDB; time-series history is persisted in InfluxDB.
+4. The Alert Engine checks configured thresholds (temperature, pH, TDS, turbidity, water level). If a threshold is breached and no unresolved alert of the same type exists for that tank, an `Alert` is generated.
+5. The alert is instantly pushed to connected React clients via WebSocket (`socket.io`) and dispatched by email if SMTP is configured.
+6. The React frontend interacts with the backend via JWT-authenticated REST APIs for analytics, tank configuration, user management, and threshold customisation.
+7. First-time users are automatically routed to the `/demo` sandbox where a `driver.js` guided tour walks them through every feature using static mock data — without touching the live backend.
 
 ---
 
@@ -105,36 +121,79 @@ G.U.A.R.D is a real-time aquaculture monitoring system that continuously measure
 ```
 e21-3yp-GUARD/
 ├── code/
-│   └── backend/                  ← Node.js/Express backend (this is live)
-│       ├── src/
-│       │   ├── modules/
-│       │   │   ├── auth/          ← Google OAuth + JWT
-│       │   │   ├── devices/       ← ESP32 device registration & management
-│       │   │   ├── sensors/       ← Sensor reading queries
-│       │   │   ├── alerts/        ← Alert detection engine & CRUD
-│       │   │   └── notifications/ ← WebSocket + email dispatch
-│       │   ├── mqtt/
-│       │   │   └── mqttClient.js  ← Full MQTT ingestion pipeline
-│       │   ├── middleware/
-│       │   │   └── authMiddleware.js ← JWT Bearer guard
-│       │   ├── config/config.js   ← Centralised env config with validation
-│       │   ├── database/prismaClient.js ← Prisma singleton
-│       │   ├── utils/logger.js    ← Winston structured logger
-│       │   ├── app.js             ← Express app (routes + middleware stack)
-│       │   └── server.js          ← HTTP server entry point
-│       ├── public/
-│       │   └── test-auth.html     ← Dev-only Google OAuth test page (/test-auth)
-│       ├── prisma/
-│       │   └── schema.prisma      ← Database schema (6 models)
-│       ├── mosquitto/
-│       │   └── mosquitto.conf     ← MQTT broker config (Docker + local)
-│       ├── Dockerfile
-│       ├── docker-compose.yml
-│       ├── .env.example
-│       └── README.md              ← Backend-specific developer notes
-├── docs/                          ← Project documentation & assets
-├── test_data_flow/                ← MQTT integration test scripts
-└── README.md                      ← This file
+│   ├── backend/                        ← Node.js / Express Backend
+│   │   └── src/
+│   │       ├── controllers/            ← Request handlers per domain
+│   │       ├── routes/                 ← Express route definitions
+│   │       ├── services/               ← Business logic & DB queries
+│   │       ├── middleware/
+│   │       │   └── authMiddleware.js   ← JWT Bearer guard & role verifiers
+│   │       ├── lib/                    ← Prisma & InfluxDB connections
+│   │       └── index.js                ← HTTP & WebSocket server entry
+│   │
+│   └── frontend/                       ← React 19 / Vite Frontend
+│       └── src/
+│           ├── App.jsx                 ← Router root with SmartRedirect
+│           ├── components/
+│           │   ├── Layout.jsx          ← Production nav (with 🗺️ Tour button)
+│           │   ├── SensorGauge.jsx     ← SVG arc gauge component
+│           │   ├── WaterTankLevel.jsx  ← Water level visualiser
+│           │   ├── TankTimeSeriesChart.jsx
+│           │   ├── ThresholdsPanel.jsx
+│           │   ├── ActuatorPanel.jsx
+│           │   ├── DatePicker.jsx      ← Glass calendar popup
+│           │   ├── admin/              ← Admin-only table components
+│           │   ├── auth/               ← Auth form components
+│           │   ├── demo/
+│           │   │   └── DemoLayout.jsx  ← Demo nav (Demo badge + Exit Demo)
+│           │   └── tour/
+│           │       └── TourOverlay.jsx ← driver.js tour controller
+│           ├── context/
+│           │   ├── AuthContext.jsx     ← Auth state & user/role
+│           │   ├── ThemeContext.jsx    ← Light/Dark mode toggle
+│           │   ├── DemoContext.jsx     ← Static demo data provider
+│           │   └── TourContext.jsx     ← Tour state machine (skip/finish/reset)
+│           ├── data/
+│           │   └── demoData.json       ← Static mock payload for /demo
+│           ├── hooks/
+│           │   └── useTourSteps.js     ← Role-aware step builder (7 / 11 steps)
+│           ├── pages/
+│           │   ├── Dashboard.jsx       ← Multi-tank monitoring & live gauges
+│           │   ├── Devices.jsx         ← Device inventory & registration
+│           │   ├── DeviceDetail.jsx    ← Per-tank detail & threshold config
+│           │   ├── SensorHistory.jsx   ← Recharts time-series analytics
+│           │   ├── Alerts.jsx          ← Alert queue & resolution
+│           │   ├── FishInfo.jsx        ← Fish species library
+│           │   ├── Users.jsx           ← Admin user & tank assignment
+│           │   ├── Profile.jsx         ← Account & notification preferences
+│           │   ├── Login.jsx           ← Login page
+│           │   ├── Register.jsx        ← Registration page
+│           │   ├── VerifyEmail.jsx     ← Email verification gate
+│           │   ├── DemoPage.jsx        ← /demo route shell & tour bootstrap
+│           │   ├── Landing/            ← Public landing & about pages
+│           │   └── demo/               ← Demo page wrappers (no API calls)
+│           │       ├── DashboardDemo.jsx
+│           │       ├── DevicesDemo.jsx
+│           │       ├── SensorHistoryDemo.jsx
+│           │       ├── AlertsDemo.jsx
+│           │       ├── FishInfoDemo.jsx
+│           │       ├── UsersDemo.jsx
+│           │       └── ProfileDemo.jsx
+│           ├── services/
+│           │   ├── api.js              ← Axios REST client
+│           │   └── socket.js           ← socket.io client
+│           ├── styles/
+│           │   ├── variables.css       ← Glass design tokens
+│           │   ├── base.css            ← Global styles & typography
+│           │   ├── layout.css          ← Topnav glass styles
+│           │   ├── tour.css            ← driver.js popover & tour-active styles
+│           │   └── ...                 ← Page-scoped stylesheets
+│           └── utils/
+│               └── formatUtils.js      ← Date/number formatters
+├── docs/
+├── start_all.ps1 / start_all.bat       ← Full-stack start helpers
+├── kill_all.ps1 / kill_all.bat         ← Service shutdown helpers
+└── README.md
 ```
 
 ---
@@ -143,272 +202,203 @@ e21-3yp-GUARD/
 
 ### Backend
 
-| Layer       | Technology          | Version | Purpose                          |
-| ----------- | ------------------- | ------- | -------------------------------- |
-| Runtime     | Node.js             | 22 LTS  | JavaScript server runtime        |
-| Framework   | Express             | 4.x     | HTTP server & routing            |
-| ORM         | Prisma              | 6.x     | Database access (MongoDB)        |
-| State DB    | MongoDB             | 7+      | Real-time state & User data      |
-| History DB  | InfluxDB            | 2.x     | High-frequency time-series data  |
-| MQTT client | MQTT.js             | 5.x     | Ingestion & Hardware Sync        |
-| MQTT broker | HiveMQ Cloud        | —       | Managed MQTT Broker              |
-| WebSocket   | socket.io           | 4.x     | Real-time dashboard updates      |
+| Layer          | Technology              | Purpose                              |
+| -------------- | ----------------------- | ------------------------------------ |
+| Runtime        | Node.js 22 LTS          | Server-side JavaScript runtime       |
+| Framework      | Express 4.x             | REST API framework                   |
+| ORM            | Prisma 6.x              | MongoDB object-relational mapping    |
+| State DB       | MongoDB 7+              | Application state & metadata         |
+| Time-Series DB | InfluxDB 2.x            | High-frequency telemetry history     |
+| MQTT Client    | MQTT.js 5.x             | Hardware message ingestion           |
+| MQTT Broker    | HiveMQ Cloud / Mosquitto| Distributed MQTT messaging           |
+| Real-time WS   | socket.io 4.x           | Real-time WebSocket push             |
+| Security       | bcrypt + JWT            | Password hashing & authentication    |
 
-### Frontend _(to be built)_
+### Frontend
 
-| Technology        | Purpose                     |
-| ----------------- | --------------------------- |
-| React 18+         | UI framework                |
-| Vite              | Dev server & bundler        |
-| socket.io-client  | WebSocket alert stream      |
-| React Query / SWR | API data fetching & caching |
+| Layer               | Technology             | Purpose                                   |
+| ------------------- | ---------------------- | ----------------------------------------- |
+| Framework           | React 19               | Component-driven UI framework             |
+| Build Tool          | Vite 7.x               | Lightning-fast HMR & bundler              |
+| Routing             | React Router v6        | Client-side route management              |
+| UI Design           | Vanilla CSS Glassmorphism | Milky Frost / Obsidian Glow dual theme |
+| Telemetry Charts    | Recharts 2.x           | Interactive time-series data graphing     |
+| Date Selector       | react-day-picker 10.x  | Custom glass-styled calendar picker       |
+| Real-time Socket    | socket.io-client 4.x   | Real-time telemetry & alert listener      |
+| HTTP Client         | Axios                  | REST API communication                    |
+| Onboarding Tour     | driver.js 1.x          | Step-by-step guided tour overlay          |
 
 ### Firmware (ESP32)
 
-| Library                     | Purpose                    |
-| --------------------------- | -------------------------- |
-| WiFi.h                      | Wi-Fi connectivity         |
-| PubSubClient                | MQTT publish               |
-| ArduinoJson                 | JSON serialisation         |
-| OneWire + DallasTemperature | DS18B20 temperature sensor |
+| Library                      | Purpose                             |
+| ---------------------------- | ----------------------------------- |
+| WiFi.h                       | Wi-Fi connectivity                  |
+| PubSubClient                 | MQTT telemetry publishing           |
+| ArduinoJson                  | JSON payload serialisation          |
+| OneWire + DallasTemperature  | DS18B20 temperature sensor          |
+
+---
+
+## Onboarding Tour & Demo Environment
+
+G.U.A.R.D ships with a guided onboarding tour that runs inside a fully-isolated `/demo` sandbox. New users are **never shown an empty dashboard** — they are automatically routed to `/demo` on first login and can experience every feature before a single real tank is connected.
+
+### How it works
+
+```
+User logs in for the first time
+        │
+        ▼ SmartRedirect checks localStorage key
+        │   guard_tour_<userId> === 'true' ?
+        │
+  No ───┴──▶  /demo  ──▶  DemoPage bootstraps
+                │          with static demoData.json
+                │
+                ▼  TourProvider + DemoProvider mount
+                │
+                ▼  TourOverlay creates driver.js instance
+                │
+                ├──▶ Step 1  Dashboard → #tank-grid
+                ├──▶ Step 2  Dashboard → #dash-stats
+                ├──▶ Step 3  Alerts    → #alerts-page
+                ├──▶ Step 4  Analytics → #analytics-page
+                ├──▶ Step 5  Fish Info → #fish-page
+                ├──▶ Step 6  Profile   → #profile-page
+                ├──▶ Step 7  Profile   → #tour-theme-toggle
+                │            (Admin only ↓)
+                ├──▶ Step 8  Devices → #add-device-btn
+                ├──▶ Step 9  Users   → #add-user-btn
+                ├──▶ Step 10 Users   → #user-table
+                └──▶ Step 11 Devices → #devices-table
+                             │
+                             ▼  Finish / Skip
+                             │  localStorage guard_tour_<userId> = 'true'
+                             ▼
+                         /dashboard  (live app)
+```
+
+### Tour components
+
+| File | Role |
+| ---- | ---- |
+| `src/pages/DemoPage.jsx` | Entry point for `/demo/*` — wraps `TourProvider` + `DemoProvider`, bootstraps the tour |
+| `src/context/TourContext.jsx` | State machine: `isTourActive`, `startTour`, `skipTour`, `finishTour`, `updateStep` |
+| `src/context/DemoContext.jsx` | Provides static `demoData.json` to all demo pages via React Context |
+| `src/hooks/useTourSteps.js` | Builds role-aware step arrays: 7 steps (USER) or 11 steps (ADMIN) |
+| `src/components/tour/TourOverlay.jsx` | Mounts `driver.js`, navigates routes per step, polls DOM with `MutationObserver` |
+| `src/components/demo/DemoLayout.jsx` | Demo nav: Demo badge, nav IDs, `id="tour-theme-toggle"`, tour-active class sync |
+| `src/data/demoData.json` | Static payload: 3 tanks, 5 sensor readings each, 3 alerts, 3 workers, 3 fish species, sensor history |
+| `src/styles/tour.css` | Glassmorphism driver.js popover styles, `html.tour-active` nav elevation, nav-link pulse |
+
+### Key tour UX details
+
+- **Nav highlighting:** When the tour runs, `html.tour-active` is added to `<html>`. This elevates the sticky topnav (`z-index: 10005`) above driver.js's overlay so the active NavLink glows with a pulsing cyan ring — telling the user exactly which section they are in at every step.
+- **Theme toggle step (Step 7):** Targets `#tour-theme-toggle` inside the elevated topnav with a custom glow animation, since driver.js normally cannot reach elements above its own overlay.
+- **Smooth transitions:** `TourOverlay` uses `driver.highlight()` per step (not `drive()`) with `MutationObserver`-based element detection — the overlay stays alive during route changes via a brief "Loading…" transitional popover on `body`.
+- **Skip & Resume:** Clicking "✕ Exit Demo" or the popover close button marks the tour done in `localStorage` keyed as `guard_tour_<userId>`. The "🗺️ Tour" button in the production nav resets the flag and relaunches the tour.
+- **Role-aware:** `buildTourSteps(role)` returns 7 common steps for `USER` accounts and appends 4 admin-only steps (device registration, user creation, tank assignment, threshold config) for `ADMIN` accounts.
 
 ---
 
 ## Database Schema
 
-Six tables in PostgreSQL, managed by Prisma migrations.
+Prisma models connecting to MongoDB.
 
 ### Entity Relationship
 
 ```
-User (1) ──── (N) Location
-Location (1) ──── (N) Tank
-Tank (1) ──── (N) Device
-Device (1) ──── (N) SensorReading
-Device (1) ──── (N) Alert
+User (1) ──── (N) Device  (Owner / Assigned Worker)
+Device (1) ── (N) SensorReading
+Device (1) ── (N) Alert
+Fish (N) ──── standalone species knowledge base
 ```
-
-### Tables
-
-#### `users`
-
-Populated on first Google sign-in (upsert by `googleId`).
-
-| Column       | Type        | Notes               |
-| ------------ | ----------- | ------------------- |
-| `id`         | UUID PK     |                     |
-| `email`      | text UNIQUE | From Google profile |
-| `name`       | text        | From Google profile |
-| `google_id`  | text UNIQUE | Google sub claim    |
-| `created_at` | timestamptz | Auto                |
-
-#### `locations`
-
-A physical site (e.g. one fish shop).
-
-| Column       | Type            | Notes             |
-| ------------ | --------------- | ----------------- |
-| `id`         | UUID PK         |                   |
-| `name`       | text            | e.g. "Main Store" |
-| `owner_id`   | UUID FK → users | Cascade delete    |
-| `created_at` | timestamptz     | Auto              |
-
-#### `tanks`
-
-An individual aquarium or pond within a location.
-
-| Column        | Type                | Notes          |
-| ------------- | ------------------- | -------------- |
-| `id`          | UUID PK             |                |
-| `location_id` | UUID FK → locations | Cascade delete |
-| `name`        | text                | e.g. "Tank A"  |
-
-#### `devices`
-
-An ESP32 unit assigned to a tank.
-
-| Column          | Type            | Notes                                   |
-| --------------- | --------------- | --------------------------------------- |
-| `id`            | UUID PK         |                                         |
-| `tank_id`       | UUID FK → tanks | Cascade delete                          |
-| `device_uid`    | text UNIQUE     | Matches MQTT topic segment              |
-| `device_secret` | text            | **bcrypt hash** — never returned by API |
-| `status`        | enum            | `ONLINE` / `OFFLINE` / `UNKNOWN`        |
-| `last_seen`     | timestamptz     | Updated on each valid MQTT message      |
-
-#### `sensor_readings`
-
-Time-series sensor data. Indexed on `(device_id, timestamp)`.
-
-| Column        | Type              | Notes                 |
-| ------------- | ----------------- | --------------------- |
-| `id`          | UUID PK           |                       |
-| `device_id`   | UUID FK → devices | Cascade delete        |
-| `timestamp`   | timestamptz       | Auto (insertion time) |
-| `ph`          | float             | Optional              |
-| `temperature` | float             | °C. Optional          |
-| `tds`         | float             | ppm. Optional         |
-| `turbidity`   | float             | NTU. Optional         |
-| `water_level` | float             | %. Optional           |
-
-#### `alerts`
-
-Abnormal condition records. Indexed on `(device_id, resolved)`.
-
-| Column       | Type              | Notes                                       |
-| ------------ | ----------------- | ------------------------------------------- |
-| `id`         | UUID PK           |                                             |
-| `device_id`  | UUID FK → devices | Cascade delete                              |
-| `type`       | enum              | See [Alert Rules](#alert-rules--thresholds) |
-| `message`    | text              | Human-readable description                  |
-| `value`      | float             | Sensor value that triggered the alert       |
-| `created_at` | timestamptz       | Auto                                        |
-| `resolved`   | boolean           | Default `false`                             |
 
 ---
 
 ## API Reference
 
-Base URL: `http://localhost:3000`
+Base URL: `http://localhost:5000`
 
-All endpoints except `GET /health` and `POST /auth/google` require:
+All endpoints except `GET /health` and `POST /auth/login` require:
 
 ```
 Authorization: Bearer <jwt>
 ```
 
-### Health
+### Health & Liveness
 
 | Method | Path      | Auth | Description           |
 | ------ | --------- | ---- | --------------------- |
 | GET    | `/health` | —    | Server liveness check |
 
-**Response:**
+### Authentication (`/auth`)
 
-```json
-{ "status": "ok", "timestamp": "2026-03-07T17:40:00.000Z" }
-```
+| Method | Path                    | Auth | Description                          |
+| ------ | ----------------------- | ---- | ------------------------------------ |
+| POST   | `/auth/login`           | —    | Login with username & password       |
+| POST   | `/auth/register`        | —    | Register a new ADMIN account         |
+| GET    | `/auth/me`              | ✅   | Get current user profile             |
+| PUT    | `/auth/me`              | ✅   | Update profile (name, phone, address)|
+| POST   | `/auth/verify-email`    | —    | Verify email with OTP token          |
+| POST   | `/auth/change-password` | ✅   | Change authenticated user's password |
 
----
+### Devices & Tanks (`/devices`)
 
-### Auth
+| Method | Path            | Auth | Description                      |
+| ------ | --------------- | ---- | -------------------------------- |
+| GET    | `/devices`      | ✅   | List devices visible to the user |
+| POST   | `/devices`      | ✅   | Register new ESP32 device        |
+| GET    | `/devices/:id`  | ✅   | Get device details & thresholds  |
+| PUT    | `/devices/:id`  | ✅   | Update device name / thresholds  |
+| DELETE | `/devices/:id`  | ✅   | Remove a device (ADMIN only)     |
 
-| Method | Path           | Auth | Description                      |
-| ------ | -------------- | ---- | -------------------------------- |
-| POST   | `/auth/google` | —    | Exchange Google ID token for JWT |
-| GET    | `/auth/me`     | ✅   | Get current user profile         |
+### Sensor Telemetry (`/sensor`)
 
-#### `POST /auth/google`
+| Method | Path               | Auth | Description                       |
+| ------ | ------------------ | ---- | --------------------------------- |
+| GET    | `/sensor/latest`   | ✅   | Latest reading per sensor type    |
+| GET    | `/sensor/history`  | ✅   | Historical readings (date filter) |
 
-```json
-// Request body
-{ "idToken": "<google_id_token>" }
+### Alerts (`/alerts`)
 
-// Response 200
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "user": { "id": "uuid", "email": "user@example.com", "name": "Name" }
-}
-```
+| Method | Path               | Auth | Description                      |
+| ------ | ------------------ | ---- | -------------------------------- |
+| GET    | `/alerts`          | ✅   | List active / resolved alerts    |
+| POST   | `/alerts/:id/resolve` | ✅ | Mark an alert as resolved      |
 
-#### `GET /auth/me`
+### Users (`/users`) — ADMIN / SUPER_ADMIN only
 
-```json
-// Response 200
-{
-  "id": "uuid",
-  "email": "user@example.com",
-  "name": "Name",
-  "createdAt": "2026-03-07T..."
-}
-```
+| Method | Path                       | Auth | Description                      |
+| ------ | -------------------------- | ---- | -------------------------------- |
+| GET    | `/users`                   | ✅   | List all user accounts           |
+| POST   | `/users`                   | ✅   | Create a new USER account        |
+| PUT    | `/users/:id/assign-tanks`  | ✅   | Assign tanks to a worker         |
+| DELETE | `/users/:id`               | ✅   | Delete a user account            |
 
----
+### Fish Species (`/fish`)
 
-### Devices
-
-| Method | Path           | Auth | Description            |
-| ------ | -------------- | ---- | ---------------------- |
-| GET    | `/devices`     | ✅   | List all your devices  |
-| POST   | `/devices`     | ✅   | Register a new device  |
-| GET    | `/devices/:id` | ✅   | Get one device by UUID |
-
-#### `POST /devices` — Request body
-
-```json
-{
-  "tankId": "uuid-of-tank",
-  "deviceUid": "tank_1",
-  "deviceSecret": "my_secure_secret_123"
-}
-```
-
-> **Important:** Flash `deviceUid` and `deviceSecret` into your ESP32 firmware at this point. The backend stores only the bcrypt hash — the plaintext cannot be recovered later.
-
----
-
-### Sensors
-
-| Method | Path              | Auth | Description                    |
-| ------ | ----------------- | ---- | ------------------------------ |
-| GET    | `/sensor/latest`  | ✅   | Latest reading for a device    |
-| GET    | `/sensor/history` | ✅   | Historical readings (max 1000) |
-
-#### Query parameters
-
-| Param       | Endpoint | Type     | Required |
-| ----------- | -------- | -------- | -------- |
-| `device_id` | both     | UUID     | ✅       |
-| `from`      | history  | ISO 8601 | —        |
-| `to`        | history  | ISO 8601 | —        |
-
----
-
-### Alerts
-
-| Method | Path              | Auth | Description      |
-| ------ | ----------------- | ---- | ---------------- |
-| GET    | `/alerts`         | ✅   | List alerts      |
-| POST   | `/alerts/resolve` | ✅   | Resolve an alert |
-
-#### `GET /alerts` — Query parameters
-
-| Param       | Type    | Description      |
-| ----------- | ------- | ---------------- |
-| `device_id` | UUID    | Filter by device |
-| `resolved`  | boolean | `true` / `false` |
-
-#### `POST /alerts/resolve` — Request body
-
-```json
-{ "alertId": "uuid-of-alert" }
-```
+| Method | Path       | Auth | Description                     |
+| ------ | ---------- | ---- | ------------------------------- |
+| GET    | `/fish`    | ✅   | List all fish species           |
+| POST   | `/fish`    | ✅   | Add a new species (ADMIN)       |
+| PUT    | `/fish/:id`| ✅   | Update species parameters       |
+| DELETE | `/fish/:id`| ✅   | Remove a species (ADMIN)        |
 
 ---
 
 ## MQTT Protocol
 
-### Broker
-
-| Setting        | Value                                               |
-| -------------- | --------------------------------------------------- |
-| Host           | `localhost` (dev) / `mosquitto` (Docker)            |
-| Port           | **1883** (MQTT)                                     |
-| Authentication | Anonymous (dev). See Production Notes for securing. |
-
-### Topic format
+### Topic Format
 
 ```
 aquamonitor/devices/<deviceUid>/data
 ```
 
-`<deviceUid>` must exactly match the `device_uid` column in the `devices` table.
-
-### Payload (JSON)
+### Telemetry Payload Example (JSON)
 
 ```json
 {
-  "device_id": "tank_1",
+  "device_id": "GUARD-D01",
   "device_secret": "my_secure_secret_123",
   "ph": 7.2,
   "temperature": 28.4,
@@ -418,421 +408,184 @@ aquamonitor/devices/<deviceUid>/data
 }
 ```
 
-| Field           | Type   | Unit | Required |
-| --------------- | ------ | ---- | -------- |
-| `device_id`     | string | —    | ✅       |
-| `device_secret` | string | —    | ✅       |
-| `ph`            | float  | pH   | —        |
-| `temperature`   | float  | °C   | —        |
-| `tds`           | float  | ppm  | —        |
-| `turbidity`     | float  | NTU  | —        |
-| `water_level`   | float  | %    | —        |
-
-All sensor fields are optional — only send the sensors your device has. The backend will silently store `null` for any omitted fields.
-
-### Backend ingestion pipeline
-
-```
-MQTT message received
-       │
-       ▼
-Parse JSON payload
-       │
-       ▼
-Look up Device by device_uid ──── Not found → discard + log warning
-       │
-       ▼
-bcrypt.compare(device_secret, hash) ──── Mismatch → discard + log warning
-       │
-       ▼
-Update device.status = ONLINE, device.last_seen = now()
-       │
-       ▼
-INSERT SensorReading
-       │
-       ▼
-Run alert engine (6 rules, deduplication check)
-       │
-       ├── No threshold breached → done
-       │
-       └── Threshold breached + no open alert of same type
-                 │
-                 ▼
-           INSERT Alert
-                 │
-                 ▼
-           io.emit('alert', ...) → WebSocket broadcast
-                 │
-                 ▼
-           Send email (if SMTP configured)
-```
-
 ---
 
 ## WebSocket Events
 
-The backend uses socket.io v4. Connect from the React frontend:
+Connect to the backend socket:
 
 ```js
 import { io } from "socket.io-client";
+const socket = io("http://localhost:5000");
 
-const socket = io("http://localhost:3000");
-
-socket.on("connect", () => console.log("Connected to G.U.A.R.D backend"));
-
-socket.on("alert", (data) => {
-  // Fired every time a new alert is created
-  console.log(data);
+socket.on("sensor_data", (data) => {
+  // Live gauge update — fires every telemetry cycle per device
 });
-```
 
-### `alert` event payload
-
-```json
-{
-  "id": "uuid",
-  "type": "TEMP_HIGH",
-  "message": "Temperature 34°C exceeds maximum threshold of 32°C",
-  "value": 34,
-  "deviceUid": "tank_1",
-  "createdAt": "2026-03-07T10:35:00.000Z"
-}
+socket.on("alert", (alertData) => {
+  // New threshold breach alert
+});
 ```
 
 ---
 
 ## Alert Rules & Thresholds
 
-All thresholds are configurable via `.env` — no code change required.
+Thresholds are **per-device** and configurable from the Devices → Details panel. The following are the system defaults:
 
-| Alert type        | Condition                       | Default threshold | Env variable      |
-| ----------------- | ------------------------------- | ----------------- | ----------------- |
-| `TEMP_HIGH`       | `temperature > TEMP_MAX`        | **32 °C**         | `TEMP_MAX`        |
-| `TEMP_LOW`        | `temperature < TEMP_MIN`        | **20 °C**         | `TEMP_MIN`        |
-| `PH_HIGH`         | `ph > PH_MAX`                   | **8.5**           | `PH_MAX`          |
-| `PH_LOW`          | `ph < PH_MIN`                   | **6.5**           | `PH_MIN`          |
-| `TURBIDITY_HIGH`  | `turbidity > TURBIDITY_MAX`     | **50 NTU**        | `TURBIDITY_MAX`   |
-| `WATER_LEVEL_LOW` | `water_level < WATER_LEVEL_MIN` | **20 %**          | `WATER_LEVEL_MIN` |
-
-- [x] **Alert Deduplication**: Implemented DB-level checks to prevent alert flooding.
-- [x] **Real-time Refresh**: Added 30s polling to Dashboard and Alerts pages.
-- [x] **Management Scripts**: Added `start_all` and `kill_all` helpers.
-- [x] **MQTT QoS**: Upgraded subscriptions to QoS 1 for reliable delivery.
+| Alert Type        | Condition                         | Default Threshold |
+| ----------------- | --------------------------------- | ----------------- |
+| `TEMP_HIGH`       | `temperature > TEMP_MAX`          | **32 °C**         |
+| `TEMP_LOW`        | `temperature < TEMP_MIN`          | **20 °C**         |
+| `PH_HIGH`         | `ph > PH_MAX`                     | **8.5**           |
+| `PH_LOW`          | `ph < PH_MIN`                     | **6.5**           |
+| `TDS_HIGH`        | `tds > TDS_MAX`                   | **800 ppm**       |
+| `TURBIDITY_HIGH`  | `turbidity > TURBIDITY_MAX`       | **50 NTU**        |
+| `WATER_LEVEL_LOW` | `water_level < WATER_LEVEL_MIN`   | **20 %**          |
 
 ---
 
 ## Ports & Services
 
-| Service             | Port     | Protocol | Notes                   |
-| ------------------- | -------- | -------- | ----------------------- |
-| Backend API         | **5000** | HTTP     | Express server          |
-| Backend WebSocket   | **5000** | WS       | socket.io on same port  |
-| MQTT Broker         | **8883** | MQTTS    | HiveMQ Cloud            |
-| MongoDB             | **27017**| TCP      | State & Metadata        |
-| InfluxDB            | **8086** | HTTP     | Time-series History     |
-| Frontend (Vite dev) | **5173** | HTTP     | React app               |
+| Service             | Port         | Protocol       | Description                       |
+| ------------------- | ------------ | -------------- | --------------------------------- |
+| Backend REST API    | **5000**     | HTTP           | Express API server                |
+| Backend WebSocket   | **5000**     | WS             | socket.io real-time alert stream  |
+| Frontend Dev Server | **5173**     | HTTP           | Vite React app (may use 5174+)    |
+| MongoDB             | **27017**    | TCP            | Primary MongoDB database          |
+| InfluxDB            | **8086**     | HTTP           | Telemetry time-series database    |
+| MQTT Broker         | **1883/8883**| MQTT / MQTTS   | HiveMQ Cloud / Mosquitto          |
 
 ---
 
 ## Environment Variables
 
-Create `code/backend/.env` by copying `.env.example`:
+Configure `code/backend/.env`:
+
+```env
+PORT=5000
+DATABASE_URL="mongodb://localhost:27017/guard"
+JWT_SECRET=your_jwt_secret_key
+CORS_ORIGIN=http://localhost:5173
+MQTT_BROKER_URL=mqtt://localhost:1883
+INFLUXDB_URL=http://localhost:8086
+INFLUXDB_TOKEN=your_influxdb_token
+INFLUXDB_ORG=guard
+INFLUXDB_BUCKET=telemetry
+```
+
+Configure `code/frontend/.env.local`:
+
+```env
+VITE_API_URL=http://localhost:5000
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+---
+
+## Developer Helper Scripts
+
+Root scripts to quickly manage full-stack services:
+
+| Script         | Command                                | Purpose                                                         |
+| :------------- | :------------------------------------- | :-------------------------------------------------------------- |
+| **Start All**  | `./start_all.ps1` or `start_all.bat`  | Starts Backend (port 5000) and Frontend (port 5173)             |
+| **Kill All**   | `./kill_all.ps1` or `kill_all.bat`    | Terminates all Node.js background processes and frees ports     |
+
+---
+
+## Getting Started — Quick Start
+
+### 1. Clone the repository
 
 ```powershell
-copy code\backend\.env.example code\backend\.env
+git clone https://github.com/cepdnaclk/e21-3yp-GUARD.git
+cd e21-3yp-GUARD
 ```
 
-| Variable           | Required | Default                 | Description                            |
-| ------------------ | -------- | ----------------------- | -------------------------------------- |
-| `DATABASE_URL`     | ✅       | —                       | PostgreSQL connection string           |
-| `JWT_SECRET`       | ✅       | —                       | ≥32 random characters                  |
-| `GOOGLE_CLIENT_ID` | ✅       | —                       | From Google Cloud Console              |
-| `PORT`             | —        | `3000`                  | HTTP server port                       |
-| `NODE_ENV`         | —        | `development`           | `development` / `production`           |
-| `MQTT_BROKER_URL`  | —        | `mqtt://localhost:1883` | MQTT broker URL                        |
-| `CORS_ORIGIN`      | —        | `http://localhost:5173` | Comma-separated allowed client origins |
-| `JWT_EXPIRY`       | —        | `1d`                    | JWT lifetime                           |
-| `TEMP_MAX`         | —        | `32`                    | Temperature upper alert threshold (°C) |
-| `TEMP_MIN`         | —        | `20`                    | Temperature lower alert threshold (°C) |
-| `PH_MAX`           | —        | `8.5`                   | pH upper alert threshold               |
-| `PH_MIN`           | —        | `6.5`                   | pH lower alert threshold               |
-| `TURBIDITY_MAX`    | —        | `50`                    | Turbidity alert threshold (NTU)        |
-| `WATER_LEVEL_MIN`  | —        | `20`                    | Water level lower alert threshold (%)  |
-| `SMTP_HOST`        | —        | —                       | Leave blank to disable email alerts    |
-| `SMTP_PORT`        | —        | `587`                   | SMTP port                              |
-| `SMTP_USER`        | —        | —                       | SMTP username                          |
-| `SMTP_PASS`        | —        | —                       | SMTP password                          |
-| `ALERT_EMAIL`      | —        | —                       | Alert recipient email address          |
+### 2. Configure environment files
 
-**Local dev database URL:**
+- Copy `code/backend/.env.example` → `code/backend/.env` and fill in your values.
+- Copy `code/frontend/.env.local.example` → `code/frontend/.env.local` and fill in your values.
 
-```
-DATABASE_URL="postgresql://guard:guardpass@localhost:5432/guarddb"
-```
-
-**Docker database URL (different hostname):**
-
-```
-DATABASE_URL="postgresql://guard:guardpass@postgres:5432/guarddb"
-```
-
-**Generate a strong JWT secret:**
+### 3. Launch all services
 
 ```powershell
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+./start_all.ps1
+```
+
+### 4. Access the application
+
+| Interface | URL |
+| --- | --- |
+| Frontend App | `http://localhost:5173` |
+| Backend Health | `http://localhost:5000/health` |
+| Demo / Tour | `http://localhost:5173/demo` |
+
+> **First login?** You will be automatically redirected to `/demo` where the guided onboarding tour starts. Complete or skip it to enter your live dashboard.
+
+### 5. Stop all services
+
+```powershell
+./kill_all.ps1
 ```
 
 ---
 
 ## Getting Started — Backend
 
-### Prerequisites
-
-| Tool       | Version | Download                                    |
-| ---------- | ------- | ------------------------------------------- |
-| Node.js    | 22 LTS  | https://nodejs.org                          |
-| PostgreSQL | 16+     | https://www.postgresql.org/download/windows |
-| Mosquitto  | 2.x     | https://mosquitto.org/download              |
-
-### Step 1 — Clone & install
-
 ```powershell
-git clone https://github.com/<your-org>/e21-3yp-GUARD.git
-cd e21-3yp-GUARD\code\backend
+cd code/backend
 npm install
-```
-
-### Step 2 — Configure environment
-
-```powershell
-copy .env.example .env
-```
-
-Edit `.env` and set at minimum:
-
-```env
-DATABASE_URL="postgresql://guard:guardpass@localhost:5432/guarddb"
-JWT_SECRET=<output of the node crypto command above>
-GOOGLE_CLIENT_ID=<from Google Cloud Console>
-MQTT_BROKER_URL=mqtt://localhost:1883
-```
-
-### Step 3 — Create PostgreSQL database
-
-Run once using the `postgres` superuser:
-
-```powershell
-psql -U postgres -c "CREATE USER guard WITH PASSWORD 'guardpass';"
-psql -U postgres -c "CREATE DATABASE guarddb OWNER guard;"
-psql -U postgres -c "ALTER USER guard CREATEDB;"
-```
-
-> `CREATEDB` is required by Prisma to create the shadow database used during migrations.
-
-### Step 4 — Run migrations
-
-```powershell
-npx prisma migrate dev --name init
-```
-
-Creates all 6 tables and generates the Prisma client. Only needed once (or after schema changes).
-
-### Step 5 — Start Mosquitto broker
-
-```powershell
-# In a separate terminal — leave it running
-& "C:\Program Files\mosquitto\mosquitto.exe" -c "mosquitto\mosquitto.conf" -v
-```
-
-### Step 6 — Start the backend
-
-```powershell
+npx prisma generate
 npm run dev
-```
-
-### Step 7 — Verify
-
-```powershell
-# Health check
-curl http://localhost:3000/health
-
-# Google auth test page (dev only)
-# Open in browser: http://localhost:3000/test-auth
 ```
 
 ---
 
 ## Getting Started — Frontend
 
-> The frontend is not yet in this repository. When it is added:
-
 ```powershell
-cd code\frontend
+cd code/frontend
 npm install
-npm run dev          # starts on http://localhost:5173
+npm run dev
 ```
-
-**Key integration points:**
-
-1. **Authentication:** Initiate Google sign-in, get an `id_token`, POST it to `POST /auth/google`. Store the returned JWT in `localStorage` or a cookie.
-
-2. **API calls:** Include `Authorization: Bearer <jwt>` on every request.
-
-3. **Real-time alerts:** Connect socket.io to `http://localhost:3000` and listen for `alert` events.
-
-4. **CORS:** Your dev origin (`http://localhost:5173`) is already in `.env.example`. Set `CORS_ORIGIN=http://localhost:5173` in the backend `.env`.
-
----
-
-## Google OAuth Setup
-
-### 1 — Create a Google Cloud project
-
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a new project (e.g. `guard-aquamonitor`)
-
-### 2 — Configure consent screen
-
-1. **APIs & Services → OAuth consent screen**
-2. Select **External** → fill in app name, support email, developer contact
-3. Add scopes: `openid`, `email`,, `profile`
-
-### 3 — Create credentials
-
-1. **APIs & Services → Credentials → + Create Credentials → OAuth 2.0 Client IDs**
-2. Type: **Web application**
-3. **Authorised JavaScript origins:**
-   - `http://localhost:3000`
-   - `http://localhost:5173`
-4. **Authorised redirect URIs:**
-   - `http://localhost:3000/test-auth` ← required for the built-in test page
-   - Your production callback URL
-5. Copy the **Client ID** (ends in `.apps.googleusercontent.com`)
-
-### 4 — Add to `.env`
-
-```env
-GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
-```
-
-> The backend needs only the Client ID. The Client Secret is not used (the backend verifies ID tokens, not authorization codes).
-
-### 🛠️ Developer Scripts
-The following scripts are available in the root directory to manage the full-stack environment:
-
-| Script | Purpose |
-| :--- | :--- |
-| `start_all.bat` | Starts both Frontend and Backend in separate windows (Double-click). |
-| `kill_all.bat` | Kills all Node.js processes and clears ports (Double-click). |
-| `start_all.ps1` | PowerShell version of the start script. |
-| `kill_all.ps1` | PowerShell version of the kill script. |
-
----
-
-## 🚨 Alerting & Notification Logic
-The system uses a robust multi-layer approach to ensure critical alerts are delivered exactly once.
-
-1. **MQTT Ingestion (QoS 1):** Backend subscribes at QoS 1 to ensure at-least-once delivery from the broker.
-2. **In-Memory Throttle:** A 60-second in-memory cache prevents immediate duplicate processing of identical sensor spikes.
-3. **DB-Level Deduplication:** The backend checks for existing *unresolved* alerts of the same type for a tank. A new record (and email) is only generated if no active alert is currently open.
-4. **Real-time UI:** The Dashboard and Alerts pages poll every 30 seconds to show the latest status without manual refreshes.
 
 ---
 
 ## ESP32 / Firmware Integration
 
-### Minimal Arduino sketch
+Each G.U.A.R.D hardware node is an ESP32 microcontroller fitted with:
 
-```cpp
-#include <WiFi.h>
-#include <PubSubClient.h>
-#include <ArduinoJson.h>
+| Sensor | Parameter | Interface |
+| --- | --- | --- |
+| DS18B20 | Temperature (°C) | OneWire |
+| pH Probe + Amplifier | pH (0–14) | Analog |
+| TDS Probe | TDS (ppm) | Analog |
+| Turbidity Sensor | Turbidity (NTU) | Analog |
+| Ultrasonic / Float | Water Level (%) | Digital |
 
-const char* WIFI_SSID     = "your_wifi";
-const char* WIFI_PASS     = "your_wifi_password";
-const char* MQTT_SERVER   = "192.168.1.100"; // IP of the machine running the backend
-const int   MQTT_PORT     = 1883;
-const char* DEVICE_UID    = "tank_1";        // must match deviceUid registered via POST /devices
-const char* DEVICE_SECRET = "my_secure_secret_123";
-
-WiFiClient   wifiClient;
-PubSubClient mqttClient(wifiClient);
-
-void publishReading(float ph, float temp, float tds, float turbidity, float level) {
-  StaticJsonDocument<256> doc;
-  doc["device_id"]     = DEVICE_UID;
-  doc["device_secret"] = DEVICE_SECRET;
-  doc["ph"]            = ph;
-  doc["temperature"]   = temp;
-  doc["tds"]           = tds;
-  doc["turbidity"]     = turbidity;
-  doc["water_level"]   = level;
-
-  char payload[256];
-  serializeJson(doc, payload);
-
-  char topic[64];
-  snprintf(topic, sizeof(topic), "aquamonitor/devices/%s/data", DEVICE_UID);
-
-  mqttClient.publish(topic, payload);
-}
-```
-
-### MQTT test (no ESP32 needed)
-
-```powershell
-& "C:\Program Files\mosquitto\mosquitto_pub.exe" `
-  -h localhost -t "aquamonitor/devices/tank_1/data" `
-  -m '{"device_id":"tank_1","device_secret":"my_secret","temperature":33,"ph":7.2,"tds":430,"turbidity":12,"water_level":82}'
-```
-
-> A `temperature` of 33°C is above the default `TEMP_MAX` of 32°C, so this will trigger a `TEMP_HIGH` alert visible on the WebSocket and in `GET /alerts`.
+The firmware publishes a JSON payload to the MQTT topic `aquamonitor/devices/<deviceUid>/data` every configurable interval (default 30 s). The backend verifies the `device_secret` field using bcrypt before recording any reading.
 
 ---
 
-## Docker (optional)
+## Docker Support
 
-Use Docker when you want to deploy or run a fully isolated stack without installing PostgreSQL or Mosquitto locally.
-
-### Switch to Docker hostnames in `.env`
-
-```env
-DATABASE_URL="postgresql://guard:guardpass@postgres:5432/guarddb"
-MQTT_BROKER_URL=mqtt://mosquitto:1883
-```
-
-### Start
+A `docker-compose.yml` is provided in `code/backend/` for running MongoDB and InfluxDB in containers:
 
 ```powershell
-cd code\backend
-docker compose up --build
+cd code/backend
+docker-compose up -d
 ```
 
-Migrations run automatically on container start.
+This starts:
+- **MongoDB** on port `27017`
+- **InfluxDB** on port `8086`
 
-### Ports exposed
-
-| Container | Host port |
-| --------- | --------- |
-| backend   | 3000      |
-| postgres  | 5432      |
-| mosquitto | 1883      |
-
-### Stop
-
-```powershell
-docker compose down        # keep DB data
-docker compose down -v     # wipe DB data
-```
+The Node.js backend and Vite frontend are run natively (outside Docker) for optimal HMR during development.
 
 ---
 
-## Production Notes
+## License
 
-1. **Mosquitto security** — Set `allow_anonymous false` and configure a `password_file`. Use TLS (port 8883) for remote ESP32 devices.
-2. **HTTPS** — Place the backend behind Nginx + Let's Encrypt. Update `CORS_ORIGIN` to your production frontend domain only.
-3. **Database** — Use a managed PostgreSQL service (AWS RDS, Supabase). Switch `DATABASE_URL` in production secrets.
-4. **JWT secret** — Minimum 64 bytes: `openssl rand -hex 64`. Never commit it.
-5. **Environment secrets** — Use Docker secrets, AWS Parameter Store, or a similar vault. Never commit `.env`.
-6. **Device secrets** — Stored as bcrypt hashes. The ESP32 holds the plaintext. Rotate secrets by re-registering the device.
-7. **Rate limiting** — Add `express-rate-limit` on `/auth/google` before going public.
+This project is part of the 3rd Year Software Engineering Project at the Department of Computer Engineering, Faculty of Engineering, University of Peradeniya. All rights reserved.

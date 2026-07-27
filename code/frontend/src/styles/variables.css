@@ -130,6 +130,35 @@
   --c-rgba-0-0-0-0-3: rgba(0, 0, 0, 0.3);
   --action-btn-bg: var(--c-0d1f2d);
   --action-btn-color: var(--c-ffffff);
+
+  /* ═══════════════════════════════════════════════════════════
+     GLASSMORPHISM DESIGN TOKENS — Windows 11 Fluent Design
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Light Mode — Milky Frost Glass */
+  --glass-bg:          rgba(255, 255, 255, 0.62);
+  --glass-bg-subtle:   rgba(255, 255, 255, 0.45);
+  --glass-bg-strong:   rgba(255, 255, 255, 0.78);
+  --glass-border:      rgba(255, 255, 255, 0.75);
+  --glass-border-subtle: rgba(200, 220, 240, 0.55);
+  --glass-shadow:      0 8px 32px rgba(14, 52, 84, 0.10), 0 2px 8px rgba(14, 52, 84, 0.06);
+  --glass-shadow-lg:   0 16px 48px rgba(14, 52, 84, 0.14), 0 4px 16px rgba(14, 52, 84, 0.08);
+  --glass-shadow-hover: 0 20px 60px rgba(14, 52, 84, 0.18), 0 6px 20px rgba(14, 52, 84, 0.10);
+  --glass-blur:        blur(18px);
+  --glass-blur-sm:     blur(10px);
+  --glass-radius:      16px;
+  --glass-radius-lg:   22px;
+
+  /* Page Background — Light Mesh Gradient Canvas — Stronger blobs for glass depth */
+  --page-bg: #e8f3fb;
+  --page-blob-1: radial-gradient(ellipse 55% 45% at 12% 18%, rgba(14, 165, 233, 0.18) 0%, transparent 68%);
+  --page-blob-2: radial-gradient(ellipse 45% 55% at 88% 8%,  rgba(99, 102, 241, 0.14) 0%, transparent 62%);
+  --page-blob-3: radial-gradient(ellipse 65% 38% at 50% 88%, rgba(16, 185, 129, 0.12) 0%, transparent 62%);
+  --page-blob-4: radial-gradient(ellipse 38% 48% at 78% 58%, rgba(245, 158, 11, 0.10) 0%, transparent 58%);
+  --page-blob-5: radial-gradient(ellipse 50% 42% at 30% 70%, rgba(14, 165, 233, 0.08) 0%, transparent 55%);
+
+  /* Gauge SVG track colour */
+  --gauge-track: rgba(14, 52, 84, 0.12);
 }
 
 
@@ -165,5 +194,25 @@
   --c-94a3b8: #ffffff;
   --action-btn-bg: var(--c-0284c7);
   --action-btn-color: var(--c-fff);
-  ;
+
+  /* Dark Mode — Tinted Glass */
+  --glass-bg:          rgba(255, 255, 255, 0.055);
+  --glass-bg-subtle:   rgba(255, 255, 255, 0.035);
+  --glass-bg-strong:   rgba(255, 255, 255, 0.08);
+  --glass-border:      rgba(255, 255, 255, 0.10);
+  --glass-border-subtle: rgba(255, 255, 255, 0.06);
+  --glass-shadow:      0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --glass-shadow-lg:   0 16px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(0, 0, 0, 0.30);
+  --glass-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.55), 0 6px 20px rgba(14, 165, 233, 0.15);
+
+  /* Page Background — Dark Obsidian Canvas — Richer ambient glows */
+  --page-bg: #060c16;
+  --page-blob-1: radial-gradient(ellipse 58% 48% at 8% 14%,  rgba(14, 165, 233, 0.16) 0%, transparent 68%);
+  --page-blob-2: radial-gradient(ellipse 48% 58% at 92% 8%,  rgba(99, 102, 241, 0.14) 0%, transparent 62%);
+  --page-blob-3: radial-gradient(ellipse 68% 38% at 55% 92%, rgba(16, 185, 129, 0.10) 0%, transparent 62%);
+  --page-blob-4: radial-gradient(ellipse 38% 48% at 82% 52%, rgba(56, 189, 248, 0.09) 0%, transparent 58%);
+  --page-blob-5: radial-gradient(ellipse 48% 40% at 25% 72%, rgba(14, 165, 233, 0.07) 0%, transparent 55%);
+
+  /* Gauge SVG track colour */
+  --gauge-track: rgba(255, 255, 255, 0.10);
 }
