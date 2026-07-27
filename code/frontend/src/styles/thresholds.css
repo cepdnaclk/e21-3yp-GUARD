@@ -1,9 +1,11 @@
 .threshold-card {
-    background: var(--c-rgba-255-255-255-0-8);
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--c-rgba-0-0-0-0-1);
-    border-radius: 16px;
-    color: var(--c-1e293b); /* Dark text for light mode */
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--glass-radius);
+    color: var(--text);
+    box-shadow: var(--glass-shadow);
 }
 
 .threshold-slider-grid {
@@ -14,15 +16,15 @@
 }
 
 .threshold-category-box {
-    background: var(--c-rgba-255-255-255-0-03);
-    padding: 1.25rem;
+    background: var(--glass-bg-subtle);
+    padding: 1.35rem;
     border-radius: 12px;
-    border: 1px solid var(--c-rgba-255-255-255-0-05);
-    transition: transform 0.2s;
+    border: 1px solid var(--glass-border-subtle);
+    transition: transform 0.2s, background 0.2s;
 }
 
 .threshold-category-box:hover {
-    background: var(--c-rgba-255-255-255-0-05);
+    background: var(--glass-bg);
 }
 
 .category-header {

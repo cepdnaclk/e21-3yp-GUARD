@@ -5,6 +5,7 @@ import { deviceApi, sensorApi } from '../services/api';
 import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../constants/sensorConstants';
 import { formatChartTime } from '../utils/formatUtils';
 import { useTheme } from '../context/ThemeContext';
+import GlassDatePicker from '../components/DatePicker';
 import '../styles/sensor-history.css';
 
 function transformReadingsToChartData(items) {
@@ -250,11 +251,21 @@ export default function SensorHistory() {
           </div>
           <div className="form-group">
             <label>From</label>
-            <input className='form-input' type="datetime-local" value={filters.from} onChange={set('from')} />
+            <GlassDatePicker
+              id="sensor-history-from"
+              label="From date & time"
+              value={filters.from}
+              onChange={(v) => setFilters((prev) => ({ ...prev, from: v }))}
+            />
           </div>
           <div className="form-group">
             <label>To</label>
-            <input className='form-input' type="datetime-local" value={filters.to} onChange={set('to')} />
+            <GlassDatePicker
+              id="sensor-history-to"
+              label="To date & time"
+              value={filters.to}
+              onChange={(v) => setFilters((prev) => ({ ...prev, to: v }))}
+            />
           </div>
         </div>
 
