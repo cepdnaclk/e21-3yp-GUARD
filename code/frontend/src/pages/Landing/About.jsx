@@ -3,6 +3,12 @@ import { Reveal, ScrollProgress } from '../../utils/animations';
 import '../../styles/landing.css';
 import '../../styles/about.css';
 import tempSensor from '../../assets/temp.jpg';
+import tdsSensor from '../../assets/tds.jpg';
+import ultrasonicSensor from '../../assets/ultrasonic.jpg';
+import phsensor from '../../assets/ph.jpg';
+import turbiditySensor from '../../assets/turbidity.jpg'
+import pump from '../../assets/pump.jpeg';
+import feeder from '../../assets/feeder.jpeg';
 import PublicNav from '../../components/PublicNav';
 import dashboardMockup from '../../assets/dashboard.png';
 
@@ -15,25 +21,25 @@ const SENSORS = [
     spec: '1-Wire protocol · marine-grade waterproof housing',
   },
   {
-    img: '/images/sensors/jsn-sr04t.jpg',
+    img: ultrasonicSensor,
     alt: 'JSN-SR04T ultrasonic water level sensor',
     name: 'JSN-SR04T Water Level',
     spec: 'Non-contact ultrasonic · dual-threshold pump control',
   },
   {
-    img: '/images/sensors/tds.jpg',
+    img: tdsSensor,
     alt: 'Analog TDS sensor',
     name: 'Analog TDS Sensor',
     spec: 'ppm output · temperature-compensated firmware',
   },
   {
-    img: '/images/sensors/ph4502c.jpg',
+    img: phsensor,
     alt: 'pH-4502C gravity pH sensor',
     name: 'Gravity pH Sensor (pH-4502C)',
     spec: 'Electrochemical electrode · 6.5 – 8.5 pH safe range',
   },
   {
-    img: '/images/sensors/turbidity.jpg',
+    img: turbiditySensor,
     alt: 'Optical turbidity sensor',
     name: 'Optical Turbidity Sensor',
     spec: 'Light-scattering TSS · 20 NTU filter-life threshold',
@@ -41,9 +47,8 @@ const SENSORS = [
 ];
 
 const ACTUATORS = [
-  { name: 'Water Inflow / Replenishment Pump', desc: 'Automated evaporation top-off logic', img: tempSensor },
-  { name: 'Water Outflow / Drainage Pump', desc: 'Parameter-triggered corrections and flood prevention', img: tempSensor },
-  { name: 'Automated Fish Feeder', desc: 'Precision micro servo control using PWM', img: tempSensor },
+  { name: 'Water Inflow and Outflow Pump', desc: 'Automated evaporation top-off logic/Parameter-triggered corrections and flood prevention', img: pump },
+  { name: 'Automated Fish Feeder', desc: 'Precision micro servo control using PWM', img: feeder },
 ];
 
 function pairRows(arr) {
