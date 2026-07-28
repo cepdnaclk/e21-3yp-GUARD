@@ -8,7 +8,7 @@ import TankTimeSeriesChart from '../components/TankTimeSeriesChart';
 import ThresholdsPanel from '../components/ThresholdsPanel';
 import ActuatorPanel from '../components/ActuatorPanel';
 import { getSocket } from '../services/socket';
-import '../styles/device-detail.css';
+import '../styles/device-detail.css'; /* styles migrated — kept for btn-danger reference only, see note below */
 
 function buildLocalAlerts(device, readings) {
   const nextAlerts = [];
@@ -159,16 +159,24 @@ export default function DeviceDetail() {
 
   return (
     <>
-      <div className="device-detail-header">
+      {/* .device-detail-header → flex justify-between items-center mb-4 */}
+      <div className="flex justify-between items-center mb-4">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div>
             <h3>Device #{device.deviceId}</h3>
-            <p className="device-detail-name">
+            {/* .device-detail-name → text-text-muted text-sm */}
+            <p className="text-text-muted text-sm">
               {device.deviceName || 'Unnamed'}
             </p>
           </div>
+          {/* Online status dot — mirrors tank-card pattern */}
           <span
-            className={`tank-status-dot ${isOnline ? 'active' : 'offline'}`}
+            className={[
+              'w-5 h-5 rounded-full flex-shrink-0',
+              isOnline
+                ? 'bg-success shadow-[0_0_8px_rgba(34,197,94,0.55),0_0_16px_rgba(34,197,94,0.25)]'
+                : 'bg-danger shadow-[0_0_8px_rgba(239,68,68,0.55)]',
+            ].join(' ')}
             title={isOnline ? 'Online' : 'Offline'}
           />
         </div>
@@ -258,7 +266,7 @@ export default function DeviceDetail() {
                       <td>{w.username}</td>
                       <td style={{ textAlign: 'right' }}>
                         <button 
-                          className="btn btn-outline btn-sm btn-danger" 
+                          className="btn btn-outline btn-sm border-danger text-danger hover:bg-danger hover:text-white transition-all" 
                           onClick={() => handleUnassign(w.id)}
                           disabled={busy}
                         >

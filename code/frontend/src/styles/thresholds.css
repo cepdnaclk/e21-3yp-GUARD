@@ -1,4 +1,9 @@
-.threshold-card {
+/*
+ * DEPRECATED — thresholds.css
+ * All styles migrated to Tailwind in ThresholdsPanel.jsx
+ *
+
+
     background: var(--glass-bg-strong);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -145,3 +150,4 @@
     justify-content: flex-end;
 }
 
+*/

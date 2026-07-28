@@ -1,4 +1,9 @@
-.actuator-card {
+/*
+ * DEPRECATED — actuators.css
+ * All styles migrated to Tailwind in ActuatorPanel.jsx
+ *
+
+
     background: var(--c-rgba-255-255-255-0-05);
     backdrop-filter: blur(10px);
     border: 1px solid var(--c-rgba-255-255-255-0-1);
@@ -102,3 +107,5 @@
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+*/

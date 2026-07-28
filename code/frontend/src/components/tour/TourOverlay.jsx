@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTour } from '../../context/TourContext';
 import { useAuth } from '../../context/AuthContext';
 import { buildTourSteps } from '../../hooks/useTourSteps';
-import '../../styles/tour.css';
+// tour.css is now globally imported in main.jsx (driver.js injects nodes outside React tree)
 
 /**
  * Polls the DOM for a selector using MutationObserver — much more reliable

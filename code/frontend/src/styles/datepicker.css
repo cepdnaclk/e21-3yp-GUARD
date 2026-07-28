@@ -1,7 +1,11 @@
 /* ═══════════════════════════════════════════════════════════
    Glass Date Picker — react-day-picker custom styles
-   Uses [data-theme='dark'] for dark mode overrides
+   DEPRECATED: .gdp-* classes migrated to Tailwind in DatePicker.jsx
+   DEPRECATED: .rdp-* overrides moved to <style> block in DatePicker.jsx
+   This file is kept only as a migration reference.
    ═══════════════════════════════════════════════════════════ */
+
+/*
 
 /* Wrapper */
 .gdp-wrapper {
@@ -321,3 +325,5 @@
   background: linear-gradient(135deg, #38bdf8, #0ea5e9);
   box-shadow: 0 4px 12px rgba(56, 189, 248, 0.30);
 }
+
+*/

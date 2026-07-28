@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { authApi } from '../../services/api';
-import '../../styles/CreateAccountForm.css';
+// CreateAccountForm.css migrated to Tailwind (form uses base.css bridge classes)
 
 const EMPTY_FORM = {
   username: '', email: '', password: '', fullName: '', address: '', phoneNumber: '',

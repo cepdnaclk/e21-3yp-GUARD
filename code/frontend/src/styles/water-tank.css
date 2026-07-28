@@ -1,3 +1,16 @@
+/*
+ * ============================================================
+ * DEPRECATED — water-tank.css
+ * ============================================================
+ * All styles in this file have been fully migrated to Tailwind
+ * utility classes in WaterTankLevel.jsx as part of the
+ * Strangler Fig migration (Phase 3 — "Patient Zero").
+ *
+ * The import statement in WaterTankLevel.jsx has been removed.
+ * This file is intentionally kept for reference during the
+ * migration period and can be safely deleted once verified.
+ * ============================================================
+
 .water-tank-wrapper {
   display: flex;
   flex-direction: column;
@@ -49,7 +62,6 @@
   box-shadow: 0 0 15px var(--c-rgba-239-68-68-0-4);
 }
 
-/* Threshold Markers */
 .threshold-marker {
   position: absolute;
   left: 0;
@@ -76,7 +88,6 @@
   color: var(--c-rgba-0-0-0-0-3);
 }
 
-/* Wave Animation */
 .water-wave {
   position: absolute;
   top: -10px;
@@ -115,3 +126,5 @@
   font-weight: 600;
   color: var(--c-64748b);
 }
+
+*/

@@ -1,3 +1,8 @@
+/*
+ * DEPRECATED — dashboard.css
+ * All styles migrated to Tailwind in Dashboard.jsx and SensorGauge.jsx
+ *
+
 /* ========== Dashboard ========== */
 .dashboard-page {
   min-height: calc(100vh - 62px);
@@ -391,3 +396,5 @@
     max-width: none;
   }
 }
+
+*/

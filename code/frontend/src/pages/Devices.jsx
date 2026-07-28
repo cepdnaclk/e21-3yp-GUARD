@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { deviceApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatProductKey } from '../utils/formatUtils';
-import '../styles/devices.css';
+// devices.css migrated to Tailwind below
 
 export default function Devices() {
   const { role } = useAuth();
@@ -111,14 +111,16 @@ export default function Devices() {
     }
   };
 
-  if (loading) return <div className="empty-state"><p>Loading devices...</p></div>;
+  if (loading) return <div className="flex items-center justify-center p-12 text-text-muted"><p>Loading devices...</p></div>;
 
   return (
     <>
-      <div className="devices-header">
+      {/* .devices-header */}
+      <div className="mb-4">
         <h3>Devices ({devices.length})</h3>
       </div>
-      <div className="devices-actions">
+      {/* .devices-actions */}
+      <div className="flex flex-wrap gap-3 mb-4">
         <button
           type="button"
           className="btn action-btn"
@@ -164,8 +166,8 @@ export default function Devices() {
       </div>
 
       {showForm && canAddDevice && (
-        <div className="card devices-form-card">
-          <h3 className="devices-form-title">Register New Device</h3>
+        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-4">
+          <h3 className="mt-0 mb-4 font-bold text-text-main dark:text-slate-100">Register New Device</h3>
           {error && <p className="error-msg">{error}</p>}
           <form onSubmit={handleAdd} className="devices-form">
             <div className="form-group devices-form-device-id">
@@ -193,8 +195,8 @@ export default function Devices() {
       )}
 
       {showDeleteForm && canAddDevice && (
-        <div className="card devices-form-card">
-          <h3 className="devices-form-title">Delete Device</h3>
+        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-4">
+          <h3 className="mt-0 mb-4 font-bold text-text-main dark:text-slate-100">Delete Device</h3>
           {deleteError && <p className="error-msg">{deleteError}</p>}
           <form onSubmit={handleDelete} className="devices-form">
             <div className="form-group devices-form-device-id">

@@ -1,9 +1,14 @@
-/* ========== Layout ========== */
-.app-layout { display: flex; flex-direction: column; min-height: 100vh; }
+/*
+ * ============================================================
+ * DEPRECATED — layout.css
+ * ============================================================
+ * All styles migrated to Tailwind utility classes in:
+ *   - Layout.jsx
+ *   - DemoLayout.jsx
+ * tour.css import moved to main.jsx (global).
+ * ============================================================
 
-/* ═══════════════════════════════════════════════════════════
-   TOP NAVIGATION — Fluent Glass Nav
-   ═══════════════════════════════════════════════════════════ */
+
 .topnav {
   background: rgba(1, 35, 61, 0.78);
   backdrop-filter: blur(24px) saturate(180%);
@@ -211,3 +216,5 @@
     display: none;
   }
 }
+
+*/

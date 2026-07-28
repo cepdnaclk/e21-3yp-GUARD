@@ -14,7 +14,7 @@ import { deviceApi, sensorApi } from '../services/api';
 import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../constants/sensorConstants';
 import { formatChartTime } from '../utils/formatUtils';
 import GlassDatePicker from '../components/DatePicker';
-import '../styles/sensor-history.css';
+// sensor-history.css migrated to Tailwind below
 
 function transformReadingsToChartData(items) {
   const grouped = new Map();
@@ -168,11 +168,13 @@ export default function SensorHistory() {
 
   return (
     <>
-      <h3 className="sensor-history-title">Sensor History</h3>
+      {/* .sensor-history-title */}
+      <h1 className="text-[1.6rem] font-bold tracking-tight text-text-main dark:text-[#e6edf3] mb-5">Sensor History</h1>
 
       <div className="card">
         {fetchError ? <p className="error-msg">{fetchError}</p> : null}
-        {fetchInfo ? <p className="sensor-history-summary">{fetchInfo}</p> : null}
+        {/* .sensor-history-summary */}
+        {fetchInfo ? <p className="text-text-muted text-base mb-3">{fetchInfo}</p> : null}
         <div className="filters">
           <div className="form-group">
             <label>Device *</label>
@@ -248,8 +250,10 @@ export default function SensorHistory() {
       <div className="card">
         {showAnalytics && readings.length > 0 && (
           <div>
-            <h4 className="sensor-history-chart-title">Analytics</h4>
-            <div className="sensor-chart-wrap">
+            {/* .sensor-history-chart-title */}
+            <h4 className="mb-4 text-[1.1rem] font-bold text-text-main dark:text-slate-200">Analytics</h4>
+            {/* .sensor-chart-wrap */}
+            <div className="w-full min-h-[360px] overflow-x-auto p-4">
               <ResponsiveContainer width="100%" height={360}>
                 <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -321,7 +325,7 @@ export default function SensorHistory() {
         )}
 
         {displayAnalyticsMessage && (
-          <p className="sensor-history-summary sensor-history-empty-note">
+          <p className="mt-3 text-center p-8 bg-white/[0.04] border border-white/10 rounded-xl text-text-muted">
             No data available for analytics
           </p>
         )}
@@ -330,7 +334,8 @@ export default function SensorHistory() {
           <div className="empty-state"><p>{hasFetched ? 'No readings found for the selected filters.' : 'Select a device and click Fetch.'}</p></div>
         ) : (
           <>
-            <p className="sensor-history-summary">
+            {/* .sensor-history-summary */}
+            <p className="text-text-muted text-base mb-3">
               Showing {readings.length} reading{readings.length !== 1 ? 's' : ''}
             </p>
             <div className="table-wrap">

@@ -6,7 +6,7 @@ import {
 import { useDemo } from '../../context/DemoContext';
 import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../../constants/sensorConstants';
 import { formatChartTime } from '../../utils/formatUtils';
-import '../../styles/sensor-history.css';
+// sensor-history.css migrated to Tailwind (SensorHistory.jsx)
 
 function transformReadingsToChartData(items) {
   const grouped = new Map();
