@@ -292,12 +292,43 @@ export const sensorApi = {
 };
 
 // ── Fish Species Catalogue ──────────────────────────────────────
+import carpImg from '../assets/fish/carp.png';
+import catfishImg from '../assets/fish/catfish.png';
+import dwarfGouramiImg from '../assets/fish/dwarf-gourami.png';
+import giantGouramiImg from '../assets/fish/giant-gourami.png';
+import arowanaImg from '../assets/fish/arowana.png';
+import tigerBarbImg from '../assets/fish/tiger-barb.png';
+import rainbowSharkImg from '../assets/fish/rainbow-shark.png';
+import oscarImg from '../assets/fish/oscar.png';
+import tilapiaImg from '../assets/fish/tilapia.png';
+import koiImg from '../assets/fish/koi.png';
+import guppyImg from '../assets/fish/guppy.png';
+import bettaImg from '../assets/fish/betta.png';
+import mollyImg from '../assets/fish/molly.png';
+
+const BUNDLED_FISH_IMAGES = {
+  '/uploads/fish/carp.png': carpImg,
+  '/uploads/fish/catfish.png': catfishImg,
+  '/uploads/fish/dwarf-gourami.png': dwarfGouramiImg,
+  '/uploads/fish/giant-gourami.png': giantGouramiImg,
+  '/uploads/fish/arowana.png': arowanaImg,
+  '/uploads/fish/tiger-barb.png': tigerBarbImg,
+  '/uploads/fish/rainbow-shark.png': rainbowSharkImg,
+  '/uploads/fish/oscar.png': oscarImg,
+  '/uploads/fish/tilapia.png': tilapiaImg,
+  '/uploads/fish/koi.png': koiImg,
+  '/uploads/fish/guppy.png': guppyImg,
+  '/uploads/fish/betta.png': bettaImg,
+  '/uploads/fish/molly.png': mollyImg,
+};
+
 // Images are stored locally on the backend and served at /uploads/fish/
 // Use getImageUrl() to build the correct src for any imageUrl from the DB.
 const BACKEND_ORIGIN = import.meta.env.VITE_API_URL || '';
 
 export function getImageUrl(imageUrl) {
   if (!imageUrl) return null;
+  if (BUNDLED_FISH_IMAGES[imageUrl]) return BUNDLED_FISH_IMAGES[imageUrl];
   if (imageUrl.startsWith('http')) return imageUrl;          // already absolute
   return `${BACKEND_ORIGIN}${imageUrl}`;                     // e.g. /uploads/fish/fish-xxx.jpg
 }

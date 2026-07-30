@@ -30,6 +30,7 @@ app.use(cors({
 app.use(express.json());
 // Serve locally uploaded fish images
 app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);

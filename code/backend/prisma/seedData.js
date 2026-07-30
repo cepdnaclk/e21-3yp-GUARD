@@ -194,6 +194,39 @@ async function main() {
     }
   });
 
+  // 6. Seed Fish Species
+  console.log('🐠 Seeding Fish Species...');
+  const FISH_SPECIES = [
+    { name: "Nile Tilapia", scientificName: "Oreochromis niloticus", description: "Hardy, fast-growing freshwater fish widely farmed across tropical regions and Sri Lankan inland aquaculture.", phMin: 6.0, phMax: 9.0, tempMin: 20, tempMax: 35, tdsMin: 100, tdsMax: 2000, turbidityMax: 100 },
+    { name: "Koi Carp", scientificName: "Cyprinus rubrofuscus", description: "Ornamental carp prized for vivid colour patterns. Extremely popular in Sri Lankan garden ponds and large display aquariums.", phMin: 6.8, phMax: 8.2, tempMin: 15, tempMax: 25, tdsMin: 100, tdsMax: 1000, turbidityMax: 40 },
+    { name: "Guppy", scientificName: "Poecilia reticulata", description: "One of the most popular tropical fish, known for vibrant colours and peaceful temperament. Widely bred for export in Sri Lanka.", phMin: 6.8, phMax: 7.8, tempMin: 22, tempMax: 28, tdsMin: 100, tdsMax: 400, turbidityMax: 10 },
+    { name: "Betta Fish", scientificName: "Betta splendens", description: "Famous for striking flowing fins and bold personality. Bettas prefer warm, low-flow water and dense aquatic vegetation.", phMin: 6.5, phMax: 7.5, tempMin: 24, tempMax: 30, tdsMin: 50, tdsMax: 300, turbidityMax: 8 },
+    { name: "Molly", scientificName: "Poecilia sphenops", description: "Hardy, versatile livebearers that adapt well to a wide range of water conditions. Well-suited for community tanks.", phMin: 7.0, phMax: 8.0, tempMin: 22, tempMax: 28, tdsMin: 150, tdsMax: 600, turbidityMax: 15 },
+    { name: "Platy", scientificName: "Xiphophorus maculatus", description: "Colourful and peaceful livebearers that thrive in active community aquariums. Easy to care for and highly prolific.", phMin: 7.0, phMax: 8.0, tempMin: 20, tempMax: 26, tdsMin: 150, tdsMax: 500, turbidityMax: 12 },
+    { name: "Neon Tetra", scientificName: "Paracheirodon innesi", description: "Iconic schooling fish with a brilliant blue-red lateral stripe. Thrives in soft, slightly acidic tropical waters.", phMin: 6.0, phMax: 7.0, tempMin: 20, tempMax: 26, tdsMin: 50, tdsMax: 200, turbidityMax: 5 },
+    { name: "Goldfish", scientificName: "Carassius auratus", description: "Classic coldwater ornamental species. Produces higher organic load and requires clean, well-oxygenated water.", phMin: 7.0, phMax: 8.0, tempMin: 12, tempMax: 24, tdsMin: 100, tdsMax: 400, turbidityMax: 20 },
+    { name: "Angelfish", scientificName: "Pterophyllum scalare", description: "Statuesque cichlid native to the Amazon basin. Requires tall aquariums, gentle filtration, and stable temperature.", phMin: 6.5, phMax: 7.5, tempMin: 24, tempMax: 30, tdsMin: 100, tdsMax: 400, turbidityMax: 10 },
+    { name: "Discus", scientificName: "Symphysodon spp.", description: "Prized 'King of the Aquarium'. Highly sensitive species demanding warm, soft, pristine water conditions.", phMin: 5.5, phMax: 7.0, tempMin: 28, tempMax: 32, tdsMin: 50, tdsMax: 200, turbidityMax: 5 },
+    { name: "Corydoras Catfish", scientificName: "Corydoras paleatus", description: "Peaceful bottom-dwellers that act as a natural clean-up crew. Social fish that prefer sandy substrates.", phMin: 6.0, phMax: 7.5, tempMin: 20, tempMax: 26, tdsMin: 100, tdsMax: 400, turbidityMax: 15 },
+    { name: "Zebra Danio", scientificName: "Danio rerio", description: "Hardy and active schooling fish with distinctive horizontal stripes. Ideal for beginners due to their resilience.", phMin: 6.5, phMax: 7.5, tempMin: 18, tempMax: 26, tdsMin: 50, tdsMax: 400, turbidityMax: 15 },
+    { name: "Common Carp (Grass / Mirror Carp)", scientificName: "Cyprinus carpio", description: "Robust freshwater species widely cultured in Sri Lankan commercial aquaculture and outdoor display ponds.", phMin: 6.5, phMax: 8.5, tempMin: 18, tempMax: 28, tdsMin: 100, tdsMax: 500, turbidityMax: 25 },
+    { name: "Walking Catfish (Clarias)", scientificName: "Clarias batrachus", description: "Air-breathing freshwater catfish native to South Asia. Highly resilient to low oxygen levels and turbid waters.", phMin: 6.5, phMax: 8.0, tempMin: 22, tempMax: 30, tdsMin: 80, tdsMax: 450, turbidityMax: 30 },
+    { name: "Dwarf Gourami", scientificName: "Trichogaster lalius", description: "Peaceful labyrinth fish with brilliant turquoise and orange stripes. Popular centerpiece for Sri Lankan planted aquariums.", phMin: 6.0, phMax: 7.5, tempMin: 22, tempMax: 28, tdsMin: 50, tdsMax: 300, turbidityMax: 10 },
+    { name: "Giant Gourami", scientificName: "Osphronemus goramy", description: "Impressive, intelligent freshwater giant widespread in Sri Lankan large exhibition tanks and commercial culture.", phMin: 6.5, phMax: 7.8, tempMin: 24, tempMax: 30, tdsMin: 100, tdsMax: 500, turbidityMax: 15 },
+    { name: "Silver Arowana", scientificName: "Osteoglossum bicirrhosum", description: "Prehistoric surface predator known as the 'Dragon Fish'. Demands large aquariums and tight-fitting covers.", phMin: 6.0, phMax: 7.2, tempMin: 24, tempMax: 30, tdsMin: 50, tdsMax: 300, turbidityMax: 8 },
+    { name: "Tiger Barb", scientificName: "Puntigrus tetrazona", description: "Active, fast-swimming schooling barb with distinct black vertical bands. Heavily exported from Sri Lankan fish farms.", phMin: 6.0, phMax: 7.5, tempMin: 22, tempMax: 26, tdsMin: 50, tdsMax: 350, turbidityMax: 12 },
+    { name: "Rainbow Shark", scientificName: "Epalzeorhynchos frenatum", description: "Sleek, semi-aggressive bottom swimmer featuring a dark grey body with vivid red/orange fins.", phMin: 6.5, phMax: 7.8, tempMin: 24, tempMax: 28, tdsMin: 100, tdsMax: 400, turbidityMax: 10 },
+    { name: "Oscar Fish", scientificName: "Astronotus ocellatus", description: "Intelligent, highly responsive South American cichlid popular in Sri Lanka for its strong personality and bright markings.", phMin: 6.5, phMax: 7.5, tempMin: 23, tempMax: 28, tdsMin: 100, tdsMax: 450, turbidityMax: 12 }
+  ];
+
+  for (const s of FISH_SPECIES) {
+    await prisma.fishSpecies.upsert({
+      where: { name: s.name },
+      update: s,
+      create: s,
+    });
+  }
+
   console.log('✅ Seeding Complete! Enjoy testing with password "user1234".');
 }
 

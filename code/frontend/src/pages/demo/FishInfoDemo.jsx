@@ -2,6 +2,41 @@ import { useState } from 'react';
 import { useDemo } from '../../context/DemoContext';
 import '../../styles/fish-info.css';
 
+import carpImg from '../../assets/fish/carp.png';
+import catfishImg from '../../assets/fish/catfish.png';
+import dwarfGouramiImg from '../../assets/fish/dwarf-gourami.png';
+import giantGouramiImg from '../../assets/fish/giant-gourami.png';
+import arowanaImg from '../../assets/fish/arowana.png';
+import tigerBarbImg from '../../assets/fish/tiger-barb.png';
+import rainbowSharkImg from '../../assets/fish/rainbow-shark.png';
+import oscarImg from '../../assets/fish/oscar.png';
+import tilapiaImg from '../../assets/fish/tilapia.png';
+import koiImg from '../../assets/fish/koi.png';
+import guppyImg from '../../assets/fish/guppy.png';
+import bettaImg from '../../assets/fish/betta.png';
+import mollyImg from '../../assets/fish/molly.png';
+
+const LOCAL_FISH_IMAGES = {
+  '/uploads/fish/carp.png': carpImg,
+  '/uploads/fish/catfish.png': catfishImg,
+  '/uploads/fish/dwarf-gourami.png': dwarfGouramiImg,
+  '/uploads/fish/giant-gourami.png': giantGouramiImg,
+  '/uploads/fish/arowana.png': arowanaImg,
+  '/uploads/fish/tiger-barb.png': tigerBarbImg,
+  '/uploads/fish/rainbow-shark.png': rainbowSharkImg,
+  '/uploads/fish/oscar.png': oscarImg,
+  '/uploads/fish/tilapia.png': tilapiaImg,
+  '/uploads/fish/koi.png': koiImg,
+  '/uploads/fish/guppy.png': guppyImg,
+  '/uploads/fish/betta.png': bettaImg,
+  '/uploads/fish/molly.png': mollyImg,
+};
+
+function resolveFishImage(url) {
+  if (!url) return null;
+  return LOCAL_FISH_IMAGES[url] || url;
+}
+
 function fmtRange(min, max, unit = '') {
   if (min == null && max == null) return '—';
   if (min == null) return `≤ ${max}${unit}`;
@@ -10,6 +45,9 @@ function fmtRange(min, max, unit = '') {
 }
 
 function FishCard({ fish, onClick }) {
+  const [imgErr, setImgErr] = useState(false);
+  const src = resolveFishImage(fish.imageUrl);
+
   return (
     <div
       className="fish-card"
@@ -19,7 +57,11 @@ function FishCard({ fish, onClick }) {
       onKeyDown={(e) => e.key === 'Enter' && onClick(fish)}
     >
       <div className="fish-card-img-wrap">
-        <div className="fish-card-img-placeholder">🐠</div>
+        {src && !imgErr ? (
+          <img src={src} alt={fish.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <div className="fish-card-img-placeholder">🐠</div>
+        )}
       </div>
       <div className="fish-card-body">
         <div className="fish-card-name">{fish.name}</div>
@@ -30,13 +72,19 @@ function FishCard({ fish, onClick }) {
 }
 
 function FishDetailPanel({ fish, onClose }) {
+  const [imgErr, setImgErr] = useState(false);
   if (!fish) return null;
+  const src = resolveFishImage(fish.imageUrl);
   return (
     <div className="fish-detail-overlay" onClick={onClose}>
       <div className="fish-detail-panel" onClick={(e) => e.stopPropagation()}>
         <button className="fish-detail-close" onClick={onClose}>✕</button>
         <div className="fish-detail-img-wrap">
-          <div className="fish-card-img-placeholder" style={{ fontSize: '4rem' }}>🐠</div>
+          {src && !imgErr ? (
+            <img src={src} alt={fish.name} onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <div className="fish-card-img-placeholder" style={{ fontSize: '4rem' }}>🐠</div>
+          )}
         </div>
         <h2 className="fish-detail-name">{fish.name}</h2>
         <p className="fish-detail-sci">{fish.scientificName}</p>

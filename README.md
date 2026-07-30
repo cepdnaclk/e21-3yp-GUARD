@@ -418,6 +418,27 @@ Authorization: Bearer <jwt>
 | PUT    | `/fish/:id`| ✅   | Update species parameters       |
 | DELETE | `/fish/:id`| ✅   | Remove a species (ADMIN)        |
 
+#### Fish Species Catalog & Parameter Ranges
+
+The G.U.A.R.D library contains **20 research-verified freshwater fish species** tailored to tropical aquariums and Sri Lankan aquaculture ponds. Each species includes verified ranges for Temperature (°C), pH, TDS (ppm), and Turbidity (NTU):
+
+- **Nile Tilapia** (*Oreochromis niloticus*): pH 6.0–9.0, Temp 20–35°C, TDS 100–2000 ppm, Turbidity ≤100 NTU
+- **Koi Carp** (*Cyprinus rubrofuscus*): pH 6.8–8.2, Temp 15–25°C, TDS 100–1000 ppm, Turbidity ≤40 NTU
+- **Common Carp** (*Cyprinus carpio*): pH 6.5–8.5, Temp 18–28°C, TDS 100–500 ppm, Turbidity ≤25 NTU
+- **Walking Catfish** (*Clarias batrachus*): pH 6.5–8.0, Temp 22–30°C, TDS 80–450 ppm, Turbidity ≤30 NTU
+- **Dwarf Gourami** (*Trichogaster lalius*): pH 6.0–7.5, Temp 22–28°C, TDS 50–300 ppm, Turbidity ≤10 NTU
+- **Giant Gourami** (*Osphronemus goramy*): pH 6.5–7.8, Temp 24–30°C, TDS 100–500 ppm, Turbidity ≤15 NTU
+- **Silver Arowana** (*Osteoglossum bicirrhosum*): pH 6.0–7.2, Temp 24–30°C, TDS 50–300 ppm, Turbidity ≤8 NTU
+- **Tiger Barb** (*Puntigrus tetrazona*): pH 6.0–7.5, Temp 22–26°C, TDS 50–350 ppm, Turbidity ≤12 NTU
+- **Rainbow Shark** (*Epalzeorhynchos frenatum*): pH 6.5–7.8, Temp 24–28°C, TDS 100–400 ppm, Turbidity ≤10 NTU
+- **Oscar Fish** (*Astronotus ocellatus*): pH 6.5–7.5, Temp 23–28°C, TDS 100–450 ppm, Turbidity ≤12 NTU
+- *Plus Guppy, Betta, Molly, Platy, Neon Tetra, Goldfish, Angelfish, Discus, Corydoras Catfish, Zebra Danio.*
+
+#### Local Generated Image Asset System
+
+- **Zero Web Dependencies:** High-resolution generated PNG species images are stored locally in `code/frontend/src/assets/fish/` and `code/backend/uploads/fish/`.
+- **Hybrid Asset Resolution:** `getImageUrl()` maps database image paths (`/uploads/fish/*.png`) directly to bundled local assets for instantaneous offline rendering in both live (`/fish`) and demo (`/demo/fish`) modes.
+
 ---
 
 ## MQTT Protocol
