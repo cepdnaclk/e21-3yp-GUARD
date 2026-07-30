@@ -550,19 +550,41 @@ export default function Profile() {
             {isEditing && verifyingPhone && (
               <div className="profile-verification-card">
                 <h5>Verify Phone Number via Telegram</h5>
-                <p className="step-text">
-                  1. Open our Telegram Bot: <a href="https://t.me/GUARD_yp_bot" target="_blank" rel="noopener noreferrer" className="telegram-link"><b>G.U.A.R.D Bot 🤖</b></a> (or search for <code>@GUARD_yp_bot</code> in Telegram).
-                </p>
-                <p className="step-text">
-                  2. Send this 6-digit OTP code to the bot: <span className="otp-display-code">{devPhoneOtp}</span>
-                </p>
-                <p className="step-text">
-                  3. The bot will respond by asking to share your contact details. Click the <b>Share Contact 📱</b> button in your Telegram app.
-                </p>
-                <p className="step-text">
-                  4. Once the bot replies confirming successful verification, click the <b>Confirm Bot Verification</b> button below.
-                </p>
-                
+                <div className="telegram-verification-content">
+                  <div className="telegram-qr-section">
+                    <div className="telegram-qr-wrapper">
+                      <img
+                        src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Ft.me%2FGUARD_yp_bot"
+                        alt="Scan QR Code to open Telegram Bot"
+                        className="telegram-qr-img"
+                      />
+                    </div>
+                    <a
+                      href="https://t.me/GUARD_yp_bot"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="telegram-qr-link"
+                    >
+                      Open Bot 📲
+                    </a>
+                  </div>
+
+                  <div className="telegram-steps-section">
+                    <p className="step-text">
+                      1. Open our Telegram Bot: <a href="https://t.me/GUARD_yp_bot" target="_blank" rel="noopener noreferrer" className="telegram-link"><b>G.U.A.R.D Bot 🤖</b></a> (or scan the QR code / search <code>@GUARD_yp_bot</code> in Telegram).
+                    </p>
+                    <p className="step-text">
+                      2. Send this 6-digit OTP code to the bot: <span className="otp-display-code">{devPhoneOtp}</span>
+                    </p>
+                    <p className="step-text">
+                      3. The bot will respond by asking to share your contact details. Click the <b>Share Contact 📱</b> button in your Telegram app.
+                    </p>
+                    <p className="step-text">
+                      4. Once the bot replies confirming successful verification, click the <b>Confirm Bot Verification</b> button below.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="profile-verification-row" style={{ marginTop: '0.5rem' }}>
                   <button
                     type="button"
