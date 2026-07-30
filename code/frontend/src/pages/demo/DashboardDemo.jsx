@@ -100,11 +100,27 @@ export default function DashboardDemo() {
 
   return (
     <div className="min-h-[calc(100vh-62px)] -mx-7 px-7 py-7 bg-transparent">
-      {/* Search bar */}
-      <div className="flex justify-center items-center mb-7 gap-4 flex-wrap">
-        <h1 className="text-[1.6rem] font-bold text-[#0e3454] dark:text-[#e6edf3] mr-auto tracking-tight">Dashboard</h1>
+      {/* Top Header Row with Compact Stat Cards and Search */}
+      <div className="flex items-center justify-between mb-7 gap-4 flex-wrap">
+        
+        {/* Compact Stat Cards */}
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Compact Total Devices Box */}
+          <div className="flex items-center gap-2.5 px-3.5 py-1.5 bg-white/60 dark:bg-slate-800/40 backdrop-blur-[20px] border border-white/40 dark:border-white/10 rounded-xl border-l-4 border-l-primary shadow-xs">
+            <span className="text-[0.7rem] text-text-muted dark:text-slate-400 uppercase tracking-[0.6px] font-bold whitespace-nowrap">Total Devices</span>
+            <span className="text-[1.1rem] font-bold text-text-main dark:text-[#e6edf3] font-mono leading-none">{demoDevices.length}</span>
+          </div>
+
+          {/* Compact Active Alerts Box */}
+          <div className={`flex items-center gap-2.5 px-3.5 py-1.5 bg-white/60 dark:bg-slate-800/40 backdrop-blur-[20px] border border-white/40 dark:border-white/10 rounded-xl border-l-4 shadow-xs ${unresolvedCount > 0 ? 'border-l-danger' : 'border-l-success'}`}>
+            <span className="text-[0.7rem] text-text-muted dark:text-slate-400 uppercase tracking-[0.6px] font-bold whitespace-nowrap">Active Alerts</span>
+            <span className="text-[1.1rem] font-bold text-text-main dark:text-[#e6edf3] font-mono leading-none">{unresolvedCount}</span>
+          </div>
+        </div>
+
+        {/* Search Bar */}
         <input
-          className="w-full max-w-[520px] px-6 py-[0.65rem] rounded-full border-[1.5px] border-white/20 dark:border-white/10 bg-white/40 dark:bg-white/[0.06] backdrop-blur-sm text-[#0e3454] dark:text-[#e6edf3] text-[0.95rem] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/15"
+          className="w-full max-w-[340px] px-5 py-[0.55rem] rounded-full border-[1.5px] border-white/20 dark:border-white/10 bg-white/40 dark:bg-white/[0.06] backdrop-blur-sm text-[#0e3454] dark:text-[#e6edf3] text-[0.95rem] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/15"
           type="text"
           placeholder="Search here..."
           value={search}
@@ -128,18 +144,6 @@ export default function DashboardDemo() {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4" id="dash-stats">
-        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-[20px] border border-white/40 dark:border-white/10 rounded-[20px] p-7 border-l-4 border-l-primary hover:-translate-y-1 transition-transform">
-          <div className="text-[0.75rem] text-text-muted dark:text-slate-400 uppercase tracking-[0.7px] font-bold">Total Devices</div>
-          <div className="text-[2rem] font-bold mt-2 text-text-main dark:text-[#e6edf3] font-mono tracking-tight">{demoDevices.length}</div>
-        </div>
-        <div className={`bg-white/60 dark:bg-slate-800/40 backdrop-blur-[20px] border border-white/40 dark:border-white/10 rounded-[20px] p-7 border-l-4 hover:-translate-y-1 transition-transform ${unresolvedCount > 0 ? 'border-l-danger' : 'border-l-success'}`}>
-          <div className="text-[0.75rem] text-text-muted dark:text-slate-400 uppercase tracking-[0.7px] font-bold">Active Alerts</div>
-          <div className="text-[2rem] font-bold mt-2 text-text-main dark:text-[#e6edf3] font-mono tracking-tight">{unresolvedCount}</div>
-        </div>
       </div>
     </div>
   );

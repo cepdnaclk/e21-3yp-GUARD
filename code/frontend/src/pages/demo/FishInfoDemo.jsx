@@ -75,8 +75,7 @@ export default function FishInfoDemo() {
 
   return (
     <div className="fish-info-page" id="fish-page">
-      <div className="fish-info-header">
-        <h1 className="fish-info-title">Fish Species Library</h1>
+      <div className="fish-info-header" style={{ justifyContent: 'flex-end' }}>
         <input
           className="fish-search-input"
           type="text"

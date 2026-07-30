@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi, getImageUrl } from '../services/api';
-// profile.css migrated to Tailwind below.
 
 const countryCodes = [
   { code: '+94', label: 'Sri Lanka (+94)' },
@@ -32,21 +30,17 @@ function parsePhone(phone) {
 
 /* ── Shared Tailwind class constants ───────────────────────────── */
 
-// Glass input — same across all fields
 const FIELD_INPUT =
   'w-full px-4 py-[0.8rem] border-[1.5px] border-white/20 dark:border-white/[0.08] bg-white/30 dark:bg-white/[0.05] backdrop-blur-sm text-text-main dark:text-[#e6edf3] rounded-[10px] text-[0.95rem] font-sans outline-none transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,165,233,0.15)] disabled:opacity-85 disabled:cursor-not-allowed disabled:bg-white/10 dark:disabled:bg-white/[0.03]';
 
-// Field label row
 const FIELD_LABEL = 'flex justify-between items-center text-[0.85rem] font-semibold text-text-muted dark:text-slate-400';
 
-// Verification badge colours
-const BADGE_VERIFIED  = 'text-[0.75rem] font-bold text-success';
-const BADGE_PENDING   = 'text-[0.75rem] font-bold text-amber-500';
+const BADGE_VERIFIED = 'text-[0.75rem] font-bold text-success';
+const BADGE_PENDING = 'text-[0.75rem] font-bold text-amber-500';
 const BADGE_UNVERIFIED = 'text-[0.75rem] font-bold text-danger';
 
 export default function Profile() {
   const { user, updateProfile, refreshUser } = useAuth();
-  const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -90,7 +84,7 @@ export default function Profile() {
     return new Date(user.createdAt).toLocaleDateString(undefined, {
       year: 'numeric', month: 'long', day: 'numeric',
     });
-  }, [user]);
+  }, [user?.createdAt]);
 
   if (!user) return null;
 
@@ -239,45 +233,39 @@ export default function Profile() {
   const hasUnverifiedEdits = isEmailModified || isPhoneModified;
 
   return (
-    /* .profile-page → transparent page, max-w-3xl centred */
     <div className="min-h-[calc(100vh-62px)] px-4 py-8 flex flex-col gap-6 max-w-3xl mx-auto">
 
-      {/* .profile-top-bar */}
+      {/* Top Bar */}
       <div className="flex justify-between items-center border-b-2 border-white/20 dark:border-white/10 pb-4">
         <h1 className="text-[1.75rem] font-bold text-text-main dark:text-[#e6edf3] tracking-[-0.3px]">
           My Profile
         </h1>
       </div>
 
-      {/* .profile-card → glass card */}
+      {/* Profile Card */}
       <div className="bg-white/60 dark:bg-[rgba(13,20,35,0.82)] backdrop-blur-xl border border-white/40 dark:border-white/[0.08] rounded-2xl p-10 max-[768px]:p-6 shadow-[0_20px_60px_rgba(14,52,84,0.12)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.50)] flex flex-col gap-8 transition-all">
 
-        {/* ── Avatar + Summary ── */}
-        {/* .profile-header-section */}
+        {/* Avatar + Summary */}
         <div className="flex items-center gap-8 border-b border-white/20 dark:border-white/[0.08] pb-8 max-[768px]:flex-col max-[768px]:text-center max-[768px]:gap-4">
 
-          {/* .profile-avatar-container — hover shows upload overlay */}
           <div className="group relative w-[120px] h-[120px] flex-shrink-0 rounded-full overflow-hidden border-4 border-primary bg-gradient-to-br from-[#9dc4e2] to-[#8ab6d8] shadow-lg transition-transform duration-300 hover:scale-[1.03] hover:border-primary-dark">
             {user.profilePicture ? (
               <img src={getImageUrl(user.profilePicture)} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[4rem] select-none">👤</div>
             )}
-            {/* .profile-avatar-overlay — hidden until group hover */}
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <label htmlFor="profile-upload" className="text-white text-[1.75rem] cursor-pointer p-4 flex items-center justify-center" title="Upload New Photo">
                 📷
               </label>
-              <input id="profile-upload" type="file" accept="image/*" onChange={handlePhotoUpload} disabled={saving} style={{ display: 'none' }} />
+              <input id="profile-upload" type="file" accept="image/*" onChange={handlePhotoUpload} disabled={saving} className="hidden" />
             </div>
           </div>
 
-          {/* .profile-summary */}
           <div className="flex flex-col gap-2 max-[768px]:items-center">
             <h4 className="text-[1.5rem] font-bold text-text-main dark:text-[#e6edf3] m-0">
               {user.fullName || 'User'}
             </h4>
-            {/* .profile-role-badge */}
             <span className="self-start max-[768px]:self-center text-[0.75rem] font-bold text-primary bg-[#eff6ff] dark:bg-[rgba(14,165,233,0.15)] px-3 py-1 rounded-full uppercase tracking-[0.5px]">
               {user.role}
             </span>
@@ -294,7 +282,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ── Feedback Banners ── */}
+        {/* Feedback Banners */}
         {error && (
           <div className="p-4 rounded-lg text-[0.9rem] font-medium bg-red-50 dark:bg-red-900/20 text-danger border border-red-200/50 dark:border-red-400/20">
             {error}
@@ -311,11 +299,10 @@ export default function Profile() {
           </div>
         )}
 
-        {/* ── Fields Grid ── */}
-        {/* .profile-grid */}
+        {/* Fields Grid */}
         <div className="grid grid-cols-2 max-[768px]:grid-cols-1 gap-x-8 gap-y-6">
 
-          {/* Username — locked */}
+          {/* Username */}
           <div className="flex flex-col gap-2">
             <label className={FIELD_LABEL}>
               <span>Username</span>
@@ -342,7 +329,7 @@ export default function Profile() {
             <input type="text" className={FIELD_INPUT} value={form.address} onChange={onChange('address')} disabled={!isEditing || saving} placeholder="Address" />
           </div>
 
-          {/* Email — full width with verification */}
+          {/* Email */}
           <div className="flex flex-col gap-2 col-span-2 max-[768px]:col-span-1">
             <label className={FIELD_LABEL}>
               <span>Email Address</span>
@@ -365,7 +352,7 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Email OTP card */}
+            {/* Email OTP Card */}
             {isEditing && verifyingEmail && (
               <div className="bg-white/30 dark:bg-white/[0.04] border border-white/20 dark:border-white/[0.08] p-5 rounded-[10px] mt-2 flex flex-col gap-3">
                 <h5 className="text-[0.95rem] font-bold text-text-main dark:text-[#e6edf3] m-0">Confirm New Email</h5>
@@ -388,7 +375,7 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Phone — full width with country code + Telegram verification */}
+          {/* Phone */}
           <div className="flex flex-col gap-2 col-span-2 max-[768px]:col-span-1">
             <label className={FIELD_LABEL}>
               <span>Phone Number (for Telegram Alert Notifications)</span>
@@ -419,73 +406,56 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Telegram OTP card */}
+            {/* Telegram OTP Card */}
             {isEditing && verifyingPhone && (
-              <div className="profile-verification-card">
-                <h5>Verify Phone Number via Telegram</h5>
-                <div className="telegram-verification-content">
-                  <div className="telegram-qr-section">
-                    <div className="telegram-qr-wrapper">
+              <div className="bg-white/30 dark:bg-white/[0.04] border border-white/20 dark:border-white/[0.08] p-5 rounded-[10px] mt-2 flex flex-col gap-4">
+                <h5 className="text-[0.95rem] font-bold text-text-main dark:text-[#e6edf3] m-0">Verify Phone Number via Telegram</h5>
+                
+                <div className="flex gap-5 items-center max-[600px]:flex-col max-[600px]:items-stretch">
+                  <div className="flex flex-col items-center gap-2 flex-shrink-0 self-center">
+                    <div className="bg-white p-2 rounded-xl border border-white/20 shadow-md">
                       <img
                         src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Ft.me%2FGUARD_yp_bot"
                         alt="Scan QR Code to open Telegram Bot"
-                        className="telegram-qr-img"
+                        className="w-[120px] h-[120px] block rounded"
                       />
                     </div>
                     <a
                       href="https://t.me/GUARD_yp_bot"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="telegram-qr-link"
+                      className="text-[0.75rem] font-semibold text-primary bg-primary/10 hover:bg-primary hover:text-white px-3 py-1 rounded-full transition-colors"
                     >
                       Open Bot 📲
                     </a>
                   </div>
 
-                  <div className="telegram-steps-section">
-                    <p className="step-text">
-                      1. Open our Telegram Bot: <a href="https://t.me/GUARD_yp_bot" target="_blank" rel="noopener noreferrer" className="telegram-link"><b>G.U.A.R.D Bot 🤖</b></a> (or scan the QR code / search <code>@GUARD_yp_bot</code> in Telegram).
+                  <div className="flex-1 flex flex-col gap-2">
+                    <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
+                      1. Open our Telegram Bot: <a href="https://t.me/GUARD_yp_bot" target="_blank" rel="noopener noreferrer" className="text-primary underline font-bold">G.U.A.R.D Bot 🤖</a> (or scan the QR code / search <code>@GUARD_yp_bot</code> in Telegram).
                     </p>
-                    <p className="step-text">
-                      2. Send this 6-digit OTP code to the bot: <span className="otp-display-code">{devPhoneOtp}</span>
+                    <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
+                      2. Send this 6-digit OTP code to the bot: <span className="font-mono text-[1.15rem] bg-primary/10 px-[0.4rem] py-[0.1rem] rounded border border-dashed border-primary/30 text-primary font-bold">{devPhoneOtp}</span>
                     </p>
-                    <p className="step-text">
+                    <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
                       3. The bot will respond by asking to share your contact details. Click the <b>Share Contact 📱</b> button in your Telegram app.
                     </p>
-                    <p className="step-text">
+                    <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
                       4. Once the bot replies confirming successful verification, click the <b>Confirm Bot Verification</b> button below.
                     </p>
                   </div>
                 </div>
 
-                <div className="profile-verification-row" style={{ marginTop: '0.5rem' }}>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={handleConfirmPhoneOtp}
-                    disabled={verifyingPhoneLoading}
-                  >
-                    Confirm Bot Verification
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={() => {
-                      setVerifyingPhone(false);
-                      setDevPhoneOtp('');
-                    }}
-                    disabled={verifyingPhoneLoading}
-                  >
-                    Cancel
-                  </button>
+                <div className="flex gap-3 max-[768px]:flex-col mt-1">
+                  <button type="button" className="btn btn-primary btn-sm" onClick={handleConfirmPhoneOtp} disabled={verifyingPhoneLoading}>Confirm Bot Verification</button>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => { setVerifyingPhone(false); setDevPhoneOtp(''); }} disabled={verifyingPhoneLoading}>Cancel</button>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Action Buttons ── */}
-        {/* .profile-actions */}
+        {/* Action Buttons */}
         <div className="flex items-center justify-end gap-4 border-t border-white/20 dark:border-white/[0.08] pt-6 flex-wrap max-[768px]:flex-col max-[768px]:items-stretch">
           {isEditing ? (
             <>
@@ -511,3 +481,4 @@ export default function Profile() {
     </div>
   );
 }
+

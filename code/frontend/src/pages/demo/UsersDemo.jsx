@@ -11,10 +11,6 @@ export default function UsersDemo() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h3>Users ({demoUsers.length})</h3>
-      </div>
-
       {/* Action bar */}
       <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-5">
         <div className="flex flex-wrap gap-3">
@@ -30,7 +26,7 @@ export default function UsersDemo() {
             </button>
           )}
           {showAddUser && (
-            <button type="button" className="btn btn-primary" onClick={() => setShowAddUser(false)}>
+            <button type="button" className="btn action-btn btn-outline" onClick={() => setShowAddUser(false)}>
               Cancel
             </button>
           )}

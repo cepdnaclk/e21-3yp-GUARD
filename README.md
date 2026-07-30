@@ -252,20 +252,23 @@ The frontend application has been migrated from legacy CSS stylesheets to **Tail
   ```
 
 ### 2. Upgraded Glassmorphism Navigation (`Layout.jsx`)
-- Sticky top navigation featuring a gradient backdrop tint, `backdrop-blur-xl`, sky-blue accent border, and dark-mode toggle switch:
-  ```html
-  <nav className="sticky top-0 z-50 flex items-center px-7 min-h-[62px] bg-gradient-to-r from-[rgba(1,30,55,0.82)] to-[rgba(2,52,96,0.76)] dark:from-[rgba(4,12,28,0.88)] dark:to-[rgba(6,18,40,0.82)] backdrop-blur-xl border-b border-sky-400/20 dark:border-sky-500/10 shadow-[0_2px_20px_rgba(0,0,0,0.28)]">
-  ```
+- Responsive frosted glass top navigation featuring light/dark mode glassmorphism (`bg-white/75 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.05)]`).
+- Vibrant gradient logo branding (`bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-[0_4px_14px_rgba(14,165,233,0.35)]`), active link pill styling, and dark-mode toggle switch.
 
-### 3. Migrated Components & Pages
+### 3. Compact Header Stat Cards & Streamlined Page Layouts
+- **Dashboard Stat Cards (`Dashboard.jsx` & `DashboardDemo.jsx`):** Compact "Total Devices" and "Active Alerts" glass cards moved inline to the top header row next to the search bar for optimal space efficiency.
+- **Streamlined Page Headers:** Redundant page title headers removed across all views (retaining only **My Profile**), maximizing vertical screen real estate for tank telemetry and data grids.
+- **Telegram Verification QR Code (`Profile.jsx`):** Instant QR code scanning support (`https://t.me/GUARD_yp_bot`) for mobile Telegram phone verification.
+
+### 4. Migrated Components & Pages
 - **Components:** `SensorGauge.jsx`, `WaterTankLevel.jsx`, `ThresholdsPanel.jsx`, `ActuatorPanel.jsx`, `DatePicker.jsx`.
 - **Production Pages:** `Dashboard.jsx`, `Alerts.jsx`, `Devices.jsx`, `DeviceDetail.jsx`, `SensorHistory.jsx`, `Users.jsx`, `Profile.jsx`, `FishInfo.jsx`, `Landing.jsx`, `About.jsx`.
-- **Demo Sandbox Pages:** `DashboardDemo.jsx`, `AlertsDemo.jsx`, `DevicesDemo.jsx`, `UsersDemo.jsx`, `SensorHistoryDemo.jsx`.
+- **Demo Sandbox Pages:** `DashboardDemo.jsx`, `AlertsDemo.jsx`, `DevicesDemo.jsx`, `UsersDemo.jsx`, `SensorHistoryDemo.jsx`, `FishInfoDemo.jsx`, `ProfileDemo.jsx`.
 - **Admin Sub-components:** `CreateAccountForm.jsx`, `AddDeviceForm.jsx`, `TourOverlay.jsx`.
 
-### 4. Deprecated Stylesheets
+### 5. Deprecated Stylesheets
 The following legacy CSS files have been deprecated and wrapped in block comments:
-`layout.css`, `actuators.css`, `thresholds.css`, `datepicker.css`, `dashboard.css`, `device-detail.css`, `alerts.css`, `devices.css`, `sensor-history.css`, `users.css`, `CreateAccountForm.css`, `profile.css`, `fish-info.css`, `landing.css`, `about.css`.
+`layout.css`, `actuators.css`, `thresholds.css`, `datepicker.css`, `dashboard.css`, `device-detail.css`, `alerts.css`, `devices.css`, `sensor-history.css`, `users.css`, `CreateAccountForm.css`, `profile.css`, `fish-info.css`, `landing.css`, `about.css`, `navigation.css`.
 
 ---
 

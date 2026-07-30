@@ -495,13 +495,8 @@ export default function FishInfo() {
     <div className="pb-8">
 
       {/* ── Header ── */}
-      <div className="flex items-end justify-between flex-wrap gap-4 mb-7">
-        <div>
-          <h1 className="text-[1.6rem] font-bold text-text-main dark:text-[#e6edf3] leading-[1.2]">🐠 Fish Info</h1>
-          <p className="text-[0.85rem] text-text-muted mt-1">Browse freshwater species and compare their water needs against your tanks.</p>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center justify-end flex-wrap gap-4 mb-7">
+        <div className="flex items-center gap-3 flex-wrap ml-auto">
           {/* Search */}
           <div className="relative min-w-[260px] max-w-[340px] flex-1">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[0.9rem] text-text-muted pointer-events-none">🔍</span>

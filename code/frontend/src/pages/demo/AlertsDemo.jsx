@@ -10,9 +10,6 @@ export default function AlertsDemo() {
 
   return (
     <div className="min-h-[calc(100vh-62px)] -mx-7 px-7 py-7 bg-transparent" id="alerts-page">
-      <h1 className="text-[1.6rem] font-bold text-[#0e3454] dark:text-[#e6edf3] mb-5 tracking-tight">
-        Notifications
-      </h1>
 
       {/* Filter Card */}
       <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-6">

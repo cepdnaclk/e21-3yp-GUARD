@@ -223,9 +223,6 @@ export default function SensorHistory() {
 
   return (
     <>
-      {/* .sensor-history-title */}
-      <h1 className="text-[1.6rem] font-bold tracking-tight text-text-main dark:text-[#e6edf3] mb-5">Sensor History</h1>
-
       <div className="card">
         {fetchError ? <p className="error-msg">{fetchError}</p> : null}
         {/* .sensor-history-summary */}

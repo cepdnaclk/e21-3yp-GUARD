@@ -115,10 +115,6 @@ export default function Devices() {
 
   return (
     <>
-      {/* .devices-header */}
-      <div className="mb-4">
-        <h3>Devices ({devices.length})</h3>
-      </div>
       {/* .devices-actions */}
       <div className="flex flex-wrap gap-3 mb-4">
         <button

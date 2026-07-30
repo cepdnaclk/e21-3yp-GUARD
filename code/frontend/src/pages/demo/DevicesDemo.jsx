@@ -11,10 +11,6 @@ export default function DevicesDemo() {
 
   return (
     <>
-      <div className="mb-4">
-        <h3>Devices ({demoDevices.length})</h3>
-      </div>
-
       <div className="flex flex-wrap gap-3 mb-4">
         <button
           id="add-device-btn"

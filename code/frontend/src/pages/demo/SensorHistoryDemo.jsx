@@ -42,8 +42,6 @@ export default function SensorHistoryDemo() {
 
   return (
     <div id="analytics-page" style={{ padding: '1rem 0' }}>
-      <h3 style={{ marginBottom: '1.2rem' }}>Historical Analytics</h3>
-
       <div className="card" style={{ padding: '1.2rem', marginBottom: '1.2rem' }}>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div className="form-group" style={{ minWidth: 160 }}>

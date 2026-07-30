@@ -60,7 +60,6 @@ export default function CreateAccountForm({ mode, onSuccess, onCancel }) {
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'Saving...' : mode === 'admin' ? 'Create Admin' : 'Create User'}
           </button>
-          <button type="button" className="btn btn-outline" onClick={onCancel} disabled={busy}>Cancel</button>
         </div>
       </form>
     </div>
