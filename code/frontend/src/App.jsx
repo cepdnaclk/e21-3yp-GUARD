@@ -15,6 +15,7 @@ import Users from './pages/Users';
 import VerifyEmail from './pages/VerifyEmail';
 import About from './pages/Landing/About';
 import FishInfo from './pages/FishInfo';
+import MobileAppDownload from './pages/MobileAppDownload';
 import DemoPage from './pages/DemoPage';
 
 /* ── Scrolls to top of page on every route change ── */
@@ -87,6 +88,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/about" element={<About />} />
+        <Route path="/mobile-download" element={<MobileAppDownload />} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />

@@ -421,23 +421,63 @@ export default function Profile() {
 
             {/* Telegram OTP card */}
             {isEditing && verifyingPhone && (
-              <div className="bg-white/30 dark:bg-white/[0.04] border border-white/20 dark:border-white/[0.08] p-5 rounded-[10px] mt-2 flex flex-col gap-3">
-                <h5 className="text-[0.95rem] font-bold text-text-main dark:text-[#e6edf3] m-0">Verify Phone Number via Telegram</h5>
-                <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
-                  1. Open our Telegram Bot: <a href="https://t.me/GUARD_yp_bot" target="_blank" rel="noopener noreferrer" className="text-primary underline"><b>G.U.A.R.D Bot 🤖</b></a> (or search <code>@GUARD_yp_bot</code>).
-                </p>
-                <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
-                  2. Send this 6-digit OTP to the bot: <span className="font-mono text-[1.15rem] bg-primary/10 px-[0.4rem] py-[0.1rem] rounded border border-dashed border-primary/30 text-primary font-bold">{devPhoneOtp}</span>
-                </p>
-                <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
-                  3. The bot will ask you to share your contact. Click the <b>Share Contact 📱</b> button.
-                </p>
-                <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
-                  4. Once the bot confirms, click <b>Confirm Bot Verification</b> below.
-                </p>
-                <div className="flex gap-3 max-[768px]:flex-col" style={{ marginTop: '0.5rem' }}>
-                  <button type="button" className="btn btn-primary btn-sm" onClick={handleConfirmPhoneOtp} disabled={verifyingPhoneLoading}>Confirm Bot Verification</button>
-                  <button type="button" className="btn btn-outline btn-sm" onClick={() => { setVerifyingPhone(false); setDevPhoneOtp(''); }} disabled={verifyingPhoneLoading}>Cancel</button>
+              <div className="profile-verification-card">
+                <h5>Verify Phone Number via Telegram</h5>
+                <div className="telegram-verification-content">
+                  <div className="telegram-qr-section">
+                    <div className="telegram-qr-wrapper">
+                      <img
+                        src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Ft.me%2FGUARD_yp_bot"
+                        alt="Scan QR Code to open Telegram Bot"
+                        className="telegram-qr-img"
+                      />
+                    </div>
+                    <a
+                      href="https://t.me/GUARD_yp_bot"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="telegram-qr-link"
+                    >
+                      Open Bot 📲
+                    </a>
+                  </div>
+
+                  <div className="telegram-steps-section">
+                    <p className="step-text">
+                      1. Open our Telegram Bot: <a href="https://t.me/GUARD_yp_bot" target="_blank" rel="noopener noreferrer" className="telegram-link"><b>G.U.A.R.D Bot 🤖</b></a> (or scan the QR code / search <code>@GUARD_yp_bot</code> in Telegram).
+                    </p>
+                    <p className="step-text">
+                      2. Send this 6-digit OTP code to the bot: <span className="otp-display-code">{devPhoneOtp}</span>
+                    </p>
+                    <p className="step-text">
+                      3. The bot will respond by asking to share your contact details. Click the <b>Share Contact 📱</b> button in your Telegram app.
+                    </p>
+                    <p className="step-text">
+                      4. Once the bot replies confirming successful verification, click the <b>Confirm Bot Verification</b> button below.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="profile-verification-row" style={{ marginTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleConfirmPhoneOtp}
+                    disabled={verifyingPhoneLoading}
+                  >
+                    Confirm Bot Verification
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => {
+                      setVerifyingPhone(false);
+                      setDevPhoneOtp('');
+                    }}
+                    disabled={verifyingPhoneLoading}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             )}

@@ -1,18 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import ReactECharts from 'echarts-for-react';
 import { deviceApi, sensorApi } from '../services/api';
 import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../constants/sensorConstants';
 import { formatChartTime } from '../utils/formatUtils';
+import { useTheme } from '../context/ThemeContext';
 import GlassDatePicker from '../components/DatePicker';
 // sensor-history.css migrated to Tailwind below
 
@@ -50,9 +42,72 @@ function getLineConfig(sensorId) {
   return SENSOR_LINE_CONFIG[sensorId] || null;
 }
 
+function buildChartOption(chartData, lineConfigs, isDark) {
+  const textColor = isDark ? '#ffffff' : '#334155';
+  const titleColor = isDark ? '#ffffff' : '#0f172a';
+  const axisLineColor = isDark ? '#30363d' : '#d8e0eb';
+  const tooltipBg = isDark ? '#161b22' : '#ffffff';
+  const tooltipBorder = isDark ? '1px solid #30363d' : '1px solid #f1f5f9';
+
+  return {
+    grid: { top: 40, right: 24, bottom: 70, left: 50 },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: tooltipBg,
+      borderWidth: 0,
+      extraCssText: 'border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); padding: 12px;',
+      textStyle: { color: textColor },
+      formatter: (params) => {
+        if (!params || params.length === 0) return '';
+        const raw = chartData[params[0].dataIndex];
+        const title = raw ? formatChartTime(raw.time) : params[0].axisValueLabel;
+        const rows = params
+          .filter((p) => p.data !== null && p.data !== undefined)
+          .map((p) => '<div style="padding:2px 0;font-weight:500;color:' + textColor + ';">' + p.marker + ' ' + p.seriesName + ': ' + p.data + '</div>')
+          .join('');
+        return '<div style="font-weight:700;margin-bottom:8px;border-bottom:' + tooltipBorder + ';padding-bottom:4px;color:' + titleColor + ';">' + title + '</div>' + rows;
+      }
+    },
+    legend: {
+      data: lineConfigs.map((c) => c.label),
+      top: 0,
+      textStyle: { color: textColor }
+    },
+    xAxis: {
+      type: 'category',
+      data: chartData.map((row) => formatChartTime(row.time)),
+      axisLabel: {
+        color: textColor,
+        fontSize: 11,
+        rotate: 30,
+        hideOverlap: true
+      },
+      axisLine: { lineStyle: { color: axisLineColor } }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: textColor, fontSize: 12 },
+      splitLine: { lineStyle: { color: axisLineColor, type: 'dashed' } }
+    },
+    series: lineConfigs.map((config) => ({
+      name: config.label,
+      type: 'line',
+      smooth: true,
+      showSymbol: false,
+      connectNulls: true,
+      lineStyle: { color: config.color, width: 2 },
+      itemStyle: { color: config.color },
+      data: chartData.map((row) => row[config.key] ?? null)
+    }))
+  };
+}
+
 export default function SensorHistory() {
   const [searchParams] = useSearchParams();
   const initialDeviceId = searchParams.get('device_id') || searchParams.get('deviceId') || '';
+
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const [devices, setDevices] = useState([]);
   const [readings, setReadings] = useState([]);

@@ -10,6 +10,11 @@ const NAV_ITEMS = [
   { to: '/register', label: 'Sign Up' },
 ];
 
+const MOBILE_APP = { to: '/mobile-download', label: 'Download Mobile App' };
+
+/* Download glyph matching the blue app-icon artwork: bars, arrow and tray with a partial progress ring */
+
+
 export default function PublicNav() {
   const location = useLocation();
   const contactActive = location.pathname === '/' && location.hash === '#contacts';
@@ -59,6 +64,7 @@ export default function PublicNav() {
             </NavLink>
           )
         )}
+
       </div>
     </nav>
   );

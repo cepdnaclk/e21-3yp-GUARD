@@ -518,3 +518,69 @@
   border: 1px dashed rgba(14, 165, 233, 0.3);
   font-weight: 700;
 }
+
+.telegram-verification-content {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.telegram-qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.telegram-qr-wrapper {
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.telegram-qr-img {
+  width: 120px;
+  height: 120px;
+  display: block;
+  border-radius: 4px;
+}
+
+.telegram-qr-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  background: rgba(14, 165, 233, 0.1);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.telegram-qr-link:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.telegram-steps-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  .telegram-verification-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .telegram-qr-section {
+    align-self: center;
+  }
+}
+
