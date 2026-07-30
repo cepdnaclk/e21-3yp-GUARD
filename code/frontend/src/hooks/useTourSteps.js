@@ -36,51 +36,51 @@ export const COMMON_STEPS = [
     },
   },
 
-  // ③ Notifications / Alerts  (targets the whole alerts page)
+  // ③ Notifications / Alerts  (targets the alert notifications table card)
   {
     route:   '/demo/alerts',
-    element: '#alerts-page',
+    element: '#alerts-table-card',
     popover: {
       title:       '🔔 Notifications & Alerts',
       description: 'All threshold breaches appear here as a table. Filter by device or status (Active / Resolved / All). Toggle Email and Telegram alert delivery preferences directly from this page.',
-      side:  'bottom',
-      align: 'start',
+      side:  'top',
+      align: 'center',
     },
   },
 
-  // ④ Historical Analytics  (targets the analytics page wrapper)
+  // ④ Historical Analytics  (targets the analytics chart card)
   {
     route:   '/demo/analytics',
-    element: '#analytics-page',
+    element: '#analytics-card',
     popover: {
       title:       '📈 Historical Analytics',
       description: 'View time-series charts for pH, Temperature, TDS, Turbidity, and Water Level. Pick a custom date range and overlay any combination of sensor types on the same chart.',
-      side:  'bottom',
-      align: 'start',
+      side:  'top',
+      align: 'center',
     },
   },
 
-  // ⑤ Fish Species Library
+  // ⑤ Fish Species Library  (targets the fish species grid)
   {
     route:   '/demo/fish',
-    element: '#fish-page',
+    element: '#fish-grid',
     popover: {
       title:       '🐡 Fish Species Library',
       description: 'Browse species cards and click any fish to see its ideal water parameter ranges. The system cross-references these against your tank thresholds and automatically flags incompatibilities.',
-      side:  'bottom',
-      align: 'start',
+      side:  'top',
+      align: 'center',
     },
   },
 
-  // ⑥ Profile & Account Settings
+  // ⑥ Profile & Account Settings  (targets the profile details section card)
   {
     route:   '/demo/profile',
-    element: '#profile-page',
+    element: '#profile-card',
     popover: {
       title:       '👤 Profile & Account Settings',
       description: 'Update your name, email, phone number, address, and notification preferences (Email & Telegram alerts) all from this page.',
       side:  'bottom',
-      align: 'start',
+      align: 'center',
     },
   },
 

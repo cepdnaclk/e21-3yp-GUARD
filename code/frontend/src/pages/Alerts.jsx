@@ -167,7 +167,7 @@ export default function Alerts() {
       <div className="min-h-[calc(100vh-62px)] -mx-7 px-7 py-7 bg-transparent">
 
         {/* Filter Card — .card.alerts-filter-card */}
-        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-6">
+        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-6" id="alerts-filter-card">
           <div className="flex flex-wrap gap-4 items-end">
 
             <div className="flex flex-col gap-1">
@@ -247,7 +247,7 @@ export default function Alerts() {
         </div>
 
         {/* Table Card — .card.alerts-table-card */}
-        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl overflow-hidden">
+        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl overflow-hidden" id="alerts-table-card">
           {loading ? (
             <div className="p-12 text-center text-text-muted">Loading alerts...</div>
           ) : alerts.length === 0 ? (

@@ -243,7 +243,7 @@ export default function Profile() {
       </div>
 
       {/* Profile Card */}
-      <div className="bg-white/60 dark:bg-[rgba(13,20,35,0.82)] backdrop-blur-xl border border-white/40 dark:border-white/[0.08] rounded-2xl p-10 max-[768px]:p-6 shadow-[0_20px_60px_rgba(14,52,84,0.12)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.50)] flex flex-col gap-8 transition-all">
+      <div className="bg-white/60 dark:bg-[rgba(13,20,35,0.82)] backdrop-blur-xl border border-white/40 dark:border-white/[0.08] rounded-2xl p-10 max-[768px]:p-6 shadow-[0_20px_60px_rgba(14,52,84,0.12)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.50)] flex flex-col gap-8 transition-all" id="profile-card">
 
         {/* Avatar + Summary */}
         <div className="flex items-center gap-8 border-b border-white/20 dark:border-white/[0.08] pb-8 max-[768px]:flex-col max-[768px]:text-center max-[768px]:gap-4">

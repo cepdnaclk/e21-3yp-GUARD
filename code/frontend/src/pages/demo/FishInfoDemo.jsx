@@ -85,7 +85,7 @@ export default function FishInfoDemo() {
         />
       </div>
 
-      <div className="fish-grid">
+      <div className="fish-grid" id="fish-grid">
         {filtered.map(f => (
           <FishCard key={f.id} fish={f} onClick={setSelected} />
         ))}

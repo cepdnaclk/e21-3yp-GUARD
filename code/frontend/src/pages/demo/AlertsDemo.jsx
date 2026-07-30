@@ -12,7 +12,7 @@ export default function AlertsDemo() {
     <div className="min-h-[calc(100vh-62px)] -mx-7 px-7 py-7 bg-transparent" id="alerts-page">
 
       {/* Filter Card */}
-      <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-6">
+      <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-6" id="alerts-filter-card">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-[#204968] dark:text-slate-400">Device</label>
@@ -51,7 +51,7 @@ export default function AlertsDemo() {
       </div>
 
       {/* Table Card */}
-      <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl overflow-hidden">
+      <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl overflow-hidden" id="alerts-table-card">
         <div className="overflow-x-auto rounded-xl border border-white/20 dark:border-white/[0.06]">
           <table className="w-full border-collapse">
             <thead className="bg-sky-400/6 dark:bg-white/[0.04]">

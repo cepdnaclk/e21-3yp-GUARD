@@ -277,7 +277,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-7 gap-4 flex-wrap">
         
         {/* Compact Stat Cards */}
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-4 flex-wrap" id="dash-stats">
           {/* Compact Total Devices Box */}
           <div className="flex items-center gap-2.5 px-3.5 py-1.5 bg-white/60 dark:bg-slate-800/40 backdrop-blur-[20px] border border-white/40 dark:border-white/10 rounded-xl border-l-4 border-l-primary shadow-xs">
             <span className="text-[0.7rem] text-text-muted dark:text-slate-400 uppercase tracking-[0.6px] font-bold whitespace-nowrap">Total Devices</span>

@@ -74,50 +74,45 @@ export default function TourOverlay() {
   const activateStep = useCallback(async (idx) => {
     if (idx < 0)    { return; }
     if (idx >= total) { handleStop(true); return; }
-    if (busyRef.current) return;
-    busyRef.current = true;
 
     const drv  = driverRef.current;
     if (!drv) { busyRef.current = false; return; }
+
+    busyRef.current = true;
 
     const step = steps[idx];
     stepRef.current = idx;
     updateStep(idx);
 
-    // 1. While navigating, hold a "Loading…" popover on body so the
-    //    overlay stays visible (no flash) during the route transition.
-    const sameRoute = (idx > 0 && steps[idx - 1]?.route === step.route) ||
-                      (idx === 0);
-    if (!sameRoute) {
-      try {
-        drv.highlight({
-          element: 'body',
-          popover: {
-            title: step.popover.title,
-            description: '⏳ Loading page…',
-            side: 'over',
-            align: 'center',
-            showButtons: [],
-          },
-        });
-      } catch (_) {}
+    // 1. If current route does not match step.route (forward or backward), navigate
+    if (window.location.pathname !== step.route) {
+      navigate(step.route);
     }
 
-    // 2. Navigate
-    navigate(step.route);
-
-    // 3. Wait for the actual target element
-    const el = await waitForElement(step.element, 2800);
-    busyRef.current = false;
+    // 2. Wait for the target element to mount in DOM
+    const el = await waitForElement(step.element, 2500);
 
     if (!el) {
-      // Element never appeared — skip forward
       console.warn(`[Tour] element not found: ${step.element}`);
+      busyRef.current = false;
       activateRef.current?.(idx + 1);
       return;
     }
 
-    if (!driverRef.current) return; // tour was stopped while waiting
+    if (!driverRef.current) {
+      busyRef.current = false;
+      return;
+    }
+
+    // 3. Center element in viewport before positioning highlight stage
+    try {
+      if (el && typeof el.scrollIntoView === 'function' && el !== document.body) {
+        el.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'nearest' });
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    } catch (_) { /* ignore */ }
+
+    busyRef.current = false;
 
     const isFirst = idx === 0;
     const isLast  = idx === total - 1;
@@ -129,7 +124,7 @@ export default function TourOverlay() {
         popover: {
           title:       step.popover.title,
           description: step.popover.description,
-          side:        step.popover.side  || 'bottom',
+          side:        step.popover.side  || 'auto',
           align:       step.popover.align || 'start',
           showButtons: isFirst ? ['next', 'close'] : ['next', 'previous', 'close'],
           nextBtnText: isLast ? 'Finish 🎉' : 'Next →',
@@ -137,21 +132,43 @@ export default function TourOverlay() {
           doneBtnText: 'Finish 🎉',
 
           onNextClick: () => {
+            busyRef.current = false;
             const next = stepRef.current + 1;
             if (next >= total) handleStop(true);
             else activateRef.current?.(next);
           },
           onPrevClick: () => {
+            busyRef.current = false;
             const prev = stepRef.current - 1;
             if (prev >= 0) activateRef.current?.(prev);
           },
-          onCloseClick: () => handleStop(false),
+          onCloseClick: () => {
+            busyRef.current = false;
+            handleStop(false);
+          },
 
           onPopoverRender: (popover) => {
+            if (!popover?.wrapper) return;
+
+            // Prominent top-right "Skip Tour ✕" button
+            const existingSkip = popover.wrapper.querySelector('.tour-skip-btn');
+            if (!existingSkip) {
+              const skipBtn = document.createElement('button');
+              skipBtn.className = 'tour-skip-btn';
+              skipBtn.textContent = 'Skip Tour ✕';
+              skipBtn.title = 'Exit the guided tour at any time';
+              skipBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                busyRef.current = false;
+                handleStop(false);
+              });
+              popover.wrapper.appendChild(skipBtn);
+            }
+
             if (!popover?.footerButtons) return;
             const footer = popover.footerButtons;
 
-            // Step progress badge (e.g. "3 / 7")
+            // Step progress badge (e.g. "3 / 11")
             const progress = document.createElement('span');
             progress.className = 'tour-progress';
             progress.textContent = `${idx + 1} / ${total}`;
@@ -162,9 +179,10 @@ export default function TourOverlay() {
               const goFirst = document.createElement('button');
               goFirst.className = 'tour-goto-start-btn';
               goFirst.textContent = '↩ Step 1';
-              goFirst.title = 'Go back to the very first step';
+              goFirst.title = 'Go back to step 1';
               goFirst.addEventListener('click', (e) => {
                 e.stopPropagation();
+                busyRef.current = false;
                 activateRef.current?.(0);
               });
               footer.prepend(goFirst);
@@ -205,7 +223,7 @@ export default function TourOverlay() {
     const drv = driver({
       animate:              true,
       smoothScroll:         true,
-      allowClose:           true,
+      allowClose:           false, // Tour can ONLY be closed by Skip or Finish
       overlayOpacity:       0.60,
       stagePadding:         8,
       stageRadius:          10,

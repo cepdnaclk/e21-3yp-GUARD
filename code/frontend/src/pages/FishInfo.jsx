@@ -523,7 +523,7 @@ export default function FishInfo() {
           <p>{search ? `No species match "${search}".` : 'No species added yet.'}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5" id="fish-species-grid">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5" id="fish-grid">
           {filtered.map(f => <FishCard key={f.id} fish={f} onClick={setSelected} />)}
         </div>
       )}

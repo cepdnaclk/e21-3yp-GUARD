@@ -223,7 +223,7 @@ export default function SensorHistory() {
 
   return (
     <>
-      <div className="card">
+      <div className="card" id="analytics-card">
         {fetchError ? <p className="error-msg">{fetchError}</p> : null}
         {/* .sensor-history-summary */}
         {fetchInfo ? <p className="text-text-muted text-base mb-3">{fetchInfo}</p> : null}

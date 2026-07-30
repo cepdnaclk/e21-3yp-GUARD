@@ -239,11 +239,10 @@ e21-3yp-GUARD/
 
 ---
 
-## Tailwind CSS Design System & Migration
+### 1. Color Palette & Design Tokens
+For the full design system reference, color hex codes, surface glass layering rules, and component file mappings, see the dedicated [**Frontend Color Palette Guide**](code/frontend/COLOR_PALETTE.md).
 
-The frontend application has been migrated from legacy CSS stylesheets to **Tailwind CSS** using a strict Strangler Fig pattern.
-
-### 1. Configuration (`tailwind.config.js`)
+### 2. Configuration (`tailwind.config.js`)
 - **Dark Mode Selector:** `darkMode: ['selector', '[data-theme="dark"]']` to sync with `ThemeContext`.
 - **Typography:** `Outfit` for body & headlines; `JetBrains Mono` (`font-mono`) for numerical telemetry gauges and timestamps.
 - **Glassmorphism Standard Card Formula:**
@@ -293,10 +292,10 @@ User logs in for the first time
                 │
                 ├──▶ Step 1  Dashboard → #tank-grid
                 ├──▶ Step 2  Dashboard → #dash-stats
-                ├──▶ Step 3  Alerts    → #alerts-page
-                ├──▶ Step 4  Analytics → #analytics-page
-                ├──▶ Step 5  Fish Info → #fish-page
-                ├──▶ Step 6  Profile   → #profile-page
+                ├──▶ Step 3  Alerts    → #alerts-table-card
+                ├──▶ Step 4  Analytics → #analytics-card
+                ├──▶ Step 5  Fish Info → #fish-grid
+                ├──▶ Step 6  Profile   → #profile-card
                 ├──▶ Step 7  Profile   → #tour-theme-toggle
                 │            (Admin only ↓)
                 ├──▶ Step 8  Devices → #add-device-btn
@@ -318,17 +317,19 @@ User logs in for the first time
 | `src/context/TourContext.jsx` | State machine: `isTourActive`, `startTour`, `skipTour`, `finishTour`, `updateStep` |
 | `src/context/DemoContext.jsx` | Provides static `demoData.json` to all demo pages via React Context |
 | `src/hooks/useTourSteps.js` | Builds role-aware step arrays: 7 steps (USER) or 11 steps (ADMIN) |
-| `src/components/tour/TourOverlay.jsx` | Mounts `driver.js`, navigates routes per step, polls DOM with `MutationObserver` |
+| `src/components/tour/TourOverlay.jsx` | Mounts `driver.js`, handles route navigation, instant center auto-scrolling, and step control |
 | `src/components/demo/DemoLayout.jsx` | Demo nav: Demo badge, nav IDs, `id="tour-theme-toggle"`, tour-active class sync |
 | `src/data/demoData.json` | Static payload: 3 tanks, 5 sensor readings each, 3 alerts, 3 workers, 3 fish species, sensor history |
-| `src/styles/tour.css` | Glassmorphism driver.js popover styles, `html.tour-active` nav elevation, nav-link pulse |
+| `src/styles/tour.css` | Glassmorphism driver.js popover styles, navbar elevation, and smooth stage transitions |
+| [`COLOR_PALETTE.md`](code/frontend/COLOR_PALETTE.md) | Dedicated reference guide for frontend color tokens, light/dark modes, and component mappings |
 
 ### Key tour UX details
 
-- **Nav highlighting:** When the tour runs, `html.tour-active` is added to `<html>`. This elevates the sticky topnav (`z-index: 10005`) above driver.js's overlay so the active NavLink glows with a pulsing cyan ring.
-- **Theme toggle step (Step 7):** Targets `#tour-theme-toggle` inside the elevated topnav with a custom glow animation.
-- **Smooth transitions:** `TourOverlay` uses `driver.highlight()` per step with `MutationObserver`-based element detection.
-- **Skip & Resume:** Clicking "✕ Exit Demo" or the popover close button marks the tour done in `localStorage`. The "🗺️ Tour" button in the production nav resets the flag and relaunches the tour.
+- **Explicit Close Protection:** Backdrop click exit is disabled (`allowClose: false`). The tour can only be closed explicitly by clicking **Skip** / **✕** or completing all steps and clicking **Finish 🎉**.
+- **Card-Level Precision:** Highlights specific component cards (`#alerts-table-card`, `#analytics-card`, `#fish-grid`, `#profile-card`) rather than full page wrappers.
+- **Bi-Directional Navigation:** URL route verification (`window.location.pathname !== step.route`) ensures smooth backward (`← Back`) and forward (`Next →`) navigation across all 11 steps.
+- **Instant Center Auto-Scroll:** Centers target elements in the viewport (`block: 'center'`) before stage highlight calculations, preventing positioning jitter.
+- **Preserved App Navbar:** Standard glassmorphism top navigation bar styling is preserved intact during the tour.
 - **Role-aware:** `buildTourSteps(role)` returns 7 common steps for `USER` accounts and appends 4 admin-only steps for `ADMIN` accounts.
 
 ---

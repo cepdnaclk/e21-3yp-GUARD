@@ -10,8 +10,10 @@ export default function ProfileDemo() {
 
   return (
     <div className="profile-page" id="profile-page">
-      {/* Header */}
-      <div className="profile-header-card card">
+      {/* Main Profile Card Section */}
+      <div className="flex flex-col gap-6" id="profile-card">
+        {/* Header */}
+        <div className="profile-header-card card">
         <div className="profile-avatar-wrap">
           <div className="profile-avatar-circle">{initials}</div>
         </div>
@@ -72,6 +74,7 @@ export default function ProfileDemo() {
             <button type="button" className="pref-toggle-btn enabled" disabled>Enabled</button>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Theme hint */}
