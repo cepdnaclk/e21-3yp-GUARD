@@ -1,4 +1,11 @@
 @import './variables.css';
+
+/* ===== Tailwind CSS Core Directives =====
+   These inject Tailwind's base reset, component layer, and utility classes.
+   Custom CSS below intentionally overrides/extends Tailwind via the cascade. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 /* ========== Reset & Base ========== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

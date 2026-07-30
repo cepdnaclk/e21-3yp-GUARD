@@ -7,9 +7,7 @@ import AdminTable from '../components/admin/AdminTable';
 import DeviceInventoryTable from '../components/admin/DeviceInventoryTable';
 import DeviceRequestsTable from '../components/admin/DeviceRequestsTable';
 import { authApi, deviceApi, deviceRequestApi } from '../services/api';
-import '../styles/devices.css';
-import '../styles/profile.css';
-import '../styles/users.css';
+// devices.css, profile.css, users.css migrated to Tailwind below
 
 export default function Users() {
   const { role } = useAuth();
@@ -227,13 +225,14 @@ export default function Users() {
 
   return (
     <div>
-      <div className="users-header devices-header">
+      {/* .users-header / .devices-header */}
+      <div className="mb-4">
         <h3>Users{canViewUsers ? ` (${users.length})` : ''}</h3>
       </div>
 
       {/* Action Bar */}
-      <div className="card users-actions-card">
-        <div className="devices-actions">
+      <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-5">
+        <div className="flex flex-wrap gap-3">
           {canCreateAdmin && (
             <button
               type="button" className="btn action-btn"
@@ -288,8 +287,8 @@ export default function Users() {
 
       {/* Delete User */}
       {showDelete && canManageUsers && (
-        <div className="card devices-form-card">
-          <h3 className="devices-form-title">Delete User</h3>
+        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-4">
+          <h3 className="mt-0 mb-4 font-bold text-text-main dark:text-slate-100">Delete User</h3>
           {deleteError && <p className="error-msg">{deleteError}</p>}
           <form onSubmit={handleDeleteUser} className="devices-form">
             <div className="form-group devices-form-device-id">
@@ -331,8 +330,8 @@ export default function Users() {
 
       {/* Admin List (SUPER_ADMIN) */}
       {canViewAdmins && (
-        <div className="users-section">
-          <div className="users-header devices-header">
+        <div className="mt-6">
+          <div className="mb-3">
             <h3>Admins ({admins.length})</h3>
           </div>
           <AdminTable
@@ -347,8 +346,8 @@ export default function Users() {
 
       {/* Device Inventory (SUPER_ADMIN) */}
       {canViewInventory && (
-        <div className="users-section">
-          <div className="users-header devices-header">
+        <div className="mt-6">
+          <div className="mb-3">
             <h3>Device Inventory ({inventory.length})</h3>
           </div>
           <DeviceInventoryTable
@@ -361,8 +360,8 @@ export default function Users() {
 
       {/* Device Requests Queue (SUPER_ADMIN) */}
       {role === 'SUPER_ADMIN' && (
-        <div className="users-section">
-          <div className="users-header devices-header">
+        <div className="mt-6">
+          <div className="mb-3">
             <h3>Device Requests Queue ({requests.length})</h3>
           </div>
           {requestsLoading ? (

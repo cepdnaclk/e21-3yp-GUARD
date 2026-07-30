@@ -1,6 +1,6 @@
 # G.U.A.R.D — General Unit for Aquatic Risk Detection
 
-> Smart IoT monitoring & alert system for multi-tank aquatic facilities — featuring a Glassmorphism Dual-Mode UI, role-based access control, real-time WebSocket telemetry, and a guided onboarding tour.
+> Smart IoT monitoring & alert system for multi-tank aquatic facilities — featuring a Tailwind CSS Glassmorphism Dual-Mode UI, role-based access control, real-time WebSocket telemetry, and a guided onboarding tour.
 
 **Third Year Project — Team 08 · Department of Computer Engineering, University of Peradeniya**
 
@@ -19,20 +19,21 @@
 2. [System Architecture](#system-architecture)
 3. [Repository Structure](#repository-structure)
 4. [Tech Stack](#tech-stack)
-5. [Onboarding Tour & Demo Environment](#onboarding-tour--demo-environment)
-6. [Database Schema](#database-schema)
-7. [API Reference](#api-reference)
-8. [MQTT Protocol](#mqtt-protocol)
-9. [WebSocket Events](#websocket-events)
-10. [Alert Rules & Thresholds](#alert-rules--thresholds)
-11. [Ports & Services](#ports--services)
-12. [Environment Variables](#environment-variables)
-13. [Developer Helper Scripts](#developer-helper-scripts)
-14. [Getting Started — Quick Start](#getting-started--quick-start)
-15. [Getting Started — Backend](#getting-started--backend)
-16. [Getting Started — Frontend](#getting-started--frontend)
-17. [ESP32 / Firmware Integration](#esp32--firmware-integration)
-18. [Docker Support](#docker-support)
+5. [Tailwind CSS Design System & Migration](#tailwind-css-design-system--migration)
+6. [Onboarding Tour & Demo Environment](#onboarding-tour--demo-environment)
+7. [Database Schema](#database-schema)
+8. [API Reference](#api-reference)
+9. [MQTT Protocol](#mqtt-protocol)
+10. [WebSocket Events](#websocket-events)
+11. [Alert Rules & Thresholds](#alert-rules--thresholds)
+12. [Ports & Services](#ports--services)
+13. [Environment Variables](#environment-variables)
+14. [Developer Helper Scripts](#developer-helper-scripts)
+15. [Getting Started — Quick Start](#getting-started--quick-start)
+16. [Getting Started — Backend](#getting-started--backend)
+17. [Getting Started — Frontend](#getting-started--frontend)
+18. [ESP32 / Firmware Integration](#esp32--firmware-integration)
+19. [Docker Support](#docker-support)
 
 ---
 
@@ -51,11 +52,11 @@ G.U.A.R.D is an enterprise-grade aquaculture real-time monitoring and alerting s
 **Key capabilities:**
 
 - **Real-Time Telemetry Gauges:** Dynamic SVG arc gauges for Temperature (°C), pH, TDS (ppm), Turbidity (NTU), and Water Level (%).
-- **Glassmorphism Dual-Mode UI:** "Milky Frost" light mode and "Obsidian Glow" dark mode using a Windows 11 Fluent Design glass system.
-- **Multi-Channel Alerts:** Real-time WebSocket alerts (`socket.io`), visual toast notifications, and SMTP email delivery.
+- **Tailwind CSS Glassmorphism Dual-Mode UI:** "Milky Frost" light mode and "Obsidian Glow" dark mode with glassmorphic cards (`bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl`).
+- **Multi-Channel Alerts:** Real-time WebSocket alerts (`socket.io`), visual toast notifications, email delivery (SMTP), and Telegram Bot verification (`@GUARD_yp_bot`).
 - **Role-Based Access Control:** `SUPER_ADMIN`, `ADMIN`, and `USER` account management with tank assignment.
 - **Interactive Analytics:** Sensor history visualization powered by Recharts with a custom glass date picker (`react-day-picker`).
-- **Fish Species Knowledge Base:** Comprehensive fish species library with optimal water parameter ranges cross-referenced against tank thresholds.
+- **Fish Species Knowledge Base:** Comprehensive fish species library with optimal water parameter ranges cross-referenced against tank thresholds (`FishDetailDrawer` & `AddEditModal`).
 - **Guided Onboarding Tour:** Role-aware `driver.js` tour across a `/demo` sandbox environment — separate from live data, auto-skippable, and resumable via the "🗺️ Tour" button.
 - **ESP32 Device Security:** Device authentication with bcrypt-hashed device secrets.
 
@@ -94,7 +95,7 @@ G.U.A.R.D is an enterprise-grade aquaculture real-time monitoring and alerting s
                                               ▼
                                 ┌─────────────────────────────────┐
                                 │      React Dashboard UI         │
-                                │  Glassmorphism Dual-Mode        │
+                                │  Tailwind CSS Glassmorphism     │
                                 │  port 5173 (Vite dev)           │
                                 │                                  │
                                 │  ┌──────────────────────────┐   │
@@ -110,7 +111,7 @@ G.U.A.R.D is an enterprise-grade aquaculture real-time monitoring and alerting s
 2. The backend MQTT client ingests the payload, verifies the device using `deviceUid` and `deviceSecret` (bcrypt authentication), and records telemetry.
 3. State data is stored via Prisma ORM in MongoDB; time-series history is persisted in InfluxDB.
 4. The Alert Engine checks configured thresholds (temperature, pH, TDS, turbidity, water level). If a threshold is breached and no unresolved alert of the same type exists for that tank, an `Alert` is generated.
-5. The alert is instantly pushed to connected React clients via WebSocket (`socket.io`) and dispatched by email if SMTP is configured.
+5. The alert is instantly pushed to connected React clients via WebSocket (`socket.io`), email if SMTP is configured, and Telegram if linked.
 6. The React frontend interacts with the backend via JWT-authenticated REST APIs for analytics, tank configuration, user management, and threshold customisation.
 7. First-time users are automatically routed to the `/demo` sandbox where a `driver.js` guided tour walks them through every feature using static mock data — without touching the live backend.
 
@@ -131,18 +132,21 @@ e21-3yp-GUARD/
 │   │       ├── lib/                    ← Prisma & InfluxDB connections
 │   │       └── index.js                ← HTTP & WebSocket server entry
 │   │
-│   └── frontend/                       ← React 19 / Vite Frontend
+│   └── frontend/                       ← React 19 / Vite / Tailwind CSS Frontend
+│       ├── tailwind.config.js          ← Tailwind design tokens & dark mode config
+│       ├── postcss.config.js           ← PostCSS configuration
 │       └── src/
 │           ├── App.jsx                 ← Router root with SmartRedirect
+│           ├── main.jsx                ← Base CSS & global tour.css import
 │           ├── components/
-│           │   ├── Layout.jsx          ← Production nav (with 🗺️ Tour button)
-│           │   ├── SensorGauge.jsx     ← SVG arc gauge component
+│           │   ├── Layout.jsx          ← Production glass nav (with 🗺️ Tour button)
+│           │   ├── PublicNav.jsx       ← Public top navigation bar
+│           │   ├── SensorGauge.jsx     ← SVG arc gauge component (Tailwind)
 │           │   ├── WaterTankLevel.jsx  ← Water level visualiser
-│           │   ├── TankTimeSeriesChart.jsx
-│           │   ├── ThresholdsPanel.jsx
-│           │   ├── ActuatorPanel.jsx
+│           │   ├── ThresholdsPanel.jsx ← Dual-range threshold sliders (Tailwind)
+│           │   ├── ActuatorPanel.jsx   ← Pump & feeder controls (Tailwind)
 │           │   ├── DatePicker.jsx      ← Glass calendar popup
-│           │   ├── admin/              ← Admin-only table components
+│           │   ├── admin/              ← Admin-only table & form components
 │           │   ├── auth/               ← Auth form components
 │           │   ├── demo/
 │           │   │   └── DemoLayout.jsx  ← Demo nav (Demo badge + Exit Demo)
@@ -163,15 +167,15 @@ e21-3yp-GUARD/
 │           │   ├── DeviceDetail.jsx    ← Per-tank detail & threshold config
 │           │   ├── SensorHistory.jsx   ← Recharts time-series analytics
 │           │   ├── Alerts.jsx          ← Alert queue & resolution
-│           │   ├── FishInfo.jsx        ← Fish species library
+│           │   ├── FishInfo.jsx        ← Fish species library & compatibility drawer
 │           │   ├── Users.jsx           ← Admin user & tank assignment
-│           │   ├── Profile.jsx         ← Account & notification preferences
+│           │   ├── Profile.jsx         ← Profile details, OTP & Telegram verification
 │           │   ├── Login.jsx           ← Login page
 │           │   ├── Register.jsx        ← Registration page
 │           │   ├── VerifyEmail.jsx     ← Email verification gate
 │           │   ├── DemoPage.jsx        ← /demo route shell & tour bootstrap
-│           │   ├── Landing/            ← Public landing & about pages
-│           │   └── demo/               ← Demo page wrappers (no API calls)
+│           │   ├── Landing/            ← Landing.jsx & About.jsx (Tailwind)
+│           │   └── demo/               ← Demo page wrappers (Tailwind)
 │           │       ├── DashboardDemo.jsx
 │           │       ├── DevicesDemo.jsx
 │           │       ├── SensorHistoryDemo.jsx
@@ -182,14 +186,10 @@ e21-3yp-GUARD/
 │           ├── services/
 │           │   ├── api.js              ← Axios REST client
 │           │   └── socket.js           ← socket.io client
-│           ├── styles/
-│           │   ├── variables.css       ← Glass design tokens
-│           │   ├── base.css            ← Global styles & typography
-│           │   ├── layout.css          ← Topnav glass styles
-│           │   ├── tour.css            ← driver.js popover & tour-active styles
-│           │   └── ...                 ← Page-scoped stylesheets
-│           └── utils/
-│               └── formatUtils.js      ← Date/number formatters
+│           └── styles/
+│               ├── base.css            ← Tailwind directives (@tailwind) & bridge classes
+│               ├── tour.css            ← driver.js popover & tour-active styles
+│               └── [deprecated CSS]    ← Legacy CSS files deprecated in favor of Tailwind
 ├── docs/
 ├── start_all.ps1 / start_all.bat       ← Full-stack start helpers
 ├── kill_all.ps1 / kill_all.bat         ← Service shutdown helpers
@@ -220,8 +220,8 @@ e21-3yp-GUARD/
 | ------------------- | ---------------------- | ----------------------------------------- |
 | Framework           | React 19               | Component-driven UI framework             |
 | Build Tool          | Vite 7.x               | Lightning-fast HMR & bundler              |
+| Styling             | Tailwind CSS v3.4      | Utility-first design system & glassmorphic UI |
 | Routing             | React Router v6        | Client-side route management              |
-| UI Design           | Vanilla CSS Glassmorphism | Milky Frost / Obsidian Glow dual theme |
 | Telemetry Charts    | Recharts 2.x           | Interactive time-series data graphing     |
 | Date Selector       | react-day-picker 10.x  | Custom glass-styled calendar picker       |
 | Real-time Socket    | socket.io-client 4.x   | Real-time telemetry & alert listener      |
@@ -236,6 +236,36 @@ e21-3yp-GUARD/
 | PubSubClient                 | MQTT telemetry publishing           |
 | ArduinoJson                  | JSON payload serialisation          |
 | OneWire + DallasTemperature  | DS18B20 temperature sensor          |
+
+---
+
+## Tailwind CSS Design System & Migration
+
+The frontend application has been migrated from legacy CSS stylesheets to **Tailwind CSS** using a strict Strangler Fig pattern.
+
+### 1. Configuration (`tailwind.config.js`)
+- **Dark Mode Selector:** `darkMode: ['selector', '[data-theme="dark"]']` to sync with `ThemeContext`.
+- **Typography:** `Outfit` for body & headlines; `JetBrains Mono` (`font-mono`) for numerical telemetry gauges and timestamps.
+- **Glassmorphism Standard Card Formula:**
+  ```html
+  <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl">
+  ```
+
+### 2. Upgraded Glassmorphism Navigation (`Layout.jsx`)
+- Sticky top navigation featuring a gradient backdrop tint, `backdrop-blur-xl`, sky-blue accent border, and dark-mode toggle switch:
+  ```html
+  <nav className="sticky top-0 z-50 flex items-center px-7 min-h-[62px] bg-gradient-to-r from-[rgba(1,30,55,0.82)] to-[rgba(2,52,96,0.76)] dark:from-[rgba(4,12,28,0.88)] dark:to-[rgba(6,18,40,0.82)] backdrop-blur-xl border-b border-sky-400/20 dark:border-sky-500/10 shadow-[0_2px_20px_rgba(0,0,0,0.28)]">
+  ```
+
+### 3. Migrated Components & Pages
+- **Components:** `SensorGauge.jsx`, `WaterTankLevel.jsx`, `ThresholdsPanel.jsx`, `ActuatorPanel.jsx`, `DatePicker.jsx`.
+- **Production Pages:** `Dashboard.jsx`, `Alerts.jsx`, `Devices.jsx`, `DeviceDetail.jsx`, `SensorHistory.jsx`, `Users.jsx`, `Profile.jsx`, `FishInfo.jsx`, `Landing.jsx`, `About.jsx`.
+- **Demo Sandbox Pages:** `DashboardDemo.jsx`, `AlertsDemo.jsx`, `DevicesDemo.jsx`, `UsersDemo.jsx`, `SensorHistoryDemo.jsx`.
+- **Admin Sub-components:** `CreateAccountForm.jsx`, `AddDeviceForm.jsx`, `TourOverlay.jsx`.
+
+### 4. Deprecated Stylesheets
+The following legacy CSS files have been deprecated and wrapped in block comments:
+`layout.css`, `actuators.css`, `thresholds.css`, `datepicker.css`, `dashboard.css`, `device-detail.css`, `alerts.css`, `devices.css`, `sensor-history.css`, `users.css`, `CreateAccountForm.css`, `profile.css`, `fish-info.css`, `landing.css`, `about.css`.
 
 ---
 
@@ -292,11 +322,11 @@ User logs in for the first time
 
 ### Key tour UX details
 
-- **Nav highlighting:** When the tour runs, `html.tour-active` is added to `<html>`. This elevates the sticky topnav (`z-index: 10005`) above driver.js's overlay so the active NavLink glows with a pulsing cyan ring — telling the user exactly which section they are in at every step.
-- **Theme toggle step (Step 7):** Targets `#tour-theme-toggle` inside the elevated topnav with a custom glow animation, since driver.js normally cannot reach elements above its own overlay.
-- **Smooth transitions:** `TourOverlay` uses `driver.highlight()` per step (not `drive()`) with `MutationObserver`-based element detection — the overlay stays alive during route changes via a brief "Loading…" transitional popover on `body`.
-- **Skip & Resume:** Clicking "✕ Exit Demo" or the popover close button marks the tour done in `localStorage` keyed as `guard_tour_<userId>`. The "🗺️ Tour" button in the production nav resets the flag and relaunches the tour.
-- **Role-aware:** `buildTourSteps(role)` returns 7 common steps for `USER` accounts and appends 4 admin-only steps (device registration, user creation, tank assignment, threshold config) for `ADMIN` accounts.
+- **Nav highlighting:** When the tour runs, `html.tour-active` is added to `<html>`. This elevates the sticky topnav (`z-index: 10005`) above driver.js's overlay so the active NavLink glows with a pulsing cyan ring.
+- **Theme toggle step (Step 7):** Targets `#tour-theme-toggle` inside the elevated topnav with a custom glow animation.
+- **Smooth transitions:** `TourOverlay` uses `driver.highlight()` per step with `MutationObserver`-based element detection.
+- **Skip & Resume:** Clicking "✕ Exit Demo" or the popover close button marks the tour done in `localStorage`. The "🗺️ Tour" button in the production nav resets the flag and relaunches the tour.
+- **Role-aware:** `buildTourSteps(role)` returns 7 common steps for `USER` accounts and appends 4 admin-only steps for `ADMIN` accounts.
 
 ---
 
@@ -431,7 +461,7 @@ socket.on("alert", (alertData) => {
 
 ## Alert Rules & Thresholds
 
-Thresholds are **per-device** and configurable from the Devices → Details panel. The following are the system defaults:
+Thresholds are **per-device** and configurable from the Devices → Details panel. Default system values:
 
 | Alert Type        | Condition                         | Default Threshold |
 | ----------------- | --------------------------------- | ----------------- |
@@ -451,7 +481,7 @@ Thresholds are **per-device** and configurable from the Devices → Details pane
 | ------------------- | ------------ | -------------- | --------------------------------- |
 | Backend REST API    | **5000**     | HTTP           | Express API server                |
 | Backend WebSocket   | **5000**     | WS             | socket.io real-time alert stream  |
-| Frontend Dev Server | **5173**     | HTTP           | Vite React app (may use 5174+)    |
+| Frontend Dev Server | **5173**     | HTTP           | Vite React app                    |
 | MongoDB             | **27017**    | TCP            | Primary MongoDB database          |
 | InfluxDB            | **8086**     | HTTP           | Telemetry time-series database    |
 | MQTT Broker         | **1883/8883**| MQTT / MQTTS   | HiveMQ Cloud / Mosquitto          |
@@ -485,7 +515,7 @@ VITE_SOCKET_URL=http://localhost:5000
 
 ## Developer Helper Scripts
 
-Root scripts to quickly manage full-stack services:
+Root scripts to manage full-stack services:
 
 | Script         | Command                                | Purpose                                                         |
 | :------------- | :------------------------------------- | :-------------------------------------------------------------- |
@@ -505,8 +535,8 @@ cd e21-3yp-GUARD
 
 ### 2. Configure environment files
 
-- Copy `code/backend/.env.example` → `code/backend/.env` and fill in your values.
-- Copy `code/frontend/.env.local.example` → `code/frontend/.env.local` and fill in your values.
+- Copy `code/backend/.env.example` → `code/backend/.env`
+- Copy `code/frontend/.env.local.example` → `code/frontend/.env.local`
 
 ### 3. Launch all services
 
@@ -565,7 +595,7 @@ Each G.U.A.R.D hardware node is an ESP32 microcontroller fitted with:
 | Turbidity Sensor | Turbidity (NTU) | Analog |
 | Ultrasonic / Float | Water Level (%) | Digital |
 
-The firmware publishes a JSON payload to the MQTT topic `aquamonitor/devices/<deviceUid>/data` every configurable interval (default 30 s). The backend verifies the `device_secret` field using bcrypt before recording any reading.
+The firmware publishes a JSON payload to `aquamonitor/devices/<deviceUid>/data` every configurable interval (default 30 s). The backend verifies `device_secret` using bcrypt before recording telemetry.
 
 ---
 
@@ -581,8 +611,6 @@ docker-compose up -d
 This starts:
 - **MongoDB** on port `27017`
 - **InfluxDB** on port `8086`
-
-The Node.js backend and Vite frontend are run natively (outside Docker) for optimal HMR during development.
 
 ---
 

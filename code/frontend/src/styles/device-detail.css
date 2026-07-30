@@ -1,3 +1,6 @@
+/* DEPRECATED — device-detail.css: styles migrated to Tailwind in DeviceDetail.jsx */
+/* .btn-danger retained as minimal override for DeviceDetail's remove button */
+
 /* ========== Device Detail ========== */
 .device-detail-header {
   display: flex;

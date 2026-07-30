@@ -1,3 +1,6 @@
+/* DEPRECATED — alerts.css: all styles migrated to Tailwind in Alerts.jsx */
+/* @keyframes highlight-fade kept as self-contained <style> block in Alerts.jsx */
+
 /* ========== Notifications / Alerts ========== */
 .alerts-page {
   min-height: calc(100vh - 62px);

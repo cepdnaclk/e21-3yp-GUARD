@@ -1,25 +1,23 @@
 import { useState } from 'react';
 import { useDemo } from '../../context/DemoContext';
 import { useAuth } from '../../context/AuthContext';
-import '../../styles/devices.css';
-import '../../styles/users.css';
+// devices.css + users.css migrated to Tailwind below (same as production Users.jsx)
 
 export default function UsersDemo() {
   const { demoUsers, demoDevices } = useDemo();
   const { role } = useAuth();
   const canCreateUser = role === 'ADMIN';
-
   const [showAddUser, setShowAddUser] = useState(false);
 
   return (
     <div>
-      <div className="users-header devices-header">
+      <div className="mb-4">
         <h3>Users ({demoUsers.length})</h3>
       </div>
 
       {/* Action bar */}
-      <div className="card users-actions-card">
-        <div className="devices-actions">
+      <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-5">
+        <div className="flex flex-wrap gap-3">
           {canCreateUser && (
             <button
               id="add-user-btn"
@@ -41,8 +39,8 @@ export default function UsersDemo() {
 
       {/* Demo add-user form */}
       {showAddUser && canCreateUser && (
-        <div className="card devices-form-card">
-          <h3 className="devices-form-title">Create Worker Account</h3>
+        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mb-4">
+          <h3 className="mt-0 mb-4 font-bold text-text-main dark:text-slate-100">Create Worker Account</h3>
           <p style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: 10 }}>
             🎭 Demo mode — form is read-only.
           </p>
@@ -59,7 +57,7 @@ export default function UsersDemo() {
               <label>Email</label>
               <input className="form-input" type="email" readOnly defaultValue="worker@guard.local" />
             </div>
-            <button type="submit" className="btn btn-primary devices-form-submit" disabled>Create</button>
+            <button type="submit" className="btn btn-primary" disabled>Create</button>
           </form>
         </div>
       )}
