@@ -6,6 +6,9 @@ export default function ActuatorPanel({ tankId }) {
     const [loading, setLoading] = useState(null);
     const [status, setStatus] = useState({ type: '', message: '' });
     const [lastAction, setLastAction] = useState(null);
+    const [activePumpMode, setActivePumpMode] = useState(() => {
+        return localStorage.getItem(`guard_pump_mode_${tankId}`) || 'pump_auto';
+    });
 
     const handleCommand = async (command) => {
         setLoading(command);
@@ -13,6 +16,12 @@ export default function ActuatorPanel({ tankId }) {
         try {
             await deviceApi.actuate(tankId, command);
             setLastAction({ command, time: new Date() });
+            
+            if (['pump_on', 'pump_off', 'pump_auto'].includes(command)) {
+                setActivePumpMode(command);
+                localStorage.setItem(`guard_pump_mode_${tankId}`, command);
+            }
+
             setStatus({
                 type: 'success',
                 message: `${command.replace('_', ' ').toUpperCase()} sent.`
@@ -32,7 +41,7 @@ export default function ActuatorPanel({ tankId }) {
             bg-white/60 dark:bg-slate-800/40 backdrop-blur-md
             border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6
         */
-        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6 mt-6">
+        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl p-6">
 
             {/* .card-header */}
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-white/20 dark:border-white/10">
@@ -64,22 +73,37 @@ export default function ActuatorPanel({ tankId }) {
                     <h4 className="m-0 text-text-main dark:text-slate-200 text-sm font-semibold whitespace-nowrap">Pumps</h4>
                     {/* .pump-controls → flex gap-1 */}
                     <div className="flex gap-1">
+                        {/* PUMP ON */}
                         <button
-                            className={`px-[0.6rem] py-[0.3rem] font-bold tracking-wide uppercase text-[0.65rem] min-w-[50px] rounded bg-success text-white hover:opacity-90 transition-opacity disabled:opacity-60 ${loading === 'pump_on' ? 'opacity-70' : ''}`}
+                            className={`px-[0.6rem] py-[0.3rem] font-bold tracking-wide uppercase text-[0.65rem] min-w-[50px] rounded text-white transition-all disabled:opacity-60 ${
+                                activePumpMode === 'pump_on'
+                                    ? 'bg-success ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-900 shadow-[0_0_12px_rgba(34,197,94,0.7)] scale-105 opacity-100'
+                                    : 'bg-emerald-800/40 text-emerald-200/60 border border-emerald-500/20 hover:bg-emerald-700/60 opacity-60'
+                            } ${loading === 'pump_on' ? 'animate-pulse' : ''}`}
                             onClick={() => handleCommand('pump_on')}
                             disabled={loading !== null}
                         >
                             {loading === 'pump_on' ? '...' : 'ON'}
                         </button>
+                        {/* PUMP OFF */}
                         <button
-                            className={`px-[0.6rem] py-[0.3rem] font-bold tracking-wide uppercase text-[0.65rem] min-w-[50px] rounded bg-danger text-white hover:opacity-90 transition-opacity disabled:opacity-60 ${loading === 'pump_off' ? 'opacity-70' : ''}`}
+                            className={`px-[0.6rem] py-[0.3rem] font-bold tracking-wide uppercase text-[0.65rem] min-w-[50px] rounded text-white transition-all disabled:opacity-60 ${
+                                activePumpMode === 'pump_off'
+                                    ? 'bg-danger ring-2 ring-red-400 ring-offset-2 ring-offset-slate-900 shadow-[0_0_12px_rgba(239,68,68,0.7)] scale-105 opacity-100'
+                                    : 'bg-rose-900/40 text-rose-200/60 border border-rose-500/20 hover:bg-rose-800/60 opacity-60'
+                            } ${loading === 'pump_off' ? 'animate-pulse' : ''}`}
                             onClick={() => handleCommand('pump_off')}
                             disabled={loading !== null}
                         >
                             {loading === 'pump_off' ? '...' : 'OFF'}
                         </button>
+                        {/* PUMP AUTO */}
                         <button
-                            className={`px-[0.6rem] py-[0.3rem] font-bold tracking-wide uppercase text-[0.65rem] min-w-[50px] rounded bg-[#17a2b8] text-white hover:opacity-90 transition-opacity disabled:opacity-60 ${loading === 'pump_auto' ? 'opacity-70' : ''}`}
+                            className={`px-[0.6rem] py-[0.3rem] font-bold tracking-wide uppercase text-[0.65rem] min-w-[50px] rounded text-white transition-all disabled:opacity-60 ${
+                                activePumpMode === 'pump_auto'
+                                    ? 'bg-[#17a2b8] ring-2 ring-cyan-300 ring-offset-2 ring-offset-slate-900 shadow-[0_0_12px_rgba(23,162,184,0.7)] scale-105 opacity-100'
+                                    : 'bg-cyan-900/40 text-cyan-200/60 border border-cyan-500/20 hover:bg-cyan-800/60 opacity-60'
+                            } ${loading === 'pump_auto' ? 'animate-pulse' : ''}`}
                             onClick={() => handleCommand('pump_auto')}
                             disabled={loading !== null}
                         >
@@ -105,3 +129,4 @@ export default function ActuatorPanel({ tankId }) {
         </div>
     );
 }
+

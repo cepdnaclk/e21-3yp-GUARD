@@ -1,12 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import ReactECharts from 'echarts-for-react';
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { deviceApi, sensorApi } from '../services/api';
 import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../constants/sensorConstants';
 import { formatChartTime } from '../utils/formatUtils';
-import { useTheme } from '../context/ThemeContext';
 import GlassDatePicker from '../components/DatePicker';
-// sensor-history.css migrated to Tailwind below
 
 function transformReadingsToChartData(items) {
   const grouped = new Map();
@@ -42,72 +49,9 @@ function getLineConfig(sensorId) {
   return SENSOR_LINE_CONFIG[sensorId] || null;
 }
 
-function buildChartOption(chartData, lineConfigs, isDark) {
-  const textColor = isDark ? '#ffffff' : '#334155';
-  const titleColor = isDark ? '#ffffff' : '#0f172a';
-  const axisLineColor = isDark ? '#30363d' : '#d8e0eb';
-  const tooltipBg = isDark ? '#161b22' : '#ffffff';
-  const tooltipBorder = isDark ? '1px solid #30363d' : '1px solid #f1f5f9';
-
-  return {
-    grid: { top: 40, right: 24, bottom: 70, left: 50 },
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: tooltipBg,
-      borderWidth: 0,
-      extraCssText: 'border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); padding: 12px;',
-      textStyle: { color: textColor },
-      formatter: (params) => {
-        if (!params || params.length === 0) return '';
-        const raw = chartData[params[0].dataIndex];
-        const title = raw ? formatChartTime(raw.time) : params[0].axisValueLabel;
-        const rows = params
-          .filter((p) => p.data !== null && p.data !== undefined)
-          .map((p) => '<div style="padding:2px 0;font-weight:500;color:' + textColor + ';">' + p.marker + ' ' + p.seriesName + ': ' + p.data + '</div>')
-          .join('');
-        return '<div style="font-weight:700;margin-bottom:8px;border-bottom:' + tooltipBorder + ';padding-bottom:4px;color:' + titleColor + ';">' + title + '</div>' + rows;
-      }
-    },
-    legend: {
-      data: lineConfigs.map((c) => c.label),
-      top: 0,
-      textStyle: { color: textColor }
-    },
-    xAxis: {
-      type: 'category',
-      data: chartData.map((row) => formatChartTime(row.time)),
-      axisLabel: {
-        color: textColor,
-        fontSize: 11,
-        rotate: 30,
-        hideOverlap: true
-      },
-      axisLine: { lineStyle: { color: axisLineColor } }
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: { color: textColor, fontSize: 12 },
-      splitLine: { lineStyle: { color: axisLineColor, type: 'dashed' } }
-    },
-    series: lineConfigs.map((config) => ({
-      name: config.label,
-      type: 'line',
-      smooth: true,
-      showSymbol: false,
-      connectNulls: true,
-      lineStyle: { color: config.color, width: 2 },
-      itemStyle: { color: config.color },
-      data: chartData.map((row) => row[config.key] ?? null)
-    }))
-  };
-}
-
 export default function SensorHistory() {
   const [searchParams] = useSearchParams();
   const initialDeviceId = searchParams.get('device_id') || searchParams.get('deviceId') || '';
-
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
   const [devices, setDevices] = useState([]);
   const [readings, setReadings] = useState([]);
@@ -116,6 +60,7 @@ export default function SensorHistory() {
   const [fetchError, setFetchError] = useState('');
   const [fetchInfo, setFetchInfo] = useState('');
   const [hasFetched, setHasFetched] = useState(false);
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' (Newest first) or 'asc' (Oldest first)
 
   const [filters, setFilters] = useState({
     deviceId: initialDeviceId,
@@ -181,6 +126,15 @@ export default function SensorHistory() {
     }
   };
 
+  // Sort fetched readings by readingTime ascending or descending
+  const sortedReadings = useMemo(() => {
+    return [...readings].sort((a, b) => {
+      const timeA = new Date(a.readingTime).getTime();
+      const timeB = new Date(b.readingTime).getTime();
+      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+  }, [readings, sortOrder]);
+
   const clearReadings = () => {
     setReadings([]);
     setHasFetched(false);
@@ -190,10 +144,10 @@ export default function SensorHistory() {
   };
 
   const downloadReport = () => {
-    if (readings.length === 0) return;
+    if (sortedReadings.length === 0) return;
 
     const headers = ['#', 'Sensor', 'Value', 'Reading Time'];
-    const csvRows = readings.map((r, i) => [
+    const csvRows = sortedReadings.map((r, i) => [
       i + 1,
       `"${r.sensorType?.sensorName || r.sensorId}"`,
       r.value,
@@ -225,7 +179,6 @@ export default function SensorHistory() {
     <>
       <div className="card" id="analytics-card">
         {fetchError ? <p className="error-msg">{fetchError}</p> : null}
-        {/* .sensor-history-summary */}
         {fetchInfo ? <p className="text-text-muted text-base mb-3">{fetchInfo}</p> : null}
         <div className="filters">
           <div className="form-group">
@@ -266,6 +219,13 @@ export default function SensorHistory() {
               onChange={(v) => setFilters((prev) => ({ ...prev, to: v }))}
             />
           </div>
+          <div className="form-group">
+            <label>Sort By Time</label>
+            <select className='form-input' value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+              <option value="desc">Newest First (Descending ⬇️)</option>
+              <option value="asc">Oldest First (Ascending ⬆️)</option>
+            </select>
+          </div>
         </div>
 
         <div className="filter-actions" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -302,9 +262,7 @@ export default function SensorHistory() {
       <div className="card">
         {showAnalytics && readings.length > 0 && (
           <div>
-            {/* .sensor-history-chart-title */}
             <h4 className="mb-4 text-[1.1rem] font-bold text-text-main dark:text-slate-200">Analytics</h4>
-            {/* .sensor-chart-wrap */}
             <div className="w-full min-h-[360px] overflow-x-auto p-4">
               <ResponsiveContainer width="100%" height={360}>
                 <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
@@ -382,13 +340,12 @@ export default function SensorHistory() {
           </p>
         )}
 
-        {readings.length === 0 ? (
+        {sortedReadings.length === 0 ? (
           <div className="empty-state"><p>{hasFetched ? 'No readings found for the selected filters.' : 'Select a device and click Fetch.'}</p></div>
         ) : (
           <>
-            {/* .sensor-history-summary */}
             <p className="text-text-muted text-base mb-3">
-              Showing {readings.length} reading{readings.length !== 1 ? 's' : ''}
+              Showing {sortedReadings.length} reading{sortedReadings.length !== 1 ? 's' : ''} (Sorted by time {sortOrder === 'desc' ? '⬇️ Newest first' : '⬆️ Oldest first'})
             </p>
             <div className="table-wrap">
               <table>
@@ -397,11 +354,17 @@ export default function SensorHistory() {
                     <th>#</th>
                     <th>Sensor</th>
                     <th>Value</th>
-                    <th>Reading Time</th>
+                    <th 
+                      onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                      className="cursor-pointer hover:text-sky-400 transition-colors select-none"
+                      title="Click to toggle time sort order"
+                    >
+                      Reading Time {sortOrder === 'desc' ? '⬇️' : '⬆️'}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {readings.map((r, i) => (
+                  {sortedReadings.map((r, i) => (
                     <tr key={r.id}>
                       <td>{i + 1}</td>
                       <td>{r.sensorType?.sensorName || r.sensorId}</td>

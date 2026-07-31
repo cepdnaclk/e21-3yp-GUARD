@@ -158,7 +158,7 @@ export default function DeviceDetail() {
   if (error) return <div className="empty-state"><p className="error-msg">{error}</p></div>;
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {/* .device-detail-header → flex justify-between items-center mb-4 */}
       <div className="flex justify-between items-center mb-4">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -197,7 +197,10 @@ export default function DeviceDetail() {
               const name = r.sensorType?.sensorName || `Sensor ${r.sensorId}`;
               const unit = SENSOR_UNITS[name.toLowerCase()] ?? '';
               return (
-                <div className="sensor-card" key={r.id}>
+                <div
+                  className="sensor-card !bg-[rgba(14,52,84,0.06)] dark:!bg-white/[0.04] !border-[rgba(14,52,84,0.10)] dark:!border-white/[0.06] transition-all duration-200 hover:-translate-y-1 hover:!bg-[rgba(14,52,84,0.10)] dark:hover:!bg-white/[0.07] hover:!border-[rgba(14,52,84,0.18)] dark:hover:!border-white/10"
+                  key={r.id}
+                >
                   <div className="sensor-name">{name}</div>
                   <div className="sensor-value">
                     {typeof r.value === 'number' ? r.value.toFixed(1) : r.value}{unit}
@@ -308,6 +311,6 @@ export default function DeviceDetail() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
