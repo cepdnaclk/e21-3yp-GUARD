@@ -1,1064 +1,1703 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>G.U.A.R.D — General Unit for Aquatic Risk Detection</title>
-  <meta name="description" content="Enterprise-grade IoT aquaculture monitoring. Real-time water quality telemetry, ESP32 sensor nodes, and a glassmorphic React dashboard — Team 08, University of Peradeniya." />
+  <meta name="description" content="Enterprise-grade IoT aquaculture monitoring. Real-time water quality telemetry via ESP32, MQTT, and a glassmorphic React dashboard. Team 08, University of Peradeniya." />
+  <meta property="og:title" content="G.U.A.R.D — Aquatic Risk Detection System" />
+  <meta property="og:description" content="Smart IoT monitoring and alert system for multi-tank aquaculture facilities." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-
   <style>
-    /* ── DESIGN TOKENS (from COLOR_PALETTE.md + tailwind.config.js) ── */
+    /* ═══════════════════════════════════════════════
+       DESIGN TOKENS — Mirrored from variables.css
+       ═══════════════════════════════════════════════ */
     :root {
-      --primary:       #0ea5e9;
-      --primary-dark:  #0284c7;
-      --primary-glow:  rgba(14,165,233,0.35);
-      --success:       #22c55e;
-      --danger:        #ef4444;
-      --warning:       #f59e0b;
-      --canvas:        #060c16;
-      --surface:       rgba(255,255,255,0.055);
-      --border:        rgba(255,255,255,0.10);
-      --border-accent: rgba(14,165,233,0.30);
-      --text-main:     #f0f6fc;
-      --text-muted:    #8b949e;
-      --text-dim:      #4a5568;
-      --font-sans:     'Outfit', sans-serif;
-      --font-mono:     'JetBrains Mono', monospace;
-      /* Sensor accent colours */
-      --temp:          #f97316;
-      --ph:            #a855f7;
-      --tds:           #0ea5e9;
-      --turbidity:     #14b8a6;
-      --waterlevel:    #3b82f6;
+      /* Brand */
+      --primary:        #0ea5e9;
+      --primary-dark:   #0284c7;
+      --primary-glow:   rgba(14,165,233,.30);
+      --success:        #22c55e;
+      --danger:         #ef4444;
+      --warning:        #f59e0b;
+      /* Sensor accents */
+      --c-temp:         #f97316;
+      --c-ph:           #a855f7;
+      --c-tds:          #0ea5e9;
+      --c-turbidity:    #14b8a6;
+      --c-level:        #3b82f6;
+      /* Fonts */
+      --font-sans:      'Outfit', sans-serif;
+      --font-mono:      'JetBrains Mono', monospace;
+      /* Light Mode — Milky Frost */
+      --page-bg:        #e8f3fb;
+      --page-blob-1:    radial-gradient(ellipse 55% 45% at 12% 18%, rgba(14,165,233,.18) 0%, transparent 68%);
+      --page-blob-2:    radial-gradient(ellipse 45% 55% at 88% 8%,  rgba(99,102,241,.14) 0%, transparent 62%);
+      --page-blob-3:    radial-gradient(ellipse 65% 38% at 50% 88%, rgba(16,185,129,.12) 0%, transparent 62%);
+      --page-blob-4:    radial-gradient(ellipse 38% 48% at 78% 58%, rgba(245,158,11,.10) 0%, transparent 58%);
+      --page-blob-5:    radial-gradient(ellipse 50% 42% at 30% 70%, rgba(14,165,233,.08) 0%, transparent 55%);
+      --glass-bg:          rgba(255,255,255,.62);
+      --glass-bg-strong:   rgba(255,255,255,.78);
+      --glass-border:      rgba(255,255,255,.75);
+      --glass-border-sub:  rgba(200,220,240,.55);
+      --glass-shadow:      0 8px 32px rgba(14,52,84,.10), 0 2px 8px rgba(14,52,84,.06);
+      --glass-shadow-lg:   0 16px 48px rgba(14,52,84,.14), 0 4px 16px rgba(14,52,84,.08);
+      --glass-shadow-h:    0 20px 60px rgba(14,52,84,.18), 0 6px 20px rgba(14,52,84,.10);
+      --text-main:      #0f172a;
+      --text-muted:     #334155;
+      --text-dim:       #64748b;
+      --border-line:    rgba(200,220,240,.70);
+      --nav-bg:         rgba(255,255,255,.80);
+      --code-bg:        rgba(14,52,84,.06);
+      --table-head:     rgba(14,165,233,.08);
+      --table-row-h:    rgba(14,165,233,.04);
+      --kicker-color:   #0284c7;
+    }
+    [data-theme="dark"] {
+      --primary:        #38bdf8;
+      --primary-dark:   #0ea5e9;
+      --primary-glow:   rgba(56,189,248,.28);
+      --page-bg:        #060c16;
+      --page-blob-1:    radial-gradient(ellipse 58% 48% at 8%  14%, rgba(14,165,233,.16) 0%, transparent 68%);
+      --page-blob-2:    radial-gradient(ellipse 48% 58% at 92% 8%,  rgba(99,102,241,.14) 0%, transparent 62%);
+      --page-blob-3:    radial-gradient(ellipse 68% 38% at 55% 92%, rgba(16,185,129,.10) 0%, transparent 62%);
+      --page-blob-4:    radial-gradient(ellipse 38% 48% at 82% 52%, rgba(56,189,248,.09) 0%, transparent 58%);
+      --page-blob-5:    radial-gradient(ellipse 48% 40% at 25% 72%, rgba(14,165,233,.07) 0%, transparent 55%);
+      --glass-bg:          rgba(255,255,255,.055);
+      --glass-bg-strong:   rgba(255,255,255,.08);
+      --glass-border:      rgba(255,255,255,.10);
+      --glass-border-sub:  rgba(255,255,255,.06);
+      --glass-shadow:      0 8px 32px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25);
+      --glass-shadow-lg:   0 16px 48px rgba(0,0,0,.45), 0 4px 16px rgba(0,0,0,.30);
+      --glass-shadow-h:    0 20px 60px rgba(0,0,0,.55), 0 6px 20px rgba(14,165,233,.15);
+      --text-main:      #f0f6fc;
+      --text-muted:     #8b949e;
+      --text-dim:       #4a5568;
+      --border-line:    rgba(255,255,255,.10);
+      --nav-bg:         rgba(6,12,22,.85);
+      --code-bg:        rgba(0,0,0,.35);
+      --table-head:     rgba(56,189,248,.10);
+      --table-row-h:    rgba(56,189,248,.04);
+      --kicker-color:   var(--primary);
     }
 
+    /* ── RESET ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
-
     body {
       font-family: var(--font-sans);
-      background: var(--canvas);
+      background-color: var(--page-bg);
+      background-image: var(--page-blob-1), var(--page-blob-2), var(--page-blob-3), var(--page-blob-4), var(--page-blob-5);
+      background-attachment: fixed;
       color: var(--text-main);
       min-height: 100vh;
       overflow-x: hidden;
       line-height: 1.6;
+      transition: background-color .35s ease, color .25s ease;
     }
 
-    /* Obsidian mesh gradient background (matches base.css) */
-    body::before {
-      content: '';
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background:
-        radial-gradient(ellipse 70% 50% at 15% 10%,  rgba(14,165,233,0.12) 0%, transparent 70%),
-        radial-gradient(ellipse 50% 60% at 85% 90%,  rgba(2,132,199,0.10)  0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(3,4,94,0.18)     0%, transparent 70%),
-        linear-gradient(160deg, #060c16 0%, #080f1e 50%, #040a22 100%);
-    }
-
-    /* ── SCROLL PROGRESS BAR ── */
+    /* ── SCROLL PROGRESS ── */
     #scroll-bar {
       position: fixed; top: 0; left: 0; height: 3px; z-index: 9999;
-      background: linear-gradient(90deg, var(--primary), #38bdf8, var(--ph));
-      width: 0%; transition: width 0.1s linear;
+      background: linear-gradient(90deg, var(--primary), #a855f7);
+      width: 0%; transition: width .1s linear;
     }
 
-    /* ── NAV ── */
-    nav#topnav {
-      position: sticky; top: 0; z-index: 100;
+    /* ── NAVIGATION (Frontend UI site-nav matching) ── */
+    #topnav {
+      position: sticky; top: 0; z-index: 1100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 clamp(1rem,5vw,3rem);
-      height: 64px;
-      background: rgba(6,12,22,0.85);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      gap: 1rem; padding: 0.6rem clamp(1rem,5vw,3rem); height: 72px;
+      background: var(--nav-bg);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-line);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s ease;
     }
     .nav-logo {
-      display: flex; align-items: center; gap: 10px;
-      text-decoration: none; color: var(--text-main);
-      font-weight: 800; font-size: 1.05rem;
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      text-decoration: none; color: var(--text-main); flex: 0 0 auto;
     }
-    .nav-logo-badge {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: #fff; padding: 5px 12px; border-radius: 8px;
-      font-size: 0.85rem; font-weight: 800; letter-spacing: 1px;
-      box-shadow: 0 4px 14px var(--primary-glow);
+    .nav-title {
+      font-weight: 800; font-size: 1.4rem; letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    .nav-links { display: flex; gap: 2px; align-items: center; }
+    .nav-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
     .nav-links a {
-      padding: 6px 14px; border-radius: 8px;
-      font-size: 0.88rem; font-weight: 500;
-      color: var(--text-muted); text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0.45rem 0.9rem; border-radius: 999px; text-decoration: none;
+      color: var(--text-muted); font-size: 0.94rem; font-weight: 600; line-height: 1;
       transition: all 0.2s ease;
     }
-    .nav-links a:hover { color: var(--text-main); background: var(--surface); }
-    .nav-cta {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
-      color: #fff !important; font-weight: 600 !important;
-      box-shadow: 0 4px 14px var(--primary-glow);
+    .nav-links a:hover {
+      color: var(--text-main); background-color: rgba(148, 163, 184, 0.15);
+      transform: translateY(-1px);
     }
-    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--primary-glow) !important; }
-
-    /* hamburger */
+    .nav-cta {
+      background: linear-gradient(135deg, #0ea5e9, #2563eb) !important;
+      color: #ffffff !important; font-weight: 700 !important;
+      box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35) !important;
+      transform: translateY(-1px) !important;
+    }
+    .nav-cta:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 24px var(--primary-glow) !important; }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    /* Theme toggle */
+    #theme-btn {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border-sub);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; transition: all .25s ease; color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    #theme-btn:hover { background: var(--glass-bg-strong); color: var(--primary); transform: rotate(15deg); }
+    /* Hamburger */
     .hamburger {
       display: none; flex-direction: column; gap: 5px;
-      cursor: pointer; padding: 4px; background: none; border: none;
+      cursor: pointer; background: none; border: none; padding: 4px;
     }
     .hamburger span {
       display: block; width: 22px; height: 2px;
-      background: var(--text-main); border-radius: 2px; transition: all 0.3s;
+      background: var(--text-main); border-radius: 2px; transition: all .3s;
     }
     .mobile-menu {
       display: none; flex-direction: column; gap: 4px;
-      background: rgba(6,12,22,0.98); border-top: 1px solid var(--border);
-      padding: 12px; position: relative; z-index: 99;
+      background: var(--nav-bg); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-line);
+      padding: 12px clamp(1rem,5vw,3rem);
     }
     .mobile-menu.open { display: flex; }
     .mobile-menu a {
-      padding: 10px 14px; border-radius: 8px;
+      padding: 10px 14px; border-radius: 9px;
       color: var(--text-muted); text-decoration: none; font-weight: 500;
+      transition: all .2s ease;
     }
-    .mobile-menu a:hover { background: var(--surface); color: var(--text-main); }
+    .mobile-menu a:hover { background: var(--glass-bg); color: var(--text-main); }
 
-    /* ── SHARED UTILITIES ── */
+    /* ── LAYOUT UTILITIES ── */
     main { position: relative; z-index: 1; }
-
-    section {
-      padding: clamp(4rem,8vw,6rem) clamp(1rem,5vw,3rem);
-      max-width: 1280px; margin: 0 auto;
-    }
-
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1rem,5vw,3rem); }
+    section.guard-section { padding: clamp(4rem,8vw,6rem) clamp(1rem,5vw,3rem); max-width: 1280px; margin: 0 auto; }
+    .divider { height: 1px; max-width: 1280px; margin: 0 auto; background: linear-gradient(90deg, transparent, var(--border-line), transparent); }
     .section-kicker {
-      text-transform: uppercase; letter-spacing: 4px;
-      font-size: 0.75rem; font-weight: 700;
-      color: var(--primary); margin-bottom: 12px;
+      font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 4px;
+      color: var(--kicker-color); margin-bottom: 12px;
     }
-
     .section-title {
-      font-size: clamp(2rem,5vw,3rem); font-weight: 800; line-height: 1.15;
-      background: linear-gradient(135deg, #fff 20%, #38bdf8 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text; margin-bottom: 1rem;
+      font-size: clamp(1.9rem,4.5vw,2.8rem); font-weight: 800; line-height: 1.15;
+      color: var(--text-main); margin-bottom: 1rem;
     }
-
-    .section-sub {
-      color: var(--text-muted); font-size: 1.05rem;
-      max-width: 650px; line-height: 1.8;
+    .section-title-grad {
+      background: linear-gradient(135deg, var(--text-main) 20%, var(--primary) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
+    .section-sub { color: var(--text-muted); font-size: 1.05rem; max-width: 640px; line-height: 1.8; }
 
-    .divider {
-      height: 1px; max-width: 1280px; margin: 0 auto;
-      background: linear-gradient(90deg, transparent, var(--border), transparent);
-    }
-
-    /* Glass card */
+    /* ── GLASS CARD ── */
     .glass-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 20px; padding: 28px;
-      backdrop-filter: blur(12px);
-      transition: all 0.3s ease;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px; padding: 26px;
+      backdrop-filter: blur(18px) saturate(1.4);
+      box-shadow: var(--glass-shadow);
+      transition: all .3s cubic-bezier(.22,1,.36,1);
       position: relative; overflow: hidden;
     }
     .glass-card::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, var(--primary), #38bdf8);
-      opacity: 0; transition: opacity 0.3s ease;
+      background: linear-gradient(90deg, var(--primary), #a855f7);
+      opacity: 0; transition: opacity .3s ease;
     }
     .glass-card:hover {
-      transform: translateY(-6px);
-      border-color: var(--border-accent);
-      box-shadow: 0 24px 48px rgba(0,0,0,0.3), 0 0 0 1px var(--border-accent);
+      transform: translateY(-5px);
+      border-color: rgba(14,165,233,.30);
+      box-shadow: var(--glass-shadow-h);
     }
     .glass-card:hover::before { opacity: 1; }
 
-    /* Buttons */
+    /* ── SPECIES HOVER DROPDOWN CARD ── */
+    .species-hover-card .species-dropdown-content {
+      max-height: 0; opacity: 0; overflow: hidden;
+      transition: max-height 0.4s ease, opacity 0.3s ease, margin-top 0.3s ease;
+      margin-top: 0; padding-top: 0;
+    }
+    .species-hover-card:hover .species-dropdown-content {
+      max-height: 300px; opacity: 1;
+      margin-top: 16px; padding-top: 14px;
+    }
+
+    /* ── BUTTONS ── */
     .btn-primary {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 12px 26px; border-radius: 999px;
-      font-weight: 700; font-size: 0.95rem; text-decoration: none;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      padding: 12px 26px; border-radius: 999px; font-weight: 700; font-size: .95rem;
+      text-decoration: none; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: #fff; border: none; cursor: pointer;
-      box-shadow: 0 6px 24px var(--primary-glow);
-      transition: all 0.25s ease;
+      box-shadow: 0 6px 24px var(--primary-glow); transition: all .25s ease;
     }
     .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 10px 32px var(--primary-glow); }
-
     .btn-ghost {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 12px 26px; border-radius: 999px;
-      font-weight: 600; font-size: 0.95rem; text-decoration: none;
-      background: transparent; color: var(--primary);
-      border: 1px solid var(--border-accent);
-      transition: all 0.25s ease;
+      padding: 12px 26px; border-radius: 999px; font-weight: 600; font-size: .95rem;
+      text-decoration: none; background: var(--glass-bg);
+      color: var(--primary); border: 1px solid rgba(14,165,233,.35);
+      backdrop-filter: blur(8px); transition: all .25s ease;
     }
-    .btn-ghost:hover { background: rgba(14,165,233,0.1); transform: translateY(-3px); }
+    .btn-ghost:hover { background: rgba(14,165,233,.12); transform: translateY(-3px); }
 
-    /* Reveal animation */
-    .reveal { opacity: 0; transition: opacity 0.7s ease, transform 0.7s ease; }
-    .reveal.from-up    { transform: translateY(30px); }
-    .reveal.from-left  { transform: translateX(-30px); }
-    .reveal.from-right { transform: translateX(30px); }
-    .reveal.visible    { opacity: 1 !important; transform: none !important; }
-    .d1 { transition-delay: 0.1s; }
-    .d2 { transition-delay: 0.2s; }
-    .d3 { transition-delay: 0.3s; }
-    .d4 { transition-delay: 0.4s; }
-
-    /* Table wrapper */
-    .table-wrap {
-      border: 1px solid var(--border); border-radius: 16px;
-      overflow: hidden; background: rgba(255,255,255,0.02);
-    }
+    /* ── REVEAL ANIMATIONS ── */
+    .reveal { opacity: 0; transition: opacity .65s ease, transform .65s ease; }
+    .reveal.up    { transform: translateY(28px); }
+    .reveal.left  { transform: translateX(-28px); }
+    .reveal.right { transform: translateX(28px); }
+    .reveal.scale { transform: scale(.94); }
+    .reveal.vis   { opacity: 1 !important; transform: none !important; }
+    .d1 { transition-delay: .10s; } .d2 { transition-delay: .20s; }
+    .d3 { transition-delay: .30s; } .d4 { transition-delay: .40s; }
 
     /* ── HERO ── */
     #hero {
       min-height: 100vh; display: flex; flex-direction: column;
       justify-content: center; padding: 0 clamp(1rem,5vw,3rem);
-      position: relative; overflow: hidden; max-width: 100%;
+      position: relative; overflow: hidden;
     }
     .hero-inner {
-      display: grid; grid-template-columns: 1fr 420px; gap: 3rem;
-      align-items: center; max-width: 1280px; margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr 480px; gap: 2.5rem;
+      align-items: center; max-width: 1400px; margin: 0 auto; width: 100%;
+      padding: 6rem 0 4rem;
     }
     .live-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3);
-      border-radius: 999px; padding: 4px 14px;
-      font-size: 0.75rem; font-weight: 700;
-      color: var(--success); margin-bottom: 20px;
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(34, 197, 94, 0.14); border: 1px solid rgba(34, 197, 94, 0.35);
+      border-radius: 999px; padding: 6px 16px;
+      font-size: .84rem; font-weight: 700; color: #15803d; margin-bottom: 18px;
+      box-shadow: 0 2px 10px rgba(34, 197, 94, 0.15);
+    }
+    [data-theme='dark'] .live-badge {
+      background: rgba(34, 197, 94, 0.20); border-color: rgba(34, 197, 94, 0.45);
+      color: #4ade80;
     }
     .live-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--success); animation: pulse-dot 1.5s ease-in-out infinite;
+      width: 7px; height: 7px; border-radius: 50%; background: #22c55e;
+      animation: pulse-dot 1.6s ease-in-out infinite;
     }
     @keyframes pulse-dot {
-      0%,100% { opacity:1; transform:scale(1); }
-      50%      { opacity:0.5; transform:scale(1.5); }
+      0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.45; transform:scale(1.5); }
     }
     .hero-kicker {
       display: inline-flex; align-items: center; gap: 8px;
-      font-size: 0.75rem; font-weight: 700; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--primary);
-      margin-bottom: 18px; padding: 5px 14px; border-radius: 999px;
-      border: 1px solid var(--border-accent);
-      background: rgba(14,165,233,0.08); width: fit-content;
+      font-size: .72rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--primary); margin-bottom: 16px; padding: 5px 14px;
+      border-radius: 999px; border: 1px solid rgba(14,165,233,.28);
+      background: rgba(14,165,233,.07); width: fit-content;
     }
-    .hero-kicker .kdot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--primary); animation: pulse-dot 2s ease-in-out infinite;
+    .hero-kicker-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--primary);
+      animation: pulse-dot 2s ease-in-out infinite;
     }
     h1.hero-title {
-      font-size: clamp(2.4rem,6vw,4rem); font-weight: 900; line-height: 1.1;
-      background: linear-gradient(135deg, #ffffff 0%, #38bdf8 60%, var(--primary) 100%);
+      font-size: clamp(2.4rem,5.5vw,3.8rem); font-weight: 900; line-height: 1.1;
+      background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text; margin-bottom: 1.4rem;
     }
-    .hero-bullets { list-style: none; margin-bottom: 1.4rem; }
+    .hero-lead {
+      color: var(--text-muted); font-size: 1.05rem; line-height: 1.85;
+      max-width: 540px; margin-bottom: 1.4rem;
+      border-left: 2px solid rgba(14,165,233,.35); padding-left: 1rem;
+    }
+    .hero-bullets { list-style: none; margin-bottom: 2rem; }
     .hero-bullets li {
       display: flex; align-items: flex-start; gap: 10px;
-      margin-bottom: 10px; color: var(--text-muted); font-size: 1rem;
+      margin-bottom: 9px; color: var(--text-muted); font-size: .95rem;
     }
     .hero-bullets li::before {
-      content: '\25B8'; color: var(--primary);
-      flex-shrink: 0; margin-top: 2px; font-size: 0.85rem;
-    }
-    .hero-exec {
-      color: var(--text-muted); font-size: 1rem; line-height: 1.85;
-      max-width: 540px; margin-bottom: 2rem;
-      border-left: 2px solid var(--border-accent); padding-left: 1rem;
+      content: '▸'; color: var(--primary); flex-shrink: 0; margin-top: 2px; font-size: .82rem;
     }
     .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
-    /* Hero right panel */
+    /* Hero panel */
     .hero-panel {
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      border-radius: 24px; padding: 28px; backdrop-filter: blur(16px);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
-      position: relative; overflow: hidden;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 22px; padding: 26px; backdrop-filter: blur(18px) saturate(1.4);
+      box-shadow: var(--glass-shadow-lg); position: relative; overflow: hidden;
     }
-    .hero-panel::before {
-      content: ''; position: absolute; top: -50%; right: -50%;
+    .hero-panel::after {
+      content: ''; position: absolute; top: -60%; right: -40%;
       width: 100%; height: 100%;
-      background: radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(14,165,233,.10) 0%, transparent 65%);
       pointer-events: none;
     }
-    .panel-title {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--primary); margin-bottom: 14px;
-    }
-    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .panel-head { font-size: .68rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--primary); margin-bottom: 14px; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
     .chip {
-      padding: 4px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
-      background: rgba(14,165,233,0.10); border: 1px solid rgba(14,165,233,0.25);
-      color: var(--primary);
+      padding: 4px 11px; border-radius: 999px; font-size: .76rem; font-weight: 600;
+      background: rgba(14,165,233,.10); border: 1px solid rgba(14,165,233,.22); color: var(--primary);
     }
     .stat-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 9px 13px; margin-bottom: 7px; border-radius: 10px;
-      background: rgba(14,165,233,0.05); border: 1px solid rgba(14,165,233,0.10);
+      padding: 8px 12px; margin-bottom: 6px; border-radius: 9px;
+      background: rgba(14,165,233,.06); border: 1px solid rgba(14,165,233,.10);
     }
-    .stat-row span  { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
-    .stat-row strong { font-size: 0.85rem; font-family: var(--font-mono); color: #fff; }
-    /* Mini live gauges */
-    .gauge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .stat-row span { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); white-space: nowrap; }
+    .stat-row strong { font-size: .82rem; font-family: var(--font-mono); color: var(--text-main); white-space: nowrap; }
+    .gauge-row { display: flex; gap: 7px; margin-top: 14px; }
     .gauge-mini {
-      flex: 1; min-width: 60px;
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      border-radius: 12px; padding: 11px 8px; text-align: center;
-      transition: all 0.3s ease;
+      flex: 1; min-width: 0; background: var(--glass-bg); border: 1px solid var(--glass-border-sub);
+      border-radius: 11px; padding: 10px 6px; text-align: center; transition: all .3s ease;
     }
-    .gauge-mini:hover { border-color: var(--border-accent); transform: translateY(-2px); }
-    .gauge-val { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; }
-    .gauge-lbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 3px; }
-    /* Floating particles */
-    .particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-    .particle {
-      position: absolute; border-radius: 50%; background: var(--primary);
-      animation: float-up linear infinite;
+    .gauge-mini:hover { transform: translateY(-2px); border-color: rgba(14,165,233,.35); }
+    .gauge-val { font-family: var(--font-mono); font-size: .9rem; font-weight: 700; }
+    .gauge-lbl { font-size: .6rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 3px; }
+    /* ── WATER BUBBLES ANIMATION ── */
+    .particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+    .bubble {
+      position: absolute; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.65), rgba(14, 165, 233, 0.15) 60%, rgba(56, 189, 248, 0.35) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.5), 0 0 10px rgba(14, 165, 233, 0.25);
+      animation: float-bubble linear infinite;
     }
-    @keyframes float-up {
-      0%   { transform: translateY(100vh); opacity: 0; }
-      10%  { opacity: 0.8; }
-      90%  { opacity: 0.2; }
-      100% { transform: translateY(-20vh); opacity: 0; }
+    [data-theme='dark'] .bubble {
+      opacity: 0.35;
+      background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.25), rgba(56, 189, 248, 0.08) 60%, rgba(14, 165, 233, 0.15) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.2), 0 0 8px rgba(56, 189, 248, 0.15);
     }
-    /* Scroll hint */
+    @keyframes float-bubble {
+      0% {
+        transform: translateY(105vh) translateX(0) scale(0.6);
+        opacity: 0;
+      }
+      15% {
+        opacity: 0.8;
+      }
+      50% {
+        transform: translateY(50vh) translateX(18px) scale(1.05);
+      }
+      85% {
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateY(-10vh) translateX(-18px) scale(1.2);
+        opacity: 0;
+      }
+    }
+
+    /* ── SWIMMING FRESHWATER FISH ANIMATION ── */
+    .swim-fish {
+      position: absolute; pointer-events: none; z-index: 0; opacity: 0.18;
+      filter: drop-shadow(0 4px 8px rgba(14,165,233,0.3));
+    }
+    [data-theme='dark'] .swim-fish { opacity: 0.22; }
+    .swim-right { animation: swimRight linear infinite; }
+    .swim-left { animation: swimLeft linear infinite; }
+
+    @keyframes swimRight {
+      0%   { transform: translateX(-120px) translateY(0) scaleX(-1); }
+      25%  { transform: translateX(25vw) translateY(-15px) scaleX(-1); }
+      50%  { transform: translateX(55vw) translateY(10px) scaleX(-1); }
+      75%  { transform: translateX(80vw) translateY(-8px) scaleX(-1); }
+      100% { transform: translateX(105vw) translateY(0) scaleX(-1); }
+    }
+    @keyframes swimLeft {
+      0%   { transform: translateX(105vw) translateY(0) scaleX(1); }
+      25%  { transform: translateX(75vw) translateY(12px) scaleX(1); }
+      50%  { transform: translateX(45vw) translateY(-10px) scaleX(1); }
+      75%  { transform: translateX(20vw) translateY(15px) scaleX(1); }
+      100% { transform: translateX(-120px) translateY(0) scaleX(1); }
+    }
     .scroll-hint {
       position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
       display: flex; flex-direction: column; align-items: center; gap: 6px;
-      color: var(--text-muted); font-size: 0.72rem; font-weight: 500;
+      color: var(--text-dim); font-size: .7rem; font-weight: 500;
       text-transform: uppercase; letter-spacing: 2px;
-      animation: sh-bounce 2s ease-in-out infinite;
+      animation: sh-bounce 2.2s ease-in-out infinite;
     }
     .scroll-hint svg { width: 18px; height: 18px; }
     @keyframes sh-bounce {
       0%,100% { transform: translateX(-50%) translateY(0); }
-      50%      { transform: translateX(-50%) translateY(6px); }
-    }
-    @media (max-width: 1024px) {
-      .hero-inner { grid-template-columns: 1fr; }
-      .hero-panel { display: none; }
+      55%      { transform: translateX(-50%) translateY(7px); }
     }
 
+    /* ── FEATURES GRID ── */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-top: 2.5rem;
+    }
+    .feat-icon {
+      width: 48px; height: 48px; border-radius: 13px; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.35rem;
+    }
+    .feat-h { font-size: .95rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
+    .feat-p { font-size: .87rem; color: var(--text-muted); line-height: 1.7; }
+
+    /* ── Z-SECTIONS ── */
+    .z-section {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 3.5rem;
+      align-items: center; padding: clamp(2.5rem,5vw,4.5rem) clamp(1rem,5vw,3rem);
+      max-width: 1280px; margin: 0 auto;
+    }
+    .z-panel {
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 22px; overflow: hidden;
+      box-shadow: var(--glass-shadow);
+    }
+    .z-text h2 { font-size: clamp(1.5rem,3vw,2.1rem); font-weight: 800; line-height: 1.2; margin-bottom: .9rem; color: var(--text-main); }
+    .z-text p  { color: var(--text-muted); font-size: .97rem; line-height: 1.8; margin-bottom: .9rem; }
+    .z-list { list-style: none; margin-bottom: 1.4rem; }
+    .z-list li { display: flex; gap: 8px; margin-bottom: 7px; color: var(--text-muted); font-size: .93rem; }
+    .z-list li::before { content: '✓'; color: #22c55e; font-weight: 700; flex-shrink: 0; }
+    /* Sensor tiles */
+    .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 1.25rem; }
+    .s-tile {
+      border-radius: 13px; padding: 14px 12px;
+      border: 1px solid var(--glass-border-sub);
+      background: var(--glass-bg-strong);
+    }
+    .s-val { font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; }
+    .s-lbl { font-size: .66rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 3px; }
+    /* Alert demo */
+    .alert-demo { padding: 1.25rem; display: flex; flex-direction: column; gap: 9px; }
+    .alert-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border-sub);
+      border-radius: 11px; padding: 11px 14px;
+    }
+    .alert-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .alert-txt { flex: 1; font-size: .83rem; color: var(--text-main); }
+    .alert-sub { font-size: .68rem; color: var(--text-muted); margin-top: 2px; }
+    .alert-time { font-family: var(--font-mono); font-size: .68rem; color: var(--text-dim); }
+    /* Code snippet */
+    .code-snip {
+      background: var(--code-bg); border: 1px solid var(--glass-border-sub);
+      border-radius: 11px; padding: 14px 18px; font-family: var(--font-mono);
+      font-size: .78rem; line-height: 1.9; overflow-x: auto; margin-top: 1rem;
+    }
+    .c-comment { color: var(--text-dim); }
+    .c-str  { color: #a855f7; }
+    .c-num  { color: #22c55e; }
+    .c-key  { color: var(--primary); }
+
+    /* ── GALLERY ── */
+    .gallery-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-top: 2rem; }
+    .gallery-card {
+      border: 1px dashed rgba(14,165,233,.30); border-radius: 18px;
+      min-height: 220px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+      background: rgba(14,165,233,.03); transition: all .3s ease; cursor: pointer;
+      padding: 1.5rem;
+    }
+    .gallery-card:hover { border-color: var(--primary); background: rgba(14,165,233,.07); transform: translateY(-4px); }
+    .gallery-card .gc-icon { font-size: 2rem; }
+    .gallery-card .gc-title { font-weight: 700; color: var(--text-main); font-size: .92rem; text-align: center; }
+    .gallery-card .gc-sub   { font-size: .78rem; color: var(--text-dim); text-align: center; }
+    .gallery-card.span2 { grid-column: span 2; min-height: 160px; }
+
+    /* ── ARCHITECTURE FLOW ── */
+    .arch-flow {
+      display: flex; align-items: center; gap: 0;
+      overflow-x: auto; padding: 1.5rem 0;
+      scrollbar-width: thin; scrollbar-color: var(--primary) transparent;
+    }
+    .arch-node {
+      flex-shrink: 0; text-align: center; min-width: 118px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 16px; padding: 16px 10px;
+      transition: all .3s ease;
+    }
+    .arch-node:hover { border-color: rgba(14,165,233,.40); box-shadow: 0 0 20px rgba(14,165,233,.12); transform: translateY(-3px); }
+    .arch-node .an-icon { font-size: 1.6rem; display: block; margin-bottom: 7px; }
+    .arch-node .an-label { font-size: .78rem; font-weight: 700; color: var(--text-main); }
+    .arch-node .an-sub   { font-size: .66rem; color: var(--text-muted); margin-top: 3px; font-family: var(--font-mono); }
+    .arch-arrow { flex-shrink: 0; padding: 0 4px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .arch-arrow svg { width: 32px; height: 14px; }
+    .arch-arrow span { font-size: .6rem; color: var(--text-dim); white-space: nowrap; }
+    @keyframes arrow-pulse { 0%,100% { opacity:.4; transform:translateX(0); } 50% { opacity:1; transform:translateX(3px); } }
+    .arch-arrow path { animation: arrow-pulse 2s ease-in-out infinite; }
+    .arch-diagrams { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 1.5rem; }
+
+    /* ── PIPELINE STEPS ── */
+    .pipeline-steps { margin-top: 2.5rem; padding-left: 1.8rem; border-left: 2px solid var(--border-line); }
+    .pipeline-step {
+      position: relative; padding: 1.3rem 0 1.3rem 2rem;
+      transition: all .25s ease;
+    }
+    .pipeline-step:hover { --border-line: var(--primary); }
+    .step-num {
+      position: absolute; left: -1.55rem; top: 1.3rem;
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: .9rem; color: #fff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+      transform: translateX(-1px);
+    }
+    .step-tag {
+      font-family: var(--font-mono); font-size: .69rem; font-weight: 600;
+      padding: 2px 8px; border-radius: 5px; display: inline-block; margin-bottom: 5px;
+    }
+    .step-h { font-size: .95rem; font-weight: 700; margin-bottom: 5px; color: var(--text-main); }
+    .step-p { font-size: .87rem; color: var(--text-muted); line-height: 1.7; }
+
+    /* ── STACK CHIPS ── */
+    .stack-groups { display: grid; grid-template-columns: repeat(2,1fr); gap: 18px; margin-top: 2.5rem; }
+    .stack-group-head { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--glass-border-sub); }
+    .chips-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
+    .s-chip {
+      padding: 5px 12px; border-radius: 8px; font-size: .79rem; font-weight: 600;
+      background: var(--glass-bg); border: 1px solid var(--glass-border-sub);
+      color: var(--text-main); display: flex; align-items: center; gap: 5px;
+      transition: all .2s ease;
+    }
+    .s-chip:hover { border-color: rgba(14,165,233,.35); color: var(--primary); background: rgba(14,165,233,.07); }
+    .s-chip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── TABLES ── */
+    .table-wrap { border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; }
+    .g-table { width: 100%; border-collapse: collapse; }
+    .g-table thead tr { background: var(--table-head); }
+    .g-table th {
+      padding: 11px 16px; text-align: left; font-size: .72rem;
+      text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700;
+      color: var(--primary); border-bottom: 1px solid var(--glass-border);
+    }
+    .g-table td { padding: 11px 16px; font-size: .87rem; color: var(--text-muted); border-bottom: 1px solid var(--glass-border-sub); }
+    .g-table tr:last-child td { border-bottom: none; }
+    .g-table tr:hover td { background: var(--table-row-h); }
+    .g-table .mono { font-family: var(--font-mono); font-size: .79rem; color: var(--text-main); }
+    .g-table .total-row td { color: var(--text-main); font-weight: 700; background: var(--table-head); border-top: 1px solid var(--glass-border); }
+    .thresh-badge {
+      display: inline-block; padding: 2px 9px; border-radius: 6px;
+      font-family: var(--font-mono); font-size: .76rem; font-weight: 600;
+    }
+
+    /* ── TEAM ── */
+    .team-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; margin-top: 2.5rem; }
+    .team-card { text-align: center; }
+    .team-avatar {
+      width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.5rem; color: #fff;
+    }
+    .team-name  { font-weight: 700; font-size: .97rem; color: var(--text-main); margin-bottom: 3px; }
+    .team-id    { font-family: var(--font-mono); font-size: .75rem; color: var(--primary); margin-bottom: 6px; }
+    .team-email { font-size: .8rem; color: var(--text-muted); text-decoration: none; transition: color .2s; }
+    .team-email:hover { color: var(--primary); }
+    .inst-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 2.5rem; }
+    .inst-card { text-align: center; }
+    .inst-card .ic-icon { font-size: 1.8rem; margin-bottom: 8px; }
+    .inst-card .ic-title { font-weight: 700; font-size: .92rem; margin-bottom: 4px; color: var(--text-main); }
+    .inst-card .ic-sub   { font-size: .8rem; color: var(--text-muted); }
+    .supervisor-card {
+      display: flex; align-items: center; gap: 18px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 16px; padding: 20px 24px; max-width: 440px;
+      box-shadow: var(--glass-shadow);
+    }
+    .sup-avatar {
+      width: 58px; height: 58px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: 800; color: #fff;
+    }
+    .sup-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 4px; }
+    .sup-name  { font-weight: 700; font-size: .97rem; color: var(--text-main); margin-bottom: 3px; }
+    .sup-dept  { font-size: .8rem; color: var(--text-muted); }
+    .sup-email { font-size: .78rem; color: var(--primary); text-decoration: none; margin-top: 4px; display: block; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border-line);
+      padding: 3rem clamp(1rem,5vw,3rem);
+      background: var(--nav-bg); backdrop-filter: blur(20px) saturate(1.4);
+      position: relative; z-index: 1;
+    }
+    .footer-grid { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; padding-bottom: 2.5rem; border-bottom: 1px solid var(--border-line); margin-bottom: 1.8rem; }
+    .footer-brand p { font-size: .87rem; color: var(--text-muted); line-height: 1.8; max-width: 360px; margin-top: 10px; }
+    .footer-col h4 { font-size: .72rem; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); margin-bottom: 14px; font-weight: 700; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .footer-col a { text-decoration: none; font-size: .87rem; color: var(--text-muted); transition: color .2s; }
+    .footer-col a:hover { color: var(--primary); }
+    .footer-bottom { max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .footer-copy { font-size: .8rem; color: var(--text-dim); }
+    .footer-pill { display: inline-flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--text-muted); background: var(--glass-bg); border: 1px solid var(--glass-border-sub); padding: 4px 14px; border-radius: 999px; }
+
     /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .hero-inner { grid-template-columns: 1fr; padding: 5rem 0 3rem; }
+      .hero-panel { display: none; }
+      .team-grid { grid-template-columns: repeat(2,1fr); }
+      .stack-groups { grid-template-columns: 1fr; }
+      .arch-diagrams { grid-template-columns: 1fr; }
+      .inst-grid { grid-template-columns: 1fr 1fr; }
+    }
     @media (max-width: 768px) {
-      .nav-links  { display: none; }
-      .hamburger  { display: flex; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .features-grid { grid-template-columns: repeat(2,1fr); }
+      .z-section { grid-template-columns: 1fr; gap: 2rem; }
+      .gallery-grid { grid-template-columns: 1fr; }
+      .gallery-card.span2 { grid-column: span 1; }
+      .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .arch-diagrams { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; text-align: center; }
     }
     @media (max-width: 480px) {
-      .footer-bottom { flex-direction: column; text-align: center; }
+      .features-grid { grid-template-columns: 1fr; }
+      .team-grid { grid-template-columns: 1fr 1fr; }
+      .inst-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
-
 <body>
   <div id="scroll-bar"></div>
 
-  <!-- NAV -->
+  <!-- ═══ NAV ═══ -->
   <nav id="topnav">
     <a href="#" class="nav-logo">
-      <span class="nav-logo-badge">G.U.A.R.D</span>
-      <span style="color:var(--text-muted);font-weight:400;font-size:0.85rem;">Aquatic Risk Detection</span>
+      <img src="images/guard-logo.png" alt="G.U.A.R.D Logo" style="height:40px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(14,165,233,0.35));"/>
+      <span class="nav-title">G.U.A.R.D</span>
     </a>
     <div class="nav-links">
       <a href="#features">Features</a>
       <a href="#architecture">Architecture</a>
-      <a href="#pipeline">Data Flow</a>
+      <a href="#pipeline">Pipeline</a>
       <a href="#stack">Stack</a>
       <a href="#team">Team</a>
-      <a href="https://github.com/cepdnaclk/e21-3yp-GUARD" target="_blank" class="nav-cta">&#11088; GitHub</a>
+      <a href="https://github.com/cepdnaclk/e21-3yp-GUARD" target="_blank" class="nav-cta">GitHub</a>
     </div>
-    <button class="hamburger" id="hamburger" onclick="document.getElementById('mobile-menu').classList.toggle('open')" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="nav-right">
+      <button id="theme-btn" title="Toggle light/dark mode" aria-label="Toggle theme">🌙</button>
+      <button class="hamburger" id="hamburger" aria-label="Menu" onclick="document.getElementById('mob-menu').classList.toggle('open')">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </nav>
-  <div class="mobile-menu" id="mobile-menu">
-    <a href="#features">Features</a>
-    <a href="#architecture">Architecture</a>
-    <a href="#pipeline">Data Flow</a>
-    <a href="#stack">Stack</a>
-    <a href="#team">Team</a>
-    <a href="https://github.com/cepdnaclk/e21-3yp-GUARD" target="_blank">&#11088; GitHub Repo</a>
+  <div class="mobile-menu" id="mob-menu">
+    <a href="#features"     onclick="document.getElementById('mob-menu').classList.remove('open')">Features</a>
+    <a href="#architecture" onclick="document.getElementById('mob-menu').classList.remove('open')">Architecture</a>
+    <a href="#pipeline"     onclick="document.getElementById('mob-menu').classList.remove('open')">Pipeline</a>
+    <a href="#stack"        onclick="document.getElementById('mob-menu').classList.remove('open')">Stack</a>
+    <a href="#team"         onclick="document.getElementById('mob-menu').classList.remove('open')">Team</a>
+    <a href="https://github.com/cepdnaclk/e21-3yp-GUARD" target="_blank">GitHub Repo</a>
   </div>
 
   <main>
-    <!-- ═══ HERO ═══ -->
-    <div id="hero">
-      <div class="particles" aria-hidden="true" id="particles"></div>
+  <!-- ═══════════════════════════════════════════
+       HERO
+  ═══════════════════════════════════════════ -->
+  <div id="hero">
+    <div class="particles" id="particles"></div>
+    <div class="hero-inner">
+      <!-- Left col -->
+      <div>
+        <div class="live-badge">
+          <span class="live-dot"></span>
+          Active Academic Project &middot; Dept. Computer Engineering &middot; University of Peradeniya
+        </div>
+        <div class="hero-kicker"><span class="hero-kicker-dot"></span>IoT &middot; Aquaculture &middot; Automation &middot; Real-Time</div>
+        <h1 class="hero-title reveal up" style="display:flex;flex-direction:column;gap:4px;">
+          <span style="display:flex;align-items:center;gap:14px;">
+            <img src="images/guard-logo.png" alt="G.U.A.R.D Logo" style="height:56px;width:auto;object-fit:contain;filter:drop-shadow(0 4px 14px rgba(14,165,233,0.35));"/>
+            <span>G.U.A.R.D</span>
+          </span>
+          <span style="font-size:0.46em;font-weight:700;line-height:1.25;color:var(--text-muted);-webkit-text-fill-color:initial;background:none;white-space:nowrap;">
+            General Unit for Aquatic Risk Detection
+          </span>
+        </h1>
+        <p class="hero-lead reveal up d1">
+          Enterprise-grade aquaculture monitoring for commercial ornamental fish shops and multi-tank hatcheries — replacing slow manual water testing with continuous sensor telemetry and instant alerts.
+        </p>
+        <ul class="hero-bullets reveal up d2">
+          <li>Real-time water quality telemetry via ESP32 nodes over MQTT to HiveMQ Cloud</li>
+          <li>Multi-channel alerting — WebSocket toast, SMTP email &amp; Telegram Bot simultaneously</li>
+          <li>Glassmorphic React dashboard with RBAC, species knowledge base &amp; guided onboarding</li>
+        </ul>
+        <div class="hero-actions reveal up d3">
+          <a href="https://github.com/cepdnaclk/e21-3yp-GUARD" target="_blank" class="btn-primary">GitHub Repository</a>
+          <a href="#architecture" class="btn-ghost">Architecture</a>
+        </div>
+      </div>
+      <!-- Right col — stack panel -->
+      <div class="hero-panel reveal right" style="margin-top:2.5rem;">
+        <div class="panel-head">System Overview</div>
+        <div class="chip-row">
+          <span class="chip">ESP32</span><span class="chip">MQTT</span>
+          <span class="chip">Node.js</span><span class="chip">React 19</span>
+          <span class="chip">MongoDB</span><span class="chip">InfluxDB</span>
+          <span class="chip">socket.io</span><span class="chip">Tailwind CSS</span>
+        </div>
+        <div class="stat-row"><span>Hardware Nodes</span><strong>ESP32 DevKit C (Per Tank)</strong></div>
+        <div class="stat-row"><span>Sensor Suite</span><strong style="font-size:0.77rem;letter-spacing:-0.2px;">Temp &bull; pH &bull; TDS &bull; Turbidity &bull; Water Level</strong></div>
+        <div class="stat-row"><span>Telemetry Protocol</span><strong>MQTT / TLS (1883 / 8883)</strong></div>
+        <div class="stat-row"><span>Real-Time Push</span><strong>WebSocket (socket.io)</strong></div>
+        <div class="stat-row"><span>Alert Channels</span><strong>Email · Telegram Bot</strong></div>
+        <div class="stat-row"><span>Security</span><strong>JWT + bcrypt · 3-Tier RBAC</strong></div>
+        <div class="stat-row"><span>UI Themes</span><strong>Milky Frost / Obsidian Glow</strong></div>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10 4v12M4 10l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
 
-      <div class="hero-inner">
-        <!-- LEFT -->
-        <div>
-          <div class="live-badge">
-            <span class="live-dot"></span>
-            Active Academic Project &middot; Dept. of Computer Engineering &middot; University of Peradeniya
-          </div>
-          <div class="hero-kicker"><span class="kdot"></span>IoT &middot; Aquaculture &middot; Automation &middot; Real-Time</div>
-          <h1 class="hero-title reveal from-up">
-            G.U.A.R.D<br/>
-            General Unit for<br/>
-            Aquatic Risk Detection
-          </h1>
-          <ul class="hero-bullets reveal from-up d1">
-            <li>Real-time water quality telemetry across unlimited ESP32-equipped tanks via MQTT</li>
-            <li>Multi-channel alerts &mdash; WebSocket, email &amp; Telegram Bot &mdash; the instant a threshold breaks</li>
-            <li>Glassmorphic React dashboard with role-based access, fish species knowledge base &amp; guided onboarding</li>
-          </ul>
-          <p class="hero-exec reveal from-up d2">
-            G.U.A.R.D is an enterprise-grade aquaculture monitoring platform built for commercial ornamental fish shops and multi-tank hatcheries. It replaces slow manual water testing with continuous sensor telemetry, alerting operators instantly before fish health is compromised.
-          </p>
-          <div class="hero-actions reveal from-up d3">
-            <a href="https://github.com/cepdnaclk/e21-3yp-GUARD" target="_blank" class="btn-primary">&#11088; View on GitHub</a>
-            <a href="#architecture" class="btn-ghost">&#127959; Architecture</a>
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════
+       LIVE TELEMETRY PANEL (Exact SensorGauge.jsx Replica)
+  ═══════════════════════════════════════════ -->
+  <section class="guard-section" id="live-demo" style="padding-top:3.5rem;padding-bottom:3.5rem;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:1.5rem;">
+      <div>
+        <div class="section-kicker">Real-Time Telemetry &bull; Zero Delay</div>
+        <h2 class="section-title section-title-grad" style="margin-bottom:0.4rem;">Aquarium Tank Telemetry Deck</h2>
+        <p class="section-sub" style="font-size:.95rem;max-width:760px;">
+          Each ESP32 node publishes a JSON payload to HiveMQ Cloud MQTT every 30 seconds. The backend authenticates with bcrypt, stores state in MongoDB, and writes time-series data to InfluxDB simultaneously.
+        </p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="live-badge" style="margin-bottom:0;">
+          <span class="live-dot"></span> Live Telemetry Feed
+        </div>
+      </div>
+    </div>
+
+    <!-- Device Card Container (Matching Dashboard.jsx device card) -->
+    <div class="glass-card" style="border-radius:20px;padding:24px;background:var(--glass-bg-strong);box-shadow:var(--glass-shadow-lg);">
+      <!-- Card Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--glass-border-sub);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <h3 style="font-size:1.1rem;font-weight:800;color:var(--text-main);">Display Tank 01</h3>
+          <span style="font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25);">ONLINE</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim);text-align:right;">
+          Last sync: <span id="last-sync-time" style="color:var(--text-muted);">Just now</span>
+        </div>
+      </div>
+
+      <!-- 5 Sensor Gauges Grid -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;" id="gauge-deck">
+        
+        <!-- 1. Temperature Gauge -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(14,52,84,0.06);padding:14px 8px 16px;border-radius:14px;border:1px solid rgba(14,52,84,0.10);transition:all .2s ease;">
+          <svg viewBox="0 0 100 65" style="width:100%;max-width:90px;height:auto;display:block;">
+            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--border-line)" stroke-width="8" stroke-linecap="round"/>
+            <path id="svg-arc-temp" d="M 10 50 A 40 40 0 0 1 58.48 10.89" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" style="transition:d 0.8s ease, stroke 0.3s ease;"/>
+          </svg>
+          <div style="text-align:center;margin-top:6px;display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Temperature</span>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:2px;margin-top:2px;">
+              <span id="deck-temp-val" style="font-size:1.15rem;font-weight:700;font-family:var(--font-mono);color:var(--text-main);">28.4</span>
+              <span style="font-size:0.68rem;color:var(--text-muted);font-weight:500;">°C</span>
+            </div>
           </div>
         </div>
 
-        <!-- RIGHT: stack panel -->
-        <div class="hero-panel reveal from-right">
-          <div class="panel-title">Live System Stack</div>
-          <div class="chip-row">
-            <span class="chip">ESP32</span>
-            <span class="chip">MQTT</span>
-            <span class="chip">Node.js</span>
-            <span class="chip">React 19</span>
-            <span class="chip">MongoDB</span>
-            <span class="chip">InfluxDB</span>
-            <span class="chip">Tailwind CSS</span>
-            <span class="chip">socket.io</span>
+        <!-- 2. pH Level Gauge -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(14,52,84,0.06);padding:14px 8px 16px;border-radius:14px;border:1px solid rgba(14,52,84,0.10);transition:all .2s ease;">
+          <svg viewBox="0 0 100 65" style="width:100%;max-width:90px;height:auto;display:block;">
+            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--border-line)" stroke-width="8" stroke-linecap="round"/>
+            <path id="svg-arc-ph" d="M 10 50 A 40 40 0 0 1 48.11 10.04" fill="none" stroke="#a855f7" stroke-width="8" stroke-linecap="round" style="transition:d 0.8s ease;"/>
+          </svg>
+          <div style="text-align:center;margin-top:6px;display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">pH Level</span>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:2px;margin-top:2px;">
+              <span id="deck-ph-val" style="font-size:1.15rem;font-weight:700;font-family:var(--font-mono);color:var(--text-main);">7.21</span>
+              <span style="font-size:0.68rem;color:var(--text-muted);font-weight:500;">pH</span>
+            </div>
           </div>
-          <div class="stat-row"><span>Sensors</span><strong>Temp &middot; pH &middot; TDS &middot; Turbidity &middot; Level</strong></div>
-          <div class="stat-row"><span>Telemetry</span><strong>Real-time WebSocket push</strong></div>
-          <div class="stat-row"><span>Alert Channels</span><strong>WS &middot; Email &middot; Telegram</strong></div>
-          <div class="stat-row"><span>Auth</span><strong>JWT + bcrypt &middot; RBAC</strong></div>
-          <div class="stat-row"><span>UI Modes</span><strong>Milky Frost / Obsidian Glow</strong></div>
-          <div style="margin-top:14px;">
-            <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px;">Live Demo Telemetry</div>
-            <div class="gauge-row">
-              <div class="gauge-mini"><div class="gauge-val" id="g-temp" style="color:var(--temp)">28.4&deg;</div><div class="gauge-lbl">Temp</div></div>
-              <div class="gauge-mini"><div class="gauge-val" id="g-ph" style="color:var(--ph)">7.21</div><div class="gauge-lbl">pH</div></div>
-              <div class="gauge-mini"><div class="gauge-val" id="g-tds" style="color:var(--tds)">430</div><div class="gauge-lbl">TDS</div></div>
-              <div class="gauge-mini"><div class="gauge-val" id="g-turb" style="color:var(--turbidity)">12</div><div class="gauge-lbl">Turb</div></div>
-              <div class="gauge-mini"><div class="gauge-val" id="g-level" style="color:var(--waterlevel)">82%</div><div class="gauge-lbl">Level</div></div>
+        </div>
+
+        <!-- 3. TDS Gauge -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(14,52,84,0.06);padding:14px 8px 16px;border-radius:14px;border:1px solid rgba(14,52,84,0.10);transition:all .2s ease;">
+          <svg viewBox="0 0 100 65" style="width:100%;max-width:90px;height:auto;display:block;">
+            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--border-line)" stroke-width="8" stroke-linecap="round"/>
+            <path id="svg-arc-tds" d="M 10 50 A 40 40 0 0 1 41.27 10.96" fill="none" stroke="#0ea5e9" stroke-width="8" stroke-linecap="round" style="transition:d 0.8s ease;"/>
+          </svg>
+          <div style="text-align:center;margin-top:6px;display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">TDS</span>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:2px;margin-top:2px;">
+              <span id="deck-tds-val" style="font-size:1.15rem;font-weight:700;font-family:var(--font-mono);color:var(--text-main);">430</span>
+              <span style="font-size:0.68rem;color:var(--text-muted);font-weight:500;">ppm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Turbidity Gauge -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(14,52,84,0.06);padding:14px 8px 16px;border-radius:14px;border:1px solid rgba(14,52,84,0.10);transition:all .2s ease;">
+          <svg viewBox="0 0 100 65" style="width:100%;max-width:90px;height:auto;display:block;">
+            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--border-line)" stroke-width="8" stroke-linecap="round"/>
+            <path id="svg-arc-turb" d="M 10 50 A 40 40 0 0 1 12.75 35.28" fill="none" stroke="#14b8a6" stroke-width="8" stroke-linecap="round" style="transition:d 0.8s ease;"/>
+          </svg>
+          <div style="text-align:center;margin-top:6px;display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Turbidity</span>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:2px;margin-top:2px;">
+              <span id="deck-turb-val" style="font-size:1.15rem;font-weight:700;font-family:var(--font-mono);color:var(--text-main);">12</span>
+              <span style="font-size:0.68rem;color:var(--text-muted);font-weight:500;">NTU</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Water Level Gauge -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(14,52,84,0.06);padding:14px 8px 16px;border-radius:14px;border:1px solid rgba(14,52,84,0.10);transition:all .2s ease;">
+          <svg viewBox="0 0 100 65" style="width:100%;max-width:90px;height:auto;display:block;">
+            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--border-line)" stroke-width="8" stroke-linecap="round"/>
+            <path id="svg-arc-level" d="M 10 50 A 40 40 0 0 1 83.77 28.56" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" style="transition:d 0.8s ease;"/>
+          </svg>
+          <div style="text-align:center;margin-top:6px;display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Water Level</span>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:2px;margin-top:2px;">
+              <span id="deck-level-val" style="font-size:1.15rem;font-weight:700;font-family:var(--font-mono);color:var(--text-main);">82</span>
+              <span style="font-size:0.68rem;color:var(--text-muted);font-weight:500;">%</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Interactive Actuator Control Panel (Matching ActuatorPanel.jsx) -->
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--glass-border-sub);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--primary);display:flex;align-items:center;gap:6px;">
+            <span>⚡ Automated Actuator Controls</span>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-dim);" id="actuator-last-cmd">
+            Last Action: <span style="color:var(--primary);">PUMP_AUTO</span> @ Sync
+          </div>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+          <!-- 1. Automated Fish Feeder (Servo PWM) -->
+          <div style="background:var(--glass-bg-sub);border:1px solid var(--glass-border-sub);padding:8px 14px;border-radius:12px;display:flex;align-items:center;gap:14px;transition:all .2s ease;">
+            <div>
+              <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">🐟 Fish Feeder</div>
+              <div style="font-size:0.65rem;color:var(--text-muted);font-family:var(--font-mono);">PWM Servo Motor</div>
+            </div>
+            <button id="btn-feed" onclick="triggerActuator('feed')" style="padding:5px 12px;border-radius:8px;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;font-weight:700;font-size:0.7rem;cursor:pointer;letter-spacing:0.5px;box-shadow:0 2px 8px rgba(14,165,233,0.3);transition:all .2s ease;">
+              DISPENSE FEED
+            </button>
+          </div>
+
+          <!-- 2. Water Inflow/Outflow Pump (Relay Module) -->
+          <div style="background:var(--glass-bg-sub);border:1px solid var(--glass-border-sub);padding:8px 14px;border-radius:12px;display:flex;align-items:center;gap:14px;flex:1;min-width:260px;justify-content:space-between;transition:all .2s ease;">
+            <div>
+              <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">💧 Water Pump System</div>
+              <div style="font-size:0.65rem;color:var(--text-muted);font-family:var(--font-mono);">5V Relay (Inflow/Outflow)</div>
+            </div>
+            <div style="display:flex;gap:4px;">
+              <button id="btn-pump-auto" onclick="setPumpMode('pump_auto')" style="padding:4px 10px;border-radius:6px;background:#17a2b8;color:#fff;border:none;font-weight:700;font-size:0.68rem;cursor:pointer;box-shadow:0 0 10px rgba(23,162,184,0.5);">
+                AUTO
+              </button>
+              <button id="btn-pump-on" onclick="setPumpMode('pump_on')" style="padding:4px 10px;border-radius:6px;background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);font-weight:700;font-size:0.68rem;cursor:pointer;">
+                ON
+              </button>
+              <button id="btn-pump-off" onclick="setPumpMode('pump_off')" style="padding:4px 10px;border-radius:6px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);font-weight:700;font-size:0.68rem;cursor:pointer;">
+                OFF
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="scroll-hint">
-        <span>Scroll</span>
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10 4v12M4 10l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <!-- Footer status bar inside device card -->
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--glass-border-sub);display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text-muted);">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>
+          <span>All 5 parameters &amp; actuators operational for <b>Discus Hatchery</b> preset</span>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <span style="font-family:var(--font-mono);color:var(--primary);">MQTT Broker: HiveMQ Cloud (TLS)</span>
+        </div>
       </div>
     </div>
-    <div class="divider"></div>
 
-    <!-- ═══ FEATURES 3x2 GRID ═══ -->
-    <section id="features">
-      <div class="section-kicker">Core Capabilities</div>
-      <h2 class="section-title reveal from-up">Six Reasons G.U.A.R.D Stands Apart</h2>
-      <p class="section-sub reveal from-up d1">Purpose-built for aquaculture operations — every feature answers a real-world problem that costs fish health and money.</p>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:2.5rem;">
-        <div class="glass-card reveal from-up d1">
-          <div style="width:50px;height:50px;border-radius:13px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.2);">&#127777;&#65039;</div>
-          <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Five-Parameter Sensor Fusion</h3>
-          <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7;">Simultaneous real-time measurement of Temperature, pH, TDS, Turbidity, and Water Level via SVG arc gauges — zero polling lag with WebSocket push every 30-second cycle.</p>
+    <!-- Technical Details: Sensor Hardware Specifications & MQTT Payload (Seamless Layout) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:2rem;align-items:start;">
+      <div>
+        <div style="font-weight:800;font-size:1.02rem;color:var(--text-main);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+          ⚙️ Sensor Hardware Specifications
         </div>
-        <div class="glass-card reveal from-up d2">
-          <div style="width:50px;height:50px;border-radius:13px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);">&#128276;</div>
-          <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Triple-Channel Instant Alerting</h3>
-          <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7;">Threshold breaches trigger simultaneous WebSocket toast, SMTP email, and Telegram Bot notifications — with in-memory throttling to prevent duplicate flood storms.</p>
-        </div>
-        <div class="glass-card reveal from-up d3">
-          <div style="width:50px;height:50px;border-radius:13px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.2);">&#127912;</div>
-          <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Glassmorphic Dual-Mode UI</h3>
-          <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7;">"Milky Frost" and "Obsidian Glow" themes — backdrop-blur glassmorphic cards, Outfit typography, JetBrains Mono for telemetry, and smooth micro-animations throughout.</p>
-        </div>
-        <div class="glass-card reveal from-up d2">
-          <div style="width:50px;height:50px;border-radius:13px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:rgba(20,184,166,0.12);border:1px solid rgba(20,184,166,0.2);">&#128031;</div>
-          <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Fish Species Knowledge Base</h3>
-          <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7;">20 research-verified freshwater species with optimal pH, Temp, TDS, and Turbidity ranges. Tank Compatibility Checker cross-validates threshold configs in real time.</p>
-        </div>
-        <div class="glass-card reveal from-up d3">
-          <div style="width:50px;height:50px;border-radius:13px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.2);">&#128506;&#65039;</div>
-          <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Guided Onboarding Tour</h3>
-          <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7;">First-time users are never shown an empty dashboard — auto-routed to a /demo sandbox with driver.js step-by-step tour across 7 (USER) or 11 (ADMIN) highlights.</p>
-        </div>
-        <div class="glass-card reveal from-up d4">
-          <div style="width:50px;height:50px;border-radius:13px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.2);">&#128274;</div>
-          <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Enterprise Security Layer</h3>
-          <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7;">Three-tier RBAC (SUPER_ADMIN / ADMIN / USER), bcrypt device secrets, JWT-protected REST, duplicate-alert suppression, and offline threshold sync via MQTT retained messages.</p>
-        </div>
-      </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══ Z-PATTERN A: SENSOR TELEMETRY ═══ -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:center;padding:clamp(3rem,6vw,5rem) clamp(1rem,5vw,3rem);max-width:1280px;margin:0 auto;">
-      <div class="reveal from-left">
-        <div class="section-kicker">Real-Time Telemetry</div>
-        <h2 style="font-size:clamp(1.6rem,3.5vw,2.2rem);font-weight:800;line-height:1.25;margin-bottom:1rem;color:var(--text-main);">Live sensor readings. Zero delay.</h2>
-        <p style="color:var(--text-muted);font-size:1rem;line-height:1.8;margin-bottom:1rem;">Each ESP32 node publishes a JSON payload to HiveMQ Cloud MQTT every 30 seconds. The backend authenticates with bcrypt, stores state in MongoDB, and writes time-series history to InfluxDB simultaneously.</p>
-        <ul style="list-style:none;margin-bottom:1.5rem;">
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> DS18B20 waterproof digital temperature (OneWire)</li>
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> Gravity pH-4502C Sensor — 6.5–8.5 safe range</li>
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> JSN-SR04T ultrasonic water-level (non-contact)</li>
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> Optical turbidity — TSS light-scattering, 50 NTU threshold</li>
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> Analog TDS probe with temperature-compensated firmware</li>
+        <ul style="list-style:none;padding:0;margin:0;font-size:0.88rem;color:var(--text-muted);line-height:1.9;">
+          <li style="display:flex;align-items:flex-start;gap:8px;"><span style="color:var(--primary);margin-top:1px;">▸</span> <div><b>Temperature:</b><br/><span style="color:var(--text-muted);">DS18B20 waterproof digital sensor (OneWire)</span></div></li>
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;"><span style="color:var(--primary);margin-top:1px;">▸</span> <div><b>pH Level:</b><br/><span style="color:var(--text-muted);">Gravity pH-4502C Probe (6.5–8.5 safe range)</span></div></li>
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;"><span style="color:var(--primary);margin-top:1px;">▸</span> <div><b>Water Level:</b><br/><span style="color:var(--text-muted);">JSN-SR04T ultrasonic sensor (non-contact)</span></div></li>
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;"><span style="color:var(--primary);margin-top:1px;">▸</span> <div><b>Turbidity:</b><br/><span style="color:var(--text-muted);">Optical TSS light-scattering sensor (50 NTU max)</span></div></li>
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;"><span style="color:var(--primary);margin-top:1px;">▸</span> <div><b>TDS:</b><br/><span style="color:var(--text-muted);">Analog probe with temperature-compensated firmware</span></div></li>
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;"><span style="color:var(--primary);margin-top:1px;">▸</span> <div><b>Automated Fish Feeder:</b><br/><span style="color:var(--text-muted);">PWM Micro Servo Motor (Precision timed feed dispense)</span></div></li>
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;"><span style="color:var(--primary);margin-top:1px;">▸</span> <div><b>Water Inflow &amp; Outflow Pumps:</b><br/><span style="color:var(--text-muted);">4-Channel 5V Relay Module (AUTO / ON / OFF modes)</span></div></li>
         </ul>
-        <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 20px;font-family:var(--font-mono);font-size:0.8rem;color:#a8d8f0;line-height:1.9;">
-          <span style="color:#8b949e;">// MQTT payload (ESP32 → HiveMQ)</span><br/>
+      </div>
+
+      <div>
+        <div style="font-weight:800;font-size:1.02rem;color:var(--text-main);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+          📡 MQTT Payload Structure (ESP32 → HiveMQ Cloud)
+        </div>
+        <div class="code-snip" style="margin-top:0;font-size:0.83rem;padding:18px;border-radius:14px;line-height:1.8;background:var(--glass-bg-sub);border:1px solid var(--glass-border-sub);color:var(--text-main);font-family:var(--font-mono);box-shadow:var(--glass-shadow);">
+          <span style="color:var(--text-dim);">// MQTT Topic: guard/telemetry/GUARD-D01</span><br/>
           {<br/>
-          &nbsp;&nbsp;<span style="color:#a855f7;">"device_id"</span>: <span style="color:#a855f7;">"GUARD-D01"</span>,<br/>
-          &nbsp;&nbsp;<span style="color:#a855f7;">"ph"</span>: <span style="color:#22c55e;">7.2</span>,<br/>
-          &nbsp;&nbsp;<span style="color:#a855f7;">"temperature"</span>: <span style="color:#22c55e;">28.4</span>,<br/>
-          &nbsp;&nbsp;<span style="color:#a855f7;">"tds"</span>: <span style="color:#22c55e;">430</span>,<br/>
-          &nbsp;&nbsp;<span style="color:#a855f7;">"turbidity"</span>: <span style="color:#22c55e;">12</span>,<br/>
-          &nbsp;&nbsp;<span style="color:#a855f7;">"water_level"</span>: <span style="color:#22c55e;">82</span><br/>
+          &nbsp;&nbsp;<span style="color:var(--primary);font-weight:600;">"device_id"</span>: <span style="color:#22c55e;">"GUARD-D01"</span>,<br/>
+          &nbsp;&nbsp;<span style="color:var(--primary);font-weight:600;">"ph"</span>: <span style="color:#f59e0b;">7.2</span>,<br/>
+          &nbsp;&nbsp;<span style="color:var(--primary);font-weight:600;">"temperature"</span>: <span style="color:#f59e0b;">28.4</span>,<br/>
+          &nbsp;&nbsp;<span style="color:var(--primary);font-weight:600;">"tds"</span>: <span style="color:#f59e0b;">430</span>,<br/>
+          &nbsp;&nbsp;<span style="color:var(--primary);font-weight:600;">"turbidity"</span>: <span style="color:#f59e0b;">12</span>,<br/>
+          &nbsp;&nbsp;<span style="color:var(--primary);font-weight:600;">"water_level"</span>: <span style="color:#f59e0b;">82</span><br/>
           }
         </div>
       </div>
-      <div class="reveal from-right" style="border-radius:24px;overflow:hidden;border:1px solid var(--border);background:rgba(255,255,255,0.03);min-height:320px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:1.5rem;">
-          <div style="border-radius:14px;padding:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);">
-            <div style="font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--temp);">28.4&#176; <span style="animation:blink 1s step-end infinite;color:var(--temp);">|</span></div>
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-top:4px;">Temperature</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════
+       FEATURES
+  ═══════════════════════════════════════════ -->
+  <section class="guard-section" id="features">
+    <div class="section-kicker">Core Capabilities</div>
+    <h2 class="section-title section-title-grad reveal up">Six Reasons G.U.A.R.D Stands Apart</h2>
+    <p class="section-sub reveal up d1">Purpose-built for aquaculture — every feature answers a real-world problem that costs fish health and money.</p>
+    <div class="features-grid">
+      <div class="glass-card reveal up d1">
+        <div class="feat-icon" style="background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.22);">&#127777;&#65039;</div>
+        <div class="feat-h">Five-Parameter Sensor Fusion</div>
+        <p class="feat-p">Simultaneous real-time measurement of Temperature, pH, TDS, Turbidity, and Water Level via SVG arc gauges — zero polling lag with WebSocket push every 30-second telemetry cycle.</p>
+      </div>
+      <div class="glass-card reveal up d2">
+        <div class="feat-icon" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.22);">&#128276;</div>
+        <div class="feat-h">Dual-Channel Instant Alerting</div>
+        <p class="feat-p">Threshold breaches trigger simultaneous SMTP email and Telegram Bot notifications — with in-memory throttling to prevent duplicate alert floods.</p>
+      </div>
+      <div class="glass-card reveal up d3">
+        <div class="feat-icon" style="background:rgba(14,165,233,.12);border:1px solid rgba(14,165,233,.22);">&#9889;</div>
+        <div class="feat-h">Automated Actuator Controls</div>
+        <p class="feat-p">Remote &amp; threshold-driven relay pump switching (AUTO / ON / OFF) and PWM micro-servo feeder dispatching over MQTT to maintain optimal tank conditions.</p>
+      </div>
+      <div class="glass-card reveal up d2">
+        <div class="feat-icon" style="background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.22);">&#128031;</div>
+        <div class="feat-h">Fish Species Knowledge Base</div>
+        <p class="feat-p">20 research-verified freshwater species with optimal pH, Temp, TDS, and Turbidity ranges. Tank Compatibility Checker cross-validates threshold configs in real time.</p>
+      </div>
+      <div class="glass-card reveal up d3">
+        <div class="feat-icon" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.22);">&#128506;&#65039;</div>
+        <div class="feat-h">Guided Onboarding Tour</div>
+        <p class="feat-p">First-time users never see an empty dashboard — auto-routed to a /demo sandbox with a driver.js step-by-step tour across 7 (USER) or 11 (ADMIN) highlights.</p>
+      </div>
+      <div class="glass-card reveal up d4">
+        <div class="feat-icon" style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.22);">&#128274;</div>
+        <div class="feat-h">Enterprise Security Layer</div>
+        <p class="feat-p">Three-tier RBAC (SUPER_ADMIN / ADMIN / USER), bcrypt device secrets, JWT-protected REST, duplicate-alert suppression, and offline threshold sync via MQTT retained messages.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+
+
+  <!-- ═══════════════════════════════════════════
+       Z-SECTION B — ALERTS (reversed)
+  ═══════════════════════════════════════════ -->
+  <div class="z-section" style="padding-top:0;">
+    <div class="z-panel reveal left">
+      <div class="alert-demo">
+        <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-bottom:4px;">Alert Queue · Tank 3</div>
+        <div class="alert-item" style="border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.05);">
+          <span class="alert-dot" style="background:#ef4444;"></span>
+          <div style="flex:1;">
+            <div class="alert-txt">&#127777;&#65039; TEMP_HIGH — 34.1°C exceeds 32°C max</div>
+            <div class="alert-sub">Notified via Email + Telegram</div>
           </div>
-          <div style="border-radius:14px;padding:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);">
-            <div style="font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--ph);">7.21</div>
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-top:4px;">pH Level</div>
+          <span class="alert-time">12:34</span>
+        </div>
+        <div class="alert-item" style="border-color:rgba(168,85,247,.22);background:rgba(168,85,247,.05);">
+          <span class="alert-dot" style="background:#a855f7;"></span>
+          <div style="flex:1;">
+            <div class="alert-txt">&#128167; PH_LOW — 6.1 below 6.5 threshold</div>
+            <div class="alert-sub">Toast notification sent</div>
           </div>
-          <div style="border-radius:14px;padding:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);">
-            <div style="font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--tds);">430<span style="font-size:0.7rem;">ppm</span></div>
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-top:4px;">TDS</div>
+          <span class="alert-time">11:58</span>
+        </div>
+        <div class="alert-item" style="border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.05);">
+          <span class="alert-dot" style="background:#22c55e;"></span>
+          <div style="flex:1;">
+            <div class="alert-txt">&#9989; TURBIDITY_HIGH — Resolved</div>
+            <div class="alert-sub">Marked resolved by Admin</div>
           </div>
-          <div style="border-radius:14px;padding:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);">
-            <div style="font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--turbidity);">12<span style="font-size:0.7rem;">NTU</span></div>
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-top:4px;">Turbidity</div>
-          </div>
-          <div style="border-radius:14px;padding:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);grid-column:span 2;">
-            <div style="font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--waterlevel);">82%</div>
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-top:4px;">Water Level &#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9617;&#9617;</div>
-          </div>
+          <span class="alert-time">10:22</span>
+        </div>
+        <div style="padding:10px 13px;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.20);font-size:.8rem;color:#22c55e;display:flex;align-items:center;gap:7px;">
+          &#129302; @GUARD_yp_bot — Telegram verification active
+        </div>
+      </div>
+    </div>
+    <div class="z-text reveal right">
+      <div class="section-kicker">Alert Engine</div>
+      <h2>Never miss a critical event.</h2>
+      <p>The rule-based alert engine checks every telemetry payload against per-device configurable thresholds. On a breach with no existing unresolved duplicate, an Alert record is persisted and dispatched across all channels simultaneously.</p>
+      <ul class="z-list">
+        <li>SMTP email delivery to tank owner on threshold breach</li>
+        <li>Instant Telegram Bot message via @GUARD_yp_bot</li>
+        <li>Per-account email / Telegram enable toggles</li>
+        <li>In-memory throttling prevents alert flood storms</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════
+       GALLERY
+  ═══════════════════════════════════════════ -->
+  <section class="guard-section" id="gallery">
+    <div class="section-kicker">Visual Showcase</div>
+    <h2 class="section-title section-title-grad reveal up">System Architecture &amp; Environment Screenshots</h2>
+
+    <!-- Image Grid -->
+    <div class="gallery-grid">
+      <div class="glass-card reveal left" style="padding:0;overflow:hidden;">
+        <img src="images/dashboard.png" alt="React Dashboard UI" style="width:100%;height:220px;object-fit:cover;display:block;transition:transform .4s ease;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'"/>
+        <div style="padding:14px 18px;">
+          <div style="font-weight:700;font-size:.95rem;color:var(--text-main);margin-bottom:4px;">Dashboard UI — Obsidian Mode</div>
+          <div style="font-size:.8rem;color:var(--text-muted);">Real-time telemetry gauges &amp; multi-tank control panel</div>
+        </div>
+      </div>
+      <div class="glass-card reveal right" style="padding:0;overflow:hidden;">
+        <img src="images/Image-2.png" alt="System Flow Architecture" style="width:100%;height:220px;object-fit:cover;display:block;transition:transform .4s ease;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'"/>
+        <div style="padding:14px 18px;">
+          <div style="font-weight:700;font-size:.95rem;color:var(--text-main);margin-bottom:4px;">System Flow Architecture</div>
+          <div style="font-size:.8rem;color:var(--text-muted);">MQTT ingestion, rule evaluation, and alert dispatch</div>
+        </div>
+      </div>
+      <div class="glass-card reveal left" style="padding:0;overflow:hidden;">
+        <img src="images/Image-3.png" alt="Water Sensor Suite" style="width:100%;height:220px;object-fit:cover;display:block;transition:transform .4s ease;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'"/>
+        <div style="padding:14px 18px;">
+          <div style="font-weight:700;font-size:.95rem;color:var(--text-main);margin-bottom:4px;">Multi-Sensor Subsystem</div>
+          <div style="font-size:.8rem;color:var(--text-muted);">DS18B20, pH-4502C, TDS, Turbidity &amp; Ultrasonic Level</div>
+        </div>
+      </div>
+      <div class="glass-card reveal right" style="padding:0;overflow:hidden;">
+        <img src="images/Image-5.jpg" alt="Aquarium Tank Environment" style="width:100%;height:220px;object-fit:cover;display:block;transition:transform .4s ease;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'"/>
+        <div style="padding:14px 18px;">
+          <div style="font-weight:700;font-size:.95rem;color:var(--text-main);margin-bottom:4px;">Freshwater Aquarium Environment</div>
+          <div style="font-size:.8rem;color:var(--text-muted);">Multi-species commercial tank deployment</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Hover Dropdown: Supported Species List (Full Container Width) -->
+    <div class="glass-card reveal up species-hover-card" style="padding:20px;margin-top:1.5rem;width:100%;">
+      <div style="font-weight:700;font-size:1rem;color:var(--text-main);display:flex;justify-content:space-between;align-items:center;">
+        <span style="display:flex;align-items:center;gap:8px;">
+          &#128031; Supported Freshwater Species Knowledge Base
+        </span>
+        <span style="font-size:0.78rem;color:var(--primary);font-family:var(--font-mono);background:rgba(14,165,233,0.1);padding:4px 14px;border-radius:999px;border:1px solid rgba(14,165,233,0.2);">
+          20+ species
+        </span>
+      </div>
+      
+      <div class="species-dropdown-content" style="border-top:1px solid var(--glass-border-sub);display:grid;grid-template-columns:repeat(4,1fr);gap:10px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Discus (<i>Symphysodon</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Angelfish (<i>Pterophyllum</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Asian Arowana (<i>Scleropages</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Koi Carp (<i>Cyprinus rubrofuscus</i>)</div>
+
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Betta Splendens</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Neon Tetra (<i>Paracheirodon</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Fancy Guppy (<i>Poecilia reticulata</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Oscar (<i>Astronotus ocellatus</i>)</div>
+
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Dwarf Gourami</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Giant Gourami</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Tiger Barb (<i>Puntigrus</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Rainbow Shark</div>
+
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Molly (<i>Poecilia sphenops</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Platy (<i>Xiphophorus maculatus</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Zebra Danio (<i>Danio rerio</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Corydoras Catfish</div>
+
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Tilapia (<i>Oreochromis</i>)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Common Carp</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Plecostomus Catfish</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-main);"><span style="color:var(--primary);">&#9656;</span> Freshwater Angelfish</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════
+       ARCHITECTURE
+  ═══════════════════════════════════════════ -->
+  <section class="guard-section" id="architecture">
+    <div class="section-kicker">System Architecture</div>
+    <h2 class="section-title section-title-grad reveal up">End-to-End IoT Architecture</h2>
+    <p class="section-sub reveal up d1">From ESP32 edge nodes to React dashboard — every layer purpose-built for low-latency aquatic telemetry.</p>
+
+    <div class="arch-flow reveal up d2">
+      <div class="arch-node">
+        <span class="an-icon">&#128297;</span>
+        <div class="an-label">ESP32 Node</div>
+        <div class="an-sub">Per tank · 5 sensors</div>
+      </div>
+      <div class="arch-arrow">
+        <svg viewBox="0 0 32 14" fill="none">
+          <path d="M2 7h24M20 2l7 5-7 5" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>MQTT/TLS</span>
+      </div>
+      <div class="arch-node">
+        <span class="an-icon">&#9729;&#65039;</span>
+        <div class="an-label">HiveMQ Cloud</div>
+        <div class="an-sub">1883 / 8883</div>
+      </div>
+      <div class="arch-arrow">
+        <svg viewBox="0 0 32 14" fill="none">
+          <path d="M2 7h24M20 2l7 5-7 5" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Subscribe</span>
+      </div>
+      <div class="arch-node">
+        <span class="an-icon">&#9881;&#65039;</span>
+        <div class="an-label">Node.js API</div>
+        <div class="an-sub">Express + Prisma</div>
+      </div>
+      <div class="arch-arrow">
+        <svg viewBox="0 0 32 14" fill="none">
+          <path d="M2 7h24M20 2l7 5-7 5" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Dual Write</span>
+      </div>
+      <div class="arch-node">
+        <span class="an-icon">&#128452;&#65039;</span>
+        <div class="an-label">MongoDB + InfluxDB</div>
+        <div class="an-sub">State + Time-series</div>
+      </div>
+      <div class="arch-arrow">
+        <svg viewBox="0 0 32 14" fill="none">
+          <path d="M2 7h24M20 2l7 5-7 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>socket.io WS</span>
+      </div>
+      <div class="arch-node">
+        <span class="an-icon">&#128187;</span>
+        <div class="an-label">React Dashboard</div>
+        <div class="an-sub">Vite · Tailwind CSS</div>
+      </div>
+    </div>
+
+    <div class="arch-diagrams reveal up d3">
+      <div class="glass-card" style="text-align:left;">
+        <div style="font-weight:700;font-size:.97rem;margin-bottom:10px;color:var(--text-main);">Deployment Ports</div>
+        <div class="code-snip" style="margin-top:0;">
+          Backend &nbsp;→ <span class="c-num">:5000</span>&nbsp; REST + WebSocket<br/>
+          Frontend → <span class="c-num">:5173</span>&nbsp; Vite dev server<br/>
+          MongoDB &nbsp;→ <span class="c-num">:27017</span> Primary state DB<br/>
+          InfluxDB → <span class="c-num">:8086</span>&nbsp; Time-series<br/>
+          MQTT &nbsp;&nbsp;&nbsp;→ <span class="c-num">:1883/:8883</span> HiveMQ Cloud
+        </div>
+      </div>
+      <div class="glass-card" style="text-align:left;">
+        <div style="font-weight:700;font-size:.97rem;margin-bottom:10px;color:var(--text-main);">ESP32 GPIO Pinout</div>
+        <div class="code-snip" style="margin-top:0;">
+          GPIO <span class="c-num">4</span> &nbsp;&nbsp;→ DS18B20 Temperature (OneWire)<br/>
+          GPIO <span class="c-num">34</span> &nbsp;→ pH-4502C Probe (ADC)<br/>
+          GPIO <span class="c-num">35</span> &nbsp;→ TDS Sensor (ADC)<br/>
+          GPIO <span class="c-num">36</span> &nbsp;→ Turbidity Sensor (ADC)<br/>
+          GPIO <span class="c-num">13/12</span> → JSN-SR04T Trig / Echo
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════
+       PIPELINE
+  ═══════════════════════════════════════════ -->
+  <section class="guard-section" id="pipeline">
+    <div class="section-kicker">Operational Pipeline</div>
+    <h2 class="section-title section-title-grad reveal up">7-Step Data Journey</h2>
+    <p class="section-sub reveal up d1">From sensor voltage to dashboard update — every stage in the real-time telemetry pipeline explained.</p>
+
+    <div class="pipeline-steps">
+      <!-- 1 -->
+      <div class="pipeline-step reveal left">
+        <div class="step-num" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));">1</div>
+        <div class="step-tag" style="background:rgba(14,165,233,.10);color:var(--primary);">aquamonitor/devices/&lt;uid&gt;/data</div>
+        <div class="step-h">ESP32 Sensor Acquisition &amp; MQTT Publish</div>
+        <p class="step-p">ESP32 reads DS18B20, pH, TDS, turbidity, and water level every 30 s. Serializes as JSON with device UID and bcrypt device secret, published to HiveMQ Cloud over TLS.</p>
+      </div>
+      <!-- 2 -->
+      <div class="pipeline-step reveal left d1">
+        <div class="step-num" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));">2</div>
+        <div class="step-tag" style="background:rgba(14,165,233,.10);color:var(--primary);">MQTT Client Ingestion</div>
+        <div class="step-h">Backend Ingestion &amp; Device Authentication</div>
+        <p class="step-p">Node.js MQTT client subscribes to the wildcard topic. On arrival, it validates device UID against MongoDB, verifies the device secret with bcrypt. Unauthorized payloads are silently discarded.</p>
+      </div>
+      <!-- 3 -->
+      <div class="pipeline-step reveal left d2">
+        <div class="step-num" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));">3</div>
+        <div class="step-tag" style="background:rgba(14,165,233,.10);color:var(--primary);">Prisma ORM + InfluxDB Write</div>
+        <div class="step-h">Dual-Database Persistence</div>
+        <p class="step-p">Latest-state fields updated in MongoDB via Prisma ORM. A time-series point is simultaneously appended to InfluxDB <code style="font-family:var(--font-mono);color:var(--primary);">water_quality</code> measurement for historical charting.</p>
+      </div>
+      <!-- 4 -->
+      <div class="pipeline-step reveal left">
+        <div class="step-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);">4</div>
+        <div class="step-tag" style="background:rgba(245,158,11,.10);color:#f59e0b;">Alert Engine Rule Evaluation</div>
+        <div class="step-h">Per-Device Threshold Rule Check</div>
+        <p class="step-p">Alert engine evaluates all 7 configurable alert types. On breach with no existing unresolved duplicate, an Alert record is persisted with timestamp, severity, and measured value.</p>
+      </div>
+      <!-- 5 -->
+      <div class="pipeline-step reveal left d1">
+        <div class="step-num" style="background:linear-gradient(135deg,#ef4444,#dc2626);">5</div>
+        <div class="step-tag" style="background:rgba(239,68,68,.10);color:#ef4444;">WebSocket · SMTP · Telegram</div>
+        <div class="step-h">Multi-Channel Alert Dispatch</div>
+        <p class="step-p">New alerts broadcast via socket.io (React toast), formatted SMTP email to tank owner, and Telegram Bot message via @GUARD_yp_bot — all respecting per-user enable toggles.</p>
+      </div>
+      <!-- 6 -->
+      <div class="pipeline-step reveal left d2">
+        <div class="step-num" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));">6</div>
+        <div class="step-tag" style="background:rgba(14,165,233,.10);color:var(--primary);">React + socket.io-client</div>
+        <div class="step-h">React Dashboard Real-Time Update</div>
+        <p class="step-p">Frontend listens on <code style="font-family:var(--font-mono);color:var(--primary);">sensor_data</code> and <code style="font-family:var(--font-mono);color:var(--primary);">alert</code> events. SVG arc gauges re-render, alert badge increments, toasts appear — no refresh or polling needed.</p>
+      </div>
+      <!-- 7 -->
+      <div class="pipeline-step reveal left d1">
+        <div class="step-num" style="background:linear-gradient(135deg,#22c55e,#16a34a);">7</div>
+        <div class="step-tag" style="background:rgba(34,197,94,.10);color:#22c55e;">InfluxDB → Recharts</div>
+        <div class="step-h">Historical Analytics — Sensor History Page</div>
+        <p class="step-p">JWT-authenticated REST queries retrieve InfluxDB time-series and render interactive Recharts line graphs with a custom glassmorphic date-range picker for per-tank parameter history.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════
+       TECH STACK + BOM
+  ═══════════════════════════════════════════ -->
+  <section class="guard-section" id="stack">
+    <div class="section-kicker">Pragmatics</div>
+    <h2 class="section-title section-title-grad reveal up">Tech Stack &amp; Bill of Materials</h2>
+
+    <div class="stack-groups reveal up d1">
+      <div class="glass-card">
+        <div class="stack-group-head">&#9883; Frontend</div>
+        <div class="chips-wrap">
+          <span class="s-chip"><span class="s-chip-dot" style="background:#61dafb;"></span>React 19</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#646cff;"></span>Vite 7.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#38bdf8;"></span>Tailwind CSS v3.4</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#ca4245;"></span>React Router v6</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#22c55e;"></span>Recharts 2.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#0ea5e9;"></span>socket.io-client 4.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#a855f7;"></span>driver.js 1.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#64748b;"></span>Axios</span>
+        </div>
+      </div>
+      <div class="glass-card">
+        <div class="stack-group-head">&#9881;&#65039; Backend</div>
+        <div class="chips-wrap">
+          <span class="s-chip"><span class="s-chip-dot" style="background:#68a063;"></span>Node.js 22 LTS</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#888;"></span>Express 4.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#2d3748;"></span>Prisma 6.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#47a248;"></span>MongoDB 7+</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#22d3ee;"></span>InfluxDB 2.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#f97316;"></span>MQTT.js 5.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#25c2a0;"></span>socket.io 4.x</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#ef4444;"></span>bcrypt + JWT</span>
+        </div>
+      </div>
+      <div class="glass-card">
+        <div class="stack-group-head">&#128297; Firmware (ESP32)</div>
+        <div class="chips-wrap">
+          <span class="s-chip"><span class="s-chip-dot" style="background:#f97316;"></span>Arduino Framework</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#22c55e;"></span>PubSubClient MQTT</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#a855f7;"></span>ArduinoJson</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#14b8a6;"></span>OneWire + DallasTemp</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#0ea5e9;"></span>WiFi.h</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#f59e0b;"></span>Preferences NVS</span>
+        </div>
+      </div>
+      <div class="glass-card">
+        <div class="stack-group-head">&#127959;&#65039; Infrastructure</div>
+        <div class="chips-wrap">
+          <span class="s-chip"><span class="s-chip-dot" style="background:#f97316;"></span>HiveMQ Cloud</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#2496ed;"></span>Docker + Compose</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#22c55e;"></span>GitHub Pages</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#ef4444;"></span>Nodemailer SMTP</span>
+          <span class="s-chip"><span class="s-chip-dot" style="background:#0ea5e9;"></span>Telegram Bot API</span>
         </div>
       </div>
     </div>
 
-    <!-- ═══ Z-PATTERN B: ALERTS (reversed) ═══ -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:center;padding:clamp(3rem,6vw,5rem) clamp(1rem,5vw,3rem);max-width:1280px;margin:0 auto;">
-      <div class="reveal from-left" style="border-radius:24px;overflow:hidden;border:1px solid var(--border);background:rgba(255,255,255,0.03);min-height:280px;">
-        <div style="display:flex;flex-direction:column;gap:10px;padding:1.5rem;">
-          <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:4px;">Alert Queue &middot; Tank 3</div>
-          <div style="display:flex;align-items:center;gap:12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 16px;">
-            <span style="width:10px;height:10px;border-radius:50%;background:var(--danger);flex-shrink:0;"></span>
-            <div><div style="font-size:0.85rem;color:var(--text-main);">&#127777;&#65039; TEMP_HIGH — 34.1&deg;C exceeds 32&deg;C max</div><div style="font-size:0.72rem;color:var(--text-muted);">Notified via Email + Telegram</div></div>
-            <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);margin-left:auto;">12:34</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:12px 16px;">
-            <span style="width:10px;height:10px;border-radius:50%;background:var(--ph);flex-shrink:0;"></span>
-            <div><div style="font-size:0.85rem;color:var(--text-main);">&#128167; PH_LOW — 6.1 below 6.5 threshold</div><div style="font-size:0.72rem;color:var(--text-muted);">Toast notification sent</div></div>
-            <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);margin-left:auto;">11:58</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 16px;">
-            <span style="width:10px;height:10px;border-radius:50%;background:var(--success);flex-shrink:0;"></span>
-            <div><div style="font-size:0.85rem;color:var(--text-main);">&#9989; TURBIDITY_HIGH — Resolved</div><div style="font-size:0.72rem;color:var(--text-muted);">Marked resolved by Admin</div></div>
-            <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);margin-left:auto;">10:22</span>
-          </div>
-          <div style="padding:11px 14px;border-radius:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:0.82rem;color:var(--success);display:flex;align-items:center;gap:8px;">
-            &#129302; @GUARD_yp_bot — Telegram verification active
-          </div>
+    <!-- Alert thresholds -->
+    <div style="margin-top:3rem;" class="reveal up d2">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--text-main);">Default Alert Threshold Configuration</h3>
+      <div class="table-wrap">
+        <table class="g-table">
+          <thead><tr>
+            <th>Alert Type</th><th>Condition</th><th>Sensor</th>
+          </tr></thead>
+          <tbody>
+            <tr><td><span class="thresh-badge" style="background:rgba(249,115,22,.15);color:var(--c-temp);">TEMP_HIGH</span></td><td>temperature &gt; TEMP_MAX</td><td style="color:var(--c-temp);">&#127777;&#65039; Temperature</td></tr>
+            <tr><td><span class="thresh-badge" style="background:rgba(249,115,22,.15);color:var(--c-temp);">TEMP_LOW</span></td><td>temperature &lt; TEMP_MIN</td><td style="color:var(--c-temp);">&#127777;&#65039; Temperature</td></tr>
+            <tr><td><span class="thresh-badge" style="background:rgba(168,85,247,.15);color:var(--c-ph);">PH_HIGH</span></td><td>ph &gt; PH_MAX</td><td style="color:var(--c-ph);">&#128167; pH Level</td></tr>
+            <tr><td><span class="thresh-badge" style="background:rgba(168,85,247,.15);color:var(--c-ph);">PH_LOW</span></td><td>ph &lt; PH_MIN</td><td style="color:var(--c-ph);">&#128167; pH Level</td></tr>
+            <tr><td><span class="thresh-badge" style="background:rgba(14,165,233,.15);color:var(--c-tds);">TDS_HIGH</span></td><td>tds &gt; TDS_MAX</td><td style="color:var(--c-tds);">&#129514; TDS</td></tr>
+            <tr><td><span class="thresh-badge" style="background:rgba(20,184,166,.15);color:var(--c-turbidity);">TURBIDITY_HIGH</span></td><td>turbidity &gt; TURBIDITY_MAX</td><td style="color:var(--c-turbidity);">&#127754; Turbidity</td></tr>
+            <tr><td><span class="thresh-badge" style="background:rgba(59,130,246,.15);color:var(--c-level);">WATER_LEVEL_LOW</span></td><td>water_level &lt; WATER_LEVEL_MIN</td><td style="color:var(--c-level);">&#128207; Water Level</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BOM -->
+    <div style="margin-top:2.5rem;" class="reveal up d3">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--text-main);">Bill of Materials — Per-Tank Hardware Node</h3>
+      <div class="table-wrap">
+        <table class="g-table">
+          <thead><tr>
+            <th>Component</th><th>Model / Spec</th><th>Interface</th><th>Qty</th><th>Est. Cost</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>Microcontroller</td><td class="mono">ESP32 DevKit C</td><td>Wi-Fi, GPIO</td><td>1</td><td class="mono">LKR 4,000</td></tr>
+            <tr><td>Temperature Sensor</td><td class="mono">DS18B20 Waterproof</td><td>OneWire GPIO 4</td><td>1</td><td class="mono">LKR 800</td></tr>
+            <tr><td>pH Sensor Module</td><td class="mono">pH-4502C / Gravity pH</td><td>Analog ADC</td><td>1</td><td class="mono">LKR 5,000</td></tr>
+            <tr><td>ORP Sensor Module</td><td class="mono">ORP Probe + Conditioner</td><td>Analog ADC</td><td>1</td><td class="mono">LKR 6,000</td></tr>
+            <tr><td>TDS Sensor</td><td class="mono">Analog TDS Module</td><td>Analog ADC</td><td>1</td><td class="mono">LKR 2,500</td></tr>
+            <tr><td>Turbidity Sensor</td><td class="mono">Optical TSS Module</td><td>Analog ADC</td><td>1</td><td class="mono">—</td></tr>
+            <tr><td>Water Level Sensor</td><td class="mono">JSN-SR04T Ultrasonic</td><td>Digital Trig/Echo</td><td>1</td><td class="mono">LKR 600</td></tr>
+            <tr><td>EC Sensor</td><td class="mono">EC Module</td><td>Analog ADC</td><td>1</td><td class="mono">LKR 6,500</td></tr>
+            <tr><td>Relay Module</td><td class="mono">4-Channel 5V Relay</td><td>Digital GPIO</td><td>1</td><td class="mono">LKR 1,200</td></tr>
+            <tr><td>Power Supply</td><td class="mono">12V DC + LM2596 Buck</td><td>VIN / GND</td><td>1</td><td class="mono">LKR 3,000</td></tr>
+            <tr><td>Miscellaneous</td><td class="mono">PCB, jumpers, casing, fuse</td><td>—</td><td>—</td><td class="mono">LKR 2,000</td></tr>
+            <tr class="total-row"><td colspan="4"><strong>Estimated Total (Per Node)</strong></td><td class="mono" style="color:var(--primary);"><strong>~LKR 31,600</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════
+       TEAM
+  ═══════════════════════════════════════════ -->
+  <section class="guard-section" id="team">
+    <div class="section-kicker">Engineering Team</div>
+    <h2 class="section-title section-title-grad reveal up">3yp - Team 08 : E21</h2>
+    <p class="section-sub reveal up d1">Third Year Software Engineering Project &middot; Department of Computer Engineering &middot; Faculty of Engineering &middot; University of Peradeniya</p>
+
+    <div class="team-grid">
+      <div class="glass-card team-card reveal up d1">
+        <div class="team-avatar" style="background:linear-gradient(135deg,var(--primary),#a855f7);box-shadow:0 4px 18px rgba(14,165,233,.3);">T</div>
+        <div class="team-name">Thisen Lakdinu</div>
+        <div class="team-id">E/21/231</div>
+        <a href="mailto:e21231@eng.pdn.ac.lk" class="team-email">e21231@eng.pdn.ac.lk</a>
+        <a href="#" class="team-profile-link" style="font-size:0.75rem;color:var(--primary);text-decoration:none;display:block;margin-top:6px;">View Profile &rarr;</a>
+      </div>
+      <div class="glass-card team-card reveal up d2">
+        <div class="team-avatar" style="background:linear-gradient(135deg,#0ea5e9,#14b8a6);box-shadow:0 4px 18px rgba(14,165,233,.3);">R</div>
+        <div class="team-name">Ravindu Ashan</div>
+        <div class="team-id">E/21/039</div>
+        <a href="mailto:e21039@eng.pdn.ac.lk" class="team-email">e21039@eng.pdn.ac.lk</a>
+        <a href="#" class="team-profile-link" style="font-size:0.75rem;color:var(--primary);text-decoration:none;display:block;margin-top:6px;">View Profile &rarr;</a>
+      </div>
+      <div class="glass-card team-card reveal up d3">
+        <div class="team-avatar" style="background:linear-gradient(135deg,#22c55e,#14b8a6);box-shadow:0 4px 18px rgba(34,197,94,.3);">S</div>
+        <div class="team-name">Shashika Sathsarani</div>
+        <div class="team-id">E/21/362</div>
+        <a href="mailto:e21362@eng.pdn.ac.lk" class="team-email">e21362@eng.pdn.ac.lk</a>
+        <a href="#" class="team-profile-link" style="font-size:0.75rem;color:var(--primary);text-decoration:none;display:block;margin-top:6px;">View Profile &rarr;</a>
+      </div>
+      <div class="glass-card team-card reveal up d4">
+        <div class="team-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 4px 18px rgba(245,158,11,.3);">A</div>
+        <div class="team-name">Asindu Chandasekara</div>
+        <div class="team-id">E/21/067</div>
+        <a href="mailto:e21067@eng.pdn.ac.lk" class="team-email">e21067@eng.pdn.ac.lk</a>
+        <a href="#" class="team-profile-link" style="font-size:0.75rem;color:var(--primary);text-decoration:none;display:block;margin-top:6px;">View Profile &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Supervisor -->
+    <div style="margin-top:2.5rem;" class="reveal up d2">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-bottom:14px;">Project Supervisor</div>
+      <div class="supervisor-card">
+        <div class="sup-avatar" style="background:linear-gradient(135deg,#14b8a6,#0ea5e9);">Y</div>
+        <div>
+          <div class="sup-title">Academic Supervisor</div>
+          <div class="sup-name">Ms. Yasodha Vimukthi</div>
+          <div class="sup-dept">Department of Computer Engineering<br/>University of Peradeniya</div>
+          <a href="mailto:yasodhav@eng.pdn.ac.lk" class="sup-email">yasodhav@eng.pdn.ac.lk</a>
+          <a href="#" class="sup-profile-link" style="font-size:0.75rem;color:var(--primary);text-decoration:none;display:block;margin-top:4px;">View Profile &rarr;</a>
         </div>
       </div>
-      <div class="reveal from-right">
-        <div class="section-kicker">Alert Engine</div>
-        <h2 style="font-size:clamp(1.6rem,3.5vw,2.2rem);font-weight:800;line-height:1.25;margin-bottom:1rem;color:var(--text-main);">Never miss a critical event.</h2>
-        <p style="color:var(--text-muted);font-size:1rem;line-height:1.8;margin-bottom:1rem;">The rule-based alert engine checks every telemetry payload against per-device configurable thresholds. If a breach is detected and no identical unresolved alert exists, an Alert record is persisted and dispatched across all channels simultaneously.</p>
-        <ul style="list-style:none;margin-bottom:1.5rem;">
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> WebSocket push &rarr; instant React toast notification</li>
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> SMTP email delivery to tank owner on breach</li>
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> Telegram Bot message via @GUARD_yp_bot</li>
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> Per-account email / Telegram enable toggles</li>
-          <li style="display:flex;gap:8px;margin-bottom:8px;color:var(--text-muted);font-size:0.95rem;"><span style="color:var(--success);font-weight:700;flex-shrink:0;">&#10003;</span> In-memory throttling prevents alert flood storms</li>
+    </div>
+
+    <!-- Institution -->
+    <div class="inst-grid reveal up d3">
+      <div class="glass-card inst-card">
+        <div class="ic-icon">&#127963;&#65039;</div>
+        <div class="ic-title">University of Peradeniya</div>
+        <div class="ic-sub">Faculty of Engineering</div>
+      </div>
+      <div class="glass-card inst-card">
+        <div class="ic-icon">&#128187;</div>
+        <div class="ic-title">Department of Computer Engineering</div>
+        <div class="ic-sub">ce.pdn.ac.lk</div>
+      </div>
+      <div class="glass-card inst-card">
+        <div class="ic-icon">&#128197;</div>
+        <div class="ic-title">3yp - Team 08 : E21</div>
+        <div class="ic-sub">3rd Year Software Engineering Project</div>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════ -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span style="font-weight:800;font-size:1.1rem;color:var(--text-main);display:flex;align-items:center;gap:8px;">
+          <span class="nav-badge" style="font-size:.8rem;">G.U.A.R.D</span>
+          General Unit for Aquatic Risk Detection
+        </span>
+        <p>Enterprise-grade IoT aquaculture monitoring — ESP32 sensor nodes, real-time telemetry via MQTT, glassmorphic React dashboard, and multi-channel alerting for commercial fish shops and hatcheries.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="#features">Core Features</a></li>
+          <li><a href="#architecture">Architecture</a></li>
+          <li><a href="#pipeline">Data Pipeline</a></li>
+          <li><a href="#stack">Tech Stack</a></li>
+          <li><a href="#team">Team</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Repository</h4>
+        <ul>
+          <li><a href="https://github.com/cepdnaclk/e21-3yp-GUARD" target="_blank">GitHub Repo</a></li>
+          <li><a href="https://github.com/cepdnaclk/e21-3yp-GUARD/issues" target="_blank">&#128027; Issues</a></li>
+          <li><a href="http://www.ce.pdn.ac.lk/" target="_blank">Department of Computer Engineering</a></li>
+          <li><a href="https://eng.pdn.ac.lk/" target="_blank">&#127891; University of Peradeniya</a></li>
         </ul>
       </div>
     </div>
-
-    <div class="divider"></div>
-
-    <!-- ═══ GALLERY ═══ -->
-    <section id="gallery" style="max-width:1280px;">
-      <div class="section-kicker">Visual Gallery</div>
-      <h2 class="section-title reveal from-up">Renders &amp; Build Photos</h2>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:2rem;">
-        <div class="reveal from-left" style="border:1px dashed var(--border-accent);border-radius:20px;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(14,165,233,0.03);transition:all .3s ease;cursor:pointer;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-accent)'">
-          <span style="font-size:2.2rem;">&#128421;&#65039;</span>
-          <span style="font-weight:600;color:var(--text-main);font-size:0.95rem;">Dashboard UI — Obsidian Glow Mode</span>
-          <span style="font-size:0.8rem;color:var(--text-dim);">Live gauges, tank grid, alert queue</span>
-        </div>
-        <div class="reveal from-right" style="border:1px dashed var(--border-accent);border-radius:20px;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(14,165,233,0.03);transition:all .3s ease;cursor:pointer;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-accent)'">
-          <span style="font-size:2.2rem;">&#128241;</span>
-          <span style="font-weight:600;color:var(--text-main);font-size:0.95rem;">Telegram Alert Notification</span>
-          <span style="font-size:0.8rem;color:var(--text-dim);">@GUARD_yp_bot &middot; Real-time breach alert</span>
-        </div>
-        <div class="reveal from-left" style="border:1px dashed var(--border-accent);border-radius:20px;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(14,165,233,0.03);transition:all .3s ease;cursor:pointer;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-accent)'">
-          <span style="font-size:2.2rem;">&#9889;</span>
-          <span style="font-weight:600;color:var(--text-main);font-size:0.95rem;">ESP32 Hardware Node</span>
-          <span style="font-size:0.8rem;color:var(--text-dim);">DS18B20 &middot; pH-4502C &middot; JSN-SR04T &middot; TDS &middot; Turbidity</span>
-        </div>
-        <div class="reveal from-right" style="border:1px dashed var(--border-accent);border-radius:20px;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(14,165,233,0.03);transition:all .3s ease;cursor:pointer;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-accent)'">
-          <span style="font-size:2.2rem;">&#128032;</span>
-          <span style="font-weight:600;color:var(--text-main);font-size:0.95rem;">Fish Species Knowledge Base</span>
-          <span style="font-size:0.8rem;color:var(--text-dim);">20 species &middot; Tank Compatibility Checker</span>
-        </div>
-        <div class="reveal from-up" style="grid-column:span 2;border:1px dashed var(--border-accent);border-radius:20px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(14,165,233,0.03);transition:all .3s ease;cursor:pointer;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-accent)'">
-          <span style="font-size:2.2rem;">&#128202;</span>
-          <span style="font-weight:600;color:var(--text-main);font-size:0.95rem;">Sensor History Analytics — Recharts Time-Series</span>
-          <span style="font-size:0.8rem;color:var(--text-dim);">Interactive date-range charts &middot; Glass date picker &middot; Per-tank parameter history from InfluxDB</span>
-        </div>
-      </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══ ARCHITECTURE ═══ -->
-    <section id="architecture">
-      <div class="section-kicker">System Architecture</div>
-      <h2 class="section-title reveal from-up">End-to-End IoT Architecture</h2>
-      <p class="section-sub reveal from-up d1">From ESP32 edge nodes to React dashboard — every layer purpose-built for low-latency aquatic telemetry.</p>
-
-      <!-- Animated flow -->
-      <div style="display:flex;align-items:center;margin:2.5rem 0;overflow-x:auto;padding-bottom:8px;" class="reveal from-up d2">
-        <div style="flex-shrink:0;text-align:center;min-width:120px;padding:16px 10px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);backdrop-filter:blur(8px);transition:all .3s;" onmouseover="this.style.borderColor='var(--border-accent)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:1.7rem;margin-bottom:6px;">&#128297;</div>
-          <div style="font-size:0.8rem;font-weight:700;">ESP32 Node</div>
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;font-family:var(--font-mono);">5 sensors</div>
-        </div>
-        <div style="flex-shrink:0;padding:0 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-          <svg width="36" height="14" viewBox="0 0 36 14" fill="none"><path d="M2 7h28M24 2l7 5-7 5" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse-arr 2s ease-in-out infinite;"/></svg>
-          <span style="font-size:0.62rem;color:var(--text-muted);">MQTT/TLS</span>
-        </div>
-        <div style="flex-shrink:0;text-align:center;min-width:120px;padding:16px 10px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);backdrop-filter:blur(8px);transition:all .3s;" onmouseover="this.style.borderColor='var(--border-accent)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:1.7rem;margin-bottom:6px;">&#9729;&#65039;</div>
-          <div style="font-size:0.8rem;font-weight:700;">HiveMQ Cloud</div>
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;font-family:var(--font-mono);">1883/8883</div>
-        </div>
-        <div style="flex-shrink:0;padding:0 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-          <svg width="36" height="14" viewBox="0 0 36 14" fill="none"><path d="M2 7h28M24 2l7 5-7 5" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse-arr 2s ease-in-out infinite;"/></svg>
-          <span style="font-size:0.62rem;color:var(--text-muted);">Subscribe</span>
-        </div>
-        <div style="flex-shrink:0;text-align:center;min-width:120px;padding:16px 10px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);backdrop-filter:blur(8px);transition:all .3s;" onmouseover="this.style.borderColor='var(--border-accent)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:1.7rem;margin-bottom:6px;">&#9881;&#65039;</div>
-          <div style="font-size:0.8rem;font-weight:700;">Node.js API</div>
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;font-family:var(--font-mono);">Express+Prisma</div>
-        </div>
-        <div style="flex-shrink:0;padding:0 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-          <svg width="36" height="14" viewBox="0 0 36 14" fill="none"><path d="M2 7h28M24 2l7 5-7 5" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse-arr 2s ease-in-out infinite;"/></svg>
-          <span style="font-size:0.62rem;color:var(--text-muted);">Dual Write</span>
-        </div>
-        <div style="flex-shrink:0;text-align:center;min-width:130px;padding:16px 10px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);backdrop-filter:blur(8px);transition:all .3s;" onmouseover="this.style.borderColor='var(--border-accent)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:1.7rem;margin-bottom:6px;">&#128452;&#65039;</div>
-          <div style="font-size:0.8rem;font-weight:700;">MongoDB + InfluxDB</div>
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;font-family:var(--font-mono);">State + Time-series</div>
-        </div>
-        <div style="flex-shrink:0;padding:0 6px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-          <svg width="36" height="14" viewBox="0 0 36 14" fill="none"><path d="M2 7h28M24 2l7 5-7 5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse-arr 2s ease-in-out infinite;"/></svg>
-          <span style="font-size:0.62rem;color:var(--text-muted);">socket.io WS</span>
-        </div>
-        <div style="flex-shrink:0;text-align:center;min-width:120px;padding:16px 10px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,0.04);backdrop-filter:blur(8px);transition:all .3s;" onmouseover="this.style.borderColor='var(--border-accent)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:1.7rem;margin-bottom:6px;">&#128187;</div>
-          <div style="font-size:0.8rem;font-weight:700;">React Dashboard</div>
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;font-family:var(--font-mono);">Vite+Tailwind</div>
-        </div>
-      </div>
-
-      <!-- Diagram placeholders -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:1.5rem;" class="reveal from-up d3">
-        <div class="glass-card" style="text-align:center;">
-          <div style="font-size:2rem;margin-bottom:10px;">&#127959;&#65039;</div>
-          <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">Deployment Ports</div>
-          <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 18px;font-family:var(--font-mono);font-size:0.78rem;color:#a8d8f0;line-height:2;text-align:left;margin-top:10px;">
-            Backend &nbsp;&rarr; <span style="color:#22c55e;">:5000</span>&nbsp; (REST + WebSocket)<br/>
-            Frontend &rarr; <span style="color:#22c55e;">:5173</span>&nbsp; (Vite dev server)<br/>
-            MongoDB &nbsp;&rarr; <span style="color:#22c55e;">:27017</span> (State DB)<br/>
-            InfluxDB &rarr; <span style="color:#22c55e;">:8086</span>&nbsp; (Time-series)<br/>
-            MQTT &nbsp;&nbsp;&nbsp;&rarr; <span style="color:#22c55e;">:1883/:8883</span>
-          </div>
-        </div>
-        <div class="glass-card" style="text-align:center;">
-          <div style="font-size:2rem;margin-bottom:10px;">&#128268;</div>
-          <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">ESP32 GPIO Pinout</div>
-          <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 18px;font-family:var(--font-mono);font-size:0.78rem;color:#a8d8f0;line-height:2;text-align:left;margin-top:10px;">
-            GPIO <span style="color:#22c55e;">4</span> &nbsp;&rarr; DS18B20 Temperature (OneWire)<br/>
-            GPIO <span style="color:#22c55e;">34</span> &rarr; pH-4502C Probe (ADC)<br/>
-            GPIO <span style="color:#22c55e;">35</span> &rarr; TDS Sensor (ADC)<br/>
-            GPIO <span style="color:#22c55e;">36</span> &rarr; Turbidity Sensor (ADC)<br/>
-            GPIO <span style="color:#22c55e;">13/12</span> &rarr; JSN-SR04T Trig/Echo
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══ PIPELINE ═══ -->
-    <section id="pipeline">
-      <div class="section-kicker">Operational Pipeline</div>
-      <h2 class="section-title reveal from-up">7-Step Data Journey</h2>
-      <p class="section-sub reveal from-up d1">From sensor voltage to dashboard update — every stage in the real-time telemetry pipeline.</p>
-
-      <div style="margin-top:2.5rem;display:flex;flex-direction:column;">
-        <!-- Step 1 -->
-        <div style="display:flex;gap:1.5rem;padding:1.5rem 0;align-items:flex-start;border-left:2px solid var(--border);padding-left:2rem;margin-left:1.5rem;position:relative;transition:border-color .3s;" class="reveal from-left" onmouseover="this.style.borderLeftColor='var(--primary)'" onmouseout="this.style.borderLeftColor='var(--border)'">
-          <div style="position:absolute;left:-1.5rem;top:1.5rem;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 4px 14px var(--primary-glow);transform:translateX(-50%) translateX(1px);">1</div>
-          <div style="font-size:1.5rem;flex-shrink:0;margin-top:2px;">&#128297;</div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--primary);background:rgba(14,165,233,0.1);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px;">aquamonitor/devices/&lt;uid&gt;/data</div>
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">ESP32 Sensor Acquisition &amp; MQTT Publish</h3>
-            <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.7;">ESP32 reads DS18B20, pH, TDS, turbidity, and water level every 30 s. Serializes as JSON with device UID and bcrypt device secret, published to HiveMQ Cloud over TLS.</p>
-          </div>
-        </div>
-        <!-- Step 2 -->
-        <div style="display:flex;gap:1.5rem;padding:1.5rem 0;align-items:flex-start;border-left:2px solid var(--border);padding-left:2rem;margin-left:1.5rem;position:relative;transition:border-color .3s;" class="reveal from-left d1" onmouseover="this.style.borderLeftColor='var(--primary)'" onmouseout="this.style.borderLeftColor='var(--border)'">
-          <div style="position:absolute;left:-1.5rem;top:1.5rem;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 4px 14px var(--primary-glow);transform:translateX(-50%) translateX(1px);">2</div>
-          <div style="font-size:1.5rem;flex-shrink:0;margin-top:2px;">&#128225;</div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--primary);background:rgba(14,165,233,0.1);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px;">MQTT Client Ingestion</div>
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">Backend Ingestion &amp; Device Authentication</h3>
-            <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.7;">Node.js MQTT client subscribes to the wildcard topic, extracts device UID, validates against MongoDB device registry, and verifies device secret with bcrypt. Unauthorized payloads are silently discarded.</p>
-          </div>
-        </div>
-        <!-- Step 3 -->
-        <div style="display:flex;gap:1.5rem;padding:1.5rem 0;align-items:flex-start;border-left:2px solid var(--border);padding-left:2rem;margin-left:1.5rem;position:relative;transition:border-color .3s;" class="reveal from-left d2" onmouseover="this.style.borderLeftColor='var(--primary)'" onmouseout="this.style.borderLeftColor='var(--border)'">
-          <div style="position:absolute;left:-1.5rem;top:1.5rem;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 4px 14px var(--primary-glow);transform:translateX(-50%) translateX(1px);">3</div>
-          <div style="font-size:1.5rem;flex-shrink:0;margin-top:2px;">&#128452;&#65039;</div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--primary);background:rgba(14,165,233,0.1);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px;">Prisma ORM + InfluxDB Write</div>
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">Dual-Database Persistence</h3>
-            <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.7;">Latest-state fields updated in MongoDB via Prisma ORM. A time-series data point is simultaneously appended to InfluxDB <code style="font-family:var(--font-mono);color:var(--primary);">water_quality</code> measurement for historical charting.</p>
-          </div>
-        </div>
-        <!-- Step 4 -->
-        <div style="display:flex;gap:1.5rem;padding:1.5rem 0;align-items:flex-start;border-left:2px solid var(--border);padding-left:2rem;margin-left:1.5rem;position:relative;transition:border-color .3s;" class="reveal from-left" onmouseover="this.style.borderLeftColor='var(--warning)'" onmouseout="this.style.borderLeftColor='var(--border)'">
-          <div style="position:absolute;left:-1.5rem;top:1.5rem;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--warning),#d97706);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 4px 14px rgba(245,158,11,0.4);transform:translateX(-50%) translateX(1px);">4</div>
-          <div style="font-size:1.5rem;flex-shrink:0;margin-top:2px;">&#9888;&#65039;</div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--warning);background:rgba(245,158,11,0.1);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px;">Alert Engine Rule Evaluation</div>
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">Per-Device Threshold Check</h3>
-            <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.7;">Alert engine evaluates all 7 configurable alert types (TEMP_HIGH/LOW, PH_HIGH/LOW, TDS_HIGH, TURBIDITY_HIGH, WATER_LEVEL_LOW). On breach with no existing unresolved duplicate, an Alert record is persisted.</p>
-          </div>
-        </div>
-        <!-- Step 5 -->
-        <div style="display:flex;gap:1.5rem;padding:1.5rem 0;align-items:flex-start;border-left:2px solid var(--border);padding-left:2rem;margin-left:1.5rem;position:relative;transition:border-color .3s;" class="reveal from-left d1" onmouseover="this.style.borderLeftColor='var(--danger)'" onmouseout="this.style.borderLeftColor='var(--border)'">
-          <div style="position:absolute;left:-1.5rem;top:1.5rem;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--danger),#dc2626);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 4px 14px rgba(239,68,68,0.4);transform:translateX(-50%) translateX(1px);">5</div>
-          <div style="font-size:1.5rem;flex-shrink:0;margin-top:2px;">&#128276;</div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--danger);background:rgba(239,68,68,0.1);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px;">WebSocket &middot; SMTP &middot; Telegram</div>
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">Multi-Channel Alert Dispatch</h3>
-            <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.7;">New alerts broadcast via socket.io (React toast), formatted SMTP email to tank owner, and Telegram Bot message to verified admin chat ID via @GUARD_yp_bot — all respecting per-user enable toggles.</p>
-          </div>
-        </div>
-        <!-- Step 6 -->
-        <div style="display:flex;gap:1.5rem;padding:1.5rem 0;align-items:flex-start;border-left:2px solid var(--border);padding-left:2rem;margin-left:1.5rem;position:relative;transition:border-color .3s;" class="reveal from-left d2" onmouseover="this.style.borderLeftColor='var(--primary)'" onmouseout="this.style.borderLeftColor='var(--border)'">
-          <div style="position:absolute;left:-1.5rem;top:1.5rem;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 4px 14px var(--primary-glow);transform:translateX(-50%) translateX(1px);">6</div>
-          <div style="font-size:1.5rem;flex-shrink:0;margin-top:2px;">&#128187;</div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--primary);background:rgba(14,165,233,0.1);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px;">React + socket.io-client</div>
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">React Dashboard Real-Time Update</h3>
-            <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.7;">Frontend listens on <code style="font-family:var(--font-mono);color:var(--primary);">sensor_data</code> and <code style="font-family:var(--font-mono);color:var(--primary);">alert</code> WebSocket events. SVG arc gauges re-render, alert badge increments, toasts appear — no refresh or polling needed.</p>
-          </div>
-        </div>
-        <!-- Step 7 -->
-        <div style="display:flex;gap:1.5rem;padding:1.5rem 0;align-items:flex-start;border-left:2px solid var(--border);padding-left:2rem;margin-left:1.5rem;position:relative;transition:border-color .3s;" class="reveal from-left d1" onmouseover="this.style.borderLeftColor='var(--success)'" onmouseout="this.style.borderLeftColor='var(--border)'">
-          <div style="position:absolute;left:-1.5rem;top:1.5rem;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--success),#16a34a);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 4px 14px rgba(34,197,94,0.4);transform:translateX(-50%) translateX(1px);">7</div>
-          <div style="font-size:1.5rem;flex-shrink:0;margin-top:2px;">&#128202;</div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--success);background:rgba(34,197,94,0.1);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px;">InfluxDB &rarr; Recharts</div>
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">Historical Analytics via Sensor History Page</h3>
-            <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.7;">JWT-authenticated REST queries retrieve InfluxDB time-series and render interactive Recharts line graphs with a custom glassmorphic date-range picker for per-tank parameter history.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══ TECH STACK + BOM ═══ -->
-    <section id="stack">
-      <div class="section-kicker">Pragmatics</div>
-      <h2 class="section-title reveal from-up">Tech Stack &amp; Bill of Materials</h2>
-
-      <!-- Stack groups -->
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:2.5rem;" class="reveal from-up d1">
-        <div class="glass-card">
-          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);">&#9883; Frontend</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#61dafb;flex-shrink:0;"></span>React 19</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#646cff;flex-shrink:0;"></span>Vite 7.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#38bdf8;flex-shrink:0;"></span>Tailwind CSS v3.4</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#ca4245;flex-shrink:0;"></span>React Router v6</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>Recharts 2.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#a855f7;flex-shrink:0;"></span>driver.js 1.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;flex-shrink:0;"></span>socket.io-client 4.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#64748b;flex-shrink:0;"></span>Axios</span>
-          </div>
-        </div>
-        <div class="glass-card">
-          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);">&#9881;&#65039; Backend</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#68a063;flex-shrink:0;"></span>Node.js 22 LTS</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#888;flex-shrink:0;"></span>Express 4.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#2d3748;flex-shrink:0;"></span>Prisma 6.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#47a248;flex-shrink:0;"></span>MongoDB 7+</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#22d3ee;flex-shrink:0;"></span>InfluxDB 2.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;flex-shrink:0;"></span>MQTT.js 5.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#25c2a0;flex-shrink:0;"></span>socket.io 4.x</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;flex-shrink:0;"></span>bcrypt + JWT</span>
-          </div>
-        </div>
-        <div class="glass-card">
-          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);">&#128297; Firmware (ESP32)</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;flex-shrink:0;"></span>Arduino Framework</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>PubSubClient MQTT</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#a855f7;flex-shrink:0;"></span>ArduinoJson</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#14b8a6;flex-shrink:0;"></span>OneWire + DallasTemp</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;flex-shrink:0;"></span>WiFi.h</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span>Preferences (NVS)</span>
-          </div>
-        </div>
-        <div class="glass-card">
-          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);">&#127959;&#65039; Infrastructure</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;flex-shrink:0;"></span>HiveMQ Cloud</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#2496ed;flex-shrink:0;"></span>Docker + Compose</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>GitHub Pages</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;flex-shrink:0;"></span>Nodemailer SMTP</span>
-            <span style="padding:5px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;flex-shrink:0;"></span>Telegram Bot API</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Alert thresholds table -->
-      <div style="margin-top:3rem;" class="reveal from-up d2">
-        <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;">Default Alert Threshold Configuration</h3>
-        <div class="table-wrap">
-          <table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="background:rgba(14,165,233,0.10);">
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Alert Type</th>
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Condition</th>
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Default</th>
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Sensor</th>
-            </tr></thead>
-            <tbody>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;"><span style="background:rgba(249,115,22,0.15);color:var(--temp);padding:2px 9px;border-radius:6px;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;">TEMP_HIGH</span></td><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">temperature &gt; TEMP_MAX</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.82rem;">32 &deg;C</td><td style="padding:11px 16px;font-size:0.88rem;color:var(--temp);">&#127777;&#65039; Temperature</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;"><span style="background:rgba(249,115,22,0.15);color:var(--temp);padding:2px 9px;border-radius:6px;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;">TEMP_LOW</span></td><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">temperature &lt; TEMP_MIN</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.82rem;">20 &deg;C</td><td style="padding:11px 16px;font-size:0.88rem;color:var(--temp);">&#127777;&#65039; Temperature</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;"><span style="background:rgba(168,85,247,0.15);color:var(--ph);padding:2px 9px;border-radius:6px;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;">PH_HIGH</span></td><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">ph &gt; PH_MAX</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.82rem;">8.5</td><td style="padding:11px 16px;font-size:0.88rem;color:var(--ph);">&#128167; pH Level</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;"><span style="background:rgba(168,85,247,0.15);color:var(--ph);padding:2px 9px;border-radius:6px;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;">PH_LOW</span></td><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">ph &lt; PH_MIN</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.82rem;">6.5</td><td style="padding:11px 16px;font-size:0.88rem;color:var(--ph);">&#128167; pH Level</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;"><span style="background:rgba(14,165,233,0.15);color:var(--tds);padding:2px 9px;border-radius:6px;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;">TDS_HIGH</span></td><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">tds &gt; TDS_MAX</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.82rem;">800 ppm</td><td style="padding:11px 16px;font-size:0.88rem;color:var(--tds);">&#129514; TDS</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;"><span style="background:rgba(20,184,166,0.15);color:var(--turbidity);padding:2px 9px;border-radius:6px;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;">TURBIDITY_HIGH</span></td><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">turbidity &gt; TURBIDITY_MAX</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.82rem;">50 NTU</td><td style="padding:11px 16px;font-size:0.88rem;color:var(--turbidity);">&#127754; Turbidity</td></tr>
-              <tr><td style="padding:11px 16px;font-size:0.88rem;"><span style="background:rgba(59,130,246,0.15);color:var(--waterlevel);padding:2px 9px;border-radius:6px;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;">WATER_LEVEL_LOW</span></td><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">water_level &lt; WATER_LEVEL_MIN</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.82rem;">20 %</td><td style="padding:11px 16px;font-size:0.88rem;color:var(--waterlevel);">&#128207; Water Level</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- BOM table -->
-      <div style="margin-top:2.5rem;" class="reveal from-up d3">
-        <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;">Bill of Materials — Per-Tank Hardware Node</h3>
-        <div class="table-wrap">
-          <table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="background:rgba(14,165,233,0.10);">
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Component</th>
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Model / Spec</th>
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Interface</th>
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Qty</th>
-              <th style="padding:11px 16px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border-accent);">Est. Cost</th>
-            </tr></thead>
-            <tbody>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">Microcontroller</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">ESP32 DevKit C</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">Wi-Fi, GPIO</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 4,000</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">Temperature Sensor</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">DS18B20 Waterproof</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">OneWire GPIO 4</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 800</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">pH Sensor Module</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">pH-4502C / Gravity pH</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">Analog ADC</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 5,000</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">ORP Sensor Module</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">ORP Probe + Conditioner</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">Analog ADC</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 6,000</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">TDS Sensor</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">Analog TDS Module</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">Analog ADC</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 2,500</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">Water Level Sensor</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">JSN-SR04T Ultrasonic</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">Digital Trig/Echo</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 600</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">EC Sensor</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">EC Module</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">Analog ADC</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 6,500</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">Relay Module</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">4-Channel 5V Relay</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">Digital GPIO</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 1,200</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">Power Supply</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">12V DC + LM2596 Buck</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">VIN / GND</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">1</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 3,000</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:11px 16px;font-size:0.88rem;color:var(--text-muted);">Miscellaneous</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">PCB, jumpers, casing, fuse</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">&mdash;</td><td style="padding:11px 16px;font-size:0.82rem;color:var(--text-muted);">&mdash;</td><td style="padding:11px 16px;font-family:var(--font-mono);font-size:0.8rem;">LKR 2,000</td></tr>
-              <tr style="background:rgba(14,165,233,0.06);border-top:1px solid var(--border-accent);"><td style="padding:12px 16px;font-weight:700;" colspan="4">Estimated Total (Per Node)</td><td style="padding:12px 16px;font-family:var(--font-mono);font-weight:700;color:var(--primary);">~LKR 31,600</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══ TEAM ═══ -->
-    <section id="team">
-      <div class="section-kicker">Engineering Team</div>
-      <h2 class="section-title reveal from-up">Team 08 &mdash; E21 Batch</h2>
-      <p class="section-sub reveal from-up d1">Third Year Software Engineering Project &middot; Department of Computer Engineering &middot; Faculty of Engineering &middot; University of Peradeniya</p>
-
-      <!-- Team cards -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:2.5rem;">
-        <div class="glass-card reveal from-up d1" style="text-align:center;">
-          <div style="width:80px;height:80px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,var(--primary),var(--ph));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;color:#fff;box-shadow:0 4px 20px rgba(14,165,233,0.3);">T</div>
-          <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Thisen Lakdinu</div>
-          <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--primary);margin-bottom:6px;">E/21/231</div>
-          <a href="mailto:e21231@eng.pdn.ac.lk" style="font-size:0.82rem;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">e21231@eng.pdn.ac.lk</a>
-        </div>
-        <div class="glass-card reveal from-up d2" style="text-align:center;">
-          <div style="width:80px;height:80px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,var(--primary),var(--turbidity));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;color:#fff;box-shadow:0 4px 20px rgba(14,165,233,0.3);">R</div>
-          <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Ravindu Ashan</div>
-          <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--primary);margin-bottom:6px;">E/21/039</div>
-          <a href="mailto:e21039@eng.pdn.ac.lk" style="font-size:0.82rem;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">e21039@eng.pdn.ac.lk</a>
-        </div>
-        <div class="glass-card reveal from-up d3" style="text-align:center;">
-          <div style="width:80px;height:80px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,var(--success),var(--turbidity));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;color:#fff;box-shadow:0 4px 20px rgba(34,197,94,0.3);">S</div>
-          <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Shashika Sathsarani</div>
-          <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--primary);margin-bottom:6px;">E/21/362</div>
-          <a href="mailto:e21362@eng.pdn.ac.lk" style="font-size:0.82rem;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">e21362@eng.pdn.ac.lk</a>
-        </div>
-        <div class="glass-card reveal from-up d4" style="text-align:center;">
-          <div style="width:80px;height:80px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,var(--warning),var(--danger));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;color:#fff;box-shadow:0 4px 20px rgba(245,158,11,0.3);">A</div>
-          <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Asindu Chandasekara</div>
-          <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--primary);margin-bottom:6px;">E/21/067</div>
-          <a href="mailto:e21067@eng.pdn.ac.lk" style="font-size:0.82rem;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">e21067@eng.pdn.ac.lk</a>
-        </div>
-      </div>
-
-      <!-- Supervisor -->
-      <div style="margin-top:2.5rem;" class="reveal from-up d2">
-        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px;">Project Supervisor</div>
-        <div style="display:flex;align-items:center;gap:20px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:20px 24px;max-width:440px;">
-          <div style="width:60px;height:60px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--turbidity),var(--tds));display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:#fff;">Y</div>
-          <div>
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:4px;">Academic Supervisor</div>
-            <div style="font-weight:700;font-size:1rem;margin-bottom:3px;">Ms. Yasodha Vimukthi</div>
-            <div style="font-size:0.82rem;color:var(--text-muted);">Department of Computer Engineering<br/>University of Peradeniya</div>
-            <a href="mailto:yasodhav@eng.pdn.ac.lk" style="font-size:0.8rem;color:var(--primary);text-decoration:none;margin-top:4px;display:block;">yasodhav@eng.pdn.ac.lk</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Institution badges -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:2.5rem;" class="reveal from-up d3">
-        <div class="glass-card" style="text-align:center;">
-          <div style="font-size:1.8rem;margin-bottom:8px;">&#127963;&#65039;</div>
-          <div style="font-weight:700;margin-bottom:4px;">University of Peradeniya</div>
-          <div style="font-size:0.82rem;color:var(--text-muted);">Faculty of Engineering</div>
-        </div>
-        <div class="glass-card" style="text-align:center;">
-          <div style="font-size:1.8rem;margin-bottom:8px;">&#128187;</div>
-          <div style="font-weight:700;margin-bottom:4px;">Dept. Computer Engineering</div>
-          <div style="font-size:0.82rem;color:var(--text-muted);">ce.pdn.ac.lk</div>
-        </div>
-        <div class="glass-card" style="text-align:center;">
-          <div style="font-size:1.8rem;margin-bottom:8px;">&#128197;</div>
-          <div style="font-weight:700;margin-bottom:4px;">3rd Year Project 2024/25</div>
-          <div style="font-size:0.82rem;color:var(--text-muted);">E21 Batch &middot; Team 08</div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- ═══ FOOTER ═══ -->
-  <footer style="border-top:1px solid var(--border);padding:3rem clamp(1rem,5vw,3rem);background:rgba(6,12,22,0.92);backdrop-filter:blur(12px);position:relative;z-index:1;">
-    <div style="max-width:1280px;margin:0 auto;">
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:3rem;padding-bottom:2.5rem;border-bottom:1px solid var(--border);margin-bottom:2rem;">
-        <!-- Brand -->
-        <div>
-          <span style="font-weight:800;font-size:1.15rem;color:var(--text-main);display:block;margin-bottom:4px;">
-            <span style="background:linear-gradient(135deg,#0ea5e9,#0284c7);padding:4px 10px;border-radius:6px;color:#fff;font-size:0.85rem;margin-right:8px;">G.U.A.R.D</span>
-            General Unit for Aquatic Risk Detection
-          </span>
-          <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.8;max-width:360px;margin-top:10px;">Enterprise-grade IoT aquaculture monitoring — ESP32 sensor nodes, real-time telemetry via MQTT, glassmorphic React dashboard, and multi-channel alerting for commercial fish shops and hatcheries.</p>
-        </div>
-        <!-- Quick links -->
-        <div>
-          <h4 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:2px;color:var(--primary);margin-bottom:14px;font-weight:700;">Quick Links</h4>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
-            <li><a href="#features" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Core Features</a></li>
-            <li><a href="#architecture" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Architecture</a></li>
-            <li><a href="#pipeline" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Data Pipeline</a></li>
-            <li><a href="#stack" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Tech Stack</a></li>
-            <li><a href="#team" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Team</a></li>
-          </ul>
-        </div>
-        <!-- Repo links -->
-        <div>
-          <h4 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:2px;color:var(--primary);margin-bottom:14px;font-weight:700;">Repository</h4>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
-            <li><a href="https://github.com/cepdnaclk/e21-3yp-GUARD" target="_blank" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">&#11088; GitHub Repo</a></li>
-            <li><a href="https://github.com/cepdnaclk/e21-3yp-GUARD/issues" target="_blank" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">&#128027; Issues</a></li>
-            <li><a href="http://www.ce.pdn.ac.lk/" target="_blank" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">&#127963;&#65039; CE Department</a></li>
-            <li><a href="https://eng.pdn.ac.lk/" target="_blank" style="text-decoration:none;font-size:0.88rem;color:var(--text-muted);transition:color .2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">&#127891; University of Peradeniya</a></li>
-          </ul>
-        </div>
-      </div>
-      <!-- Footer bottom -->
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <div style="font-size:0.82rem;color:var(--text-dim);">&copy; 2024&ndash;2025 G.U.A.R.D &middot; Team 08 &middot; Department of Computer Engineering &middot; University of Peradeniya. All rights reserved.</div>
-        <div style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text-muted);background:rgba(14,165,233,0.08);border:1px solid var(--border);padding:4px 14px;border-radius:999px;">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span>
-          IoT &middot; Aquaculture &middot; Automation
-        </div>
-      </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">&copy; 2024–2025 G.U.A.R.D · Team 08 · Department of Computer Engineering · University of Peradeniya</div>
+      <div class="footer-pill"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span>IoT · Aquaculture · Automation</div>
     </div>
   </footer>
 
   <script>
-    // Scroll progress
-    window.addEventListener('scroll', function () {
-      var bar = document.getElementById('scroll-bar');
-      var pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-      bar.style.width = Math.min(pct, 100) + '%';
+    // ── THEME TOGGLE ──────────────────────────────────────────
+    var html  = document.documentElement;
+    var btn   = document.getElementById('theme-btn');
+    var DARK  = 'dark';
+    var LIGHT = 'light';
+
+    function applyTheme(t) {
+      html.setAttribute('data-theme', t);
+      btn.textContent = t === DARK ? '🌙' : '☀️';
+      try { localStorage.setItem('guard-theme', t); } catch(e) {}
+    }
+
+    btn.addEventListener('click', function () {
+      applyTheme(html.getAttribute('data-theme') === DARK ? LIGHT : DARK);
     });
 
-    // Reveal on scroll
+    // Load saved preference
+    (function () {
+      var saved = '';
+      try { saved = localStorage.getItem('guard-theme') || ''; } catch(e) {}
+      if (!saved) {
+        saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? DARK : LIGHT;
+      }
+      applyTheme(saved);
+    })();
+
+    // ── SCROLL PROGRESS ──────────────────────────────────────
+    var bar = document.getElementById('scroll-bar');
+    window.addEventListener('scroll', function () {
+      var pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+      bar.style.width = Math.min(pct, 100) + '%';
+    }, { passive: true });
+
+    // ── REVEAL ON SCROLL ─────────────────────────────────────
     var revEls = document.querySelectorAll('.reveal');
     var revObs = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
-        if (e.isIntersecting) { e.target.classList.add('visible'); revObs.unobserve(e.target); }
+        if (e.isIntersecting) { e.target.classList.add('vis'); revObs.unobserve(e.target); }
       });
-    }, { threshold: 0.12 });
+    }, { threshold: 0.10, rootMargin: '0px 0px -40px 0px' });
     revEls.forEach(function (el) { revObs.observe(el); });
 
-    // Floating particles
+    // ── FLOATING WATER BUBBLES & SWIMMING FISH GENERATOR ─────
     (function () {
       var c = document.getElementById('particles');
       if (!c) return;
-      for (var i = 0; i < 22; i++) {
-        var p = document.createElement('div');
-        p.className = 'particle';
-        var s = 3 + Math.random() * 5;
-        p.style.cssText = 'width:'+s+'px;height:'+s+'px;left:'+Math.random()*100+'%;'
-          + 'opacity:'+(0.04+Math.random()*0.1)+';'
-          + 'animation-delay:'+Math.random()*14+'s;'
-          + 'animation-duration:'+(10+Math.random()*12)+'s;';
-        c.appendChild(p);
+
+      // 1. Water Bubbles
+      for (var i = 0; i < 28; i++) {
+        var b = document.createElement('div');
+        b.className = 'bubble';
+        var size = 6 + Math.random() * 18;
+        b.style.cssText = 'width:' + size + 'px;height:' + size + 'px;'
+          + 'left:' + (Math.random() * 100) + '%;'
+          + 'animation-delay:' + (Math.random() * 12).toFixed(1) + 's;'
+          + 'animation-duration:' + (8 + Math.random() * 10).toFixed(1) + 's;';
+        c.appendChild(b);
       }
+
+      // 2. Freshwater Fish Species SVG Silhouettes
+      var fishSVGs = [
+        // Discus (Round/Disc shaped)
+        '<svg viewBox="0 0 100 70" width="56" height="39" fill="var(--primary)"><path d="M50 5 C 20 5, 5 25, 5 35 C 5 45, 20 65, 50 65 C 70 65, 80 50, 85 35 C 80 20, 70 5, 50 5 Z M 85 35 L 98 18 L 95 35 L 98 52 Z M 55 5 L 45 -5 L 65 2 Z M 55 65 L 45 75 L 65 68 Z"/></svg>',
+        // Angelfish (Tall triangular fins)
+        '<svg viewBox="0 0 100 100" width="48" height="48" fill="var(--primary)"><path d="M50 40 C 30 40, 20 45, 10 50 C 20 55, 30 60, 50 60 C 65 60, 75 55, 80 50 C 75 45, 65 40, 50 40 Z M 50 40 L 40 5 L 60 25 Z M 50 60 L 40 95 L 60 75 Z M 80 50 L 96 35 L 92 50 L 96 65 Z"/></svg>',
+        // Neon Tetra (Streamlined slender body)
+        '<svg viewBox="0 0 100 40" width="52" height="21" fill="var(--primary)"><path d="M15 20 C 30 10, 60 10, 75 20 C 60 30, 30 30, 15 20 Z M 75 20 L 95 8 L 90 20 L 95 32 Z M 50 12 L 42 3 L 58 8 Z"/></svg>',
+        // Goldfish / Guppy (Flowing tail fins)
+        '<svg viewBox="0 0 100 60" width="50" height="30" fill="var(--primary)"><path d="M20 30 C 35 15, 60 15, 70 30 C 60 45, 35 45, 20 30 Z M 70 30 C 80 15, 95 5, 98 25 C 92 30, 98 45, 92 55 C 80 45, 70 30, 70 30 Z"/></svg>'
+      ];
+
+      var fishConfigs = [
+        { top: '18%', dir: 'right', delay: 0.5, dur: 22, svg: 0 },
+        { top: '42%', dir: 'left',  delay: 4.0, dur: 28, svg: 1 },
+        { top: '68%', dir: 'right', delay: 8.5, dur: 19, svg: 2 },
+        { top: '82%', dir: 'left',  delay: 2.0, dur: 25, svg: 3 },
+        { top: '28%', dir: 'left',  delay: 11.0, dur: 24, svg: 0 }
+      ];
+
+      fishConfigs.forEach(function(f) {
+        var el = document.createElement('div');
+        el.className = 'swim-fish swim-' + f.dir;
+        el.style.top = f.top;
+        el.style.animationDelay = f.delay + 's';
+        el.style.animationDuration = f.dur + 's';
+        el.innerHTML = fishSVGs[f.svg];
+        c.appendChild(el);
+      });
     })();
 
-    // Live gauge jitter
-    var gd = [
-      { id:'g-temp',  base:28.4, d:0.8,  fmt:function(v){return v.toFixed(1)+'\u00b0';} },
-      { id:'g-ph',    base:7.21, d:0.08, fmt:function(v){return v.toFixed(2);} },
-      { id:'g-tds',   base:430,  d:12,   fmt:function(v){return Math.round(v)+'';} },
-      { id:'g-turb',  base:12,   d:2.5,  fmt:function(v){return Math.round(v)+'';} },
-      { id:'g-level', base:82,   d:1.5,  fmt:function(v){return Math.round(v)+'%';} }
-    ];
+    // ── SVG ARC MATH HELPERS (Directly from SensorGauge.jsx) ──
+    function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+      var angleInRadians = (angleInDegrees * Math.PI) / 180.0;
+      return {
+        x: centerX + radius * Math.cos(angleInRadians),
+        y: centerY + radius * Math.sin(angleInRadians)
+      };
+    }
+
+    function describeArc(x, y, radius, startAngle, endAngle) {
+      var start = polarToCartesian(x, y, radius, endAngle);
+      var end = polarToCartesian(x, y, radius, startAngle);
+      var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+      return [
+        "M", start.x, start.y,
+        "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+      ].join(" ");
+    }
+
+    var deckSensors = {
+      temp:  { base: 28.4, d: 0.8,  rMin: 0, rMax: 50,   arcId: 'svg-arc-temp',  textId: 'deck-temp-val',  fmt: function(v){ return v.toFixed(1); } },
+      ph:    { base: 7.21, d: 0.08, rMin: 0, rMax: 14,   arcId: 'svg-arc-ph',    textId: 'deck-ph-val',    fmt: function(v){ return v.toFixed(2); } },
+      tds:   { base: 430,  d: 12,   rMin: 0, rMax: 1000, arcId: 'svg-arc-tds',   textId: 'deck-tds-val',   fmt: function(v){ return Math.round(v)+''; } },
+      turb:  { base: 12,   d: 2.2,  rMin: 0, rMax: 100,  arcId: 'svg-arc-turb',  textId: 'deck-turb-val',  fmt: function(v){ return Math.round(v)+''; } },
+      level: { base: 82,   d: 1.5,  rMin: 0, rMax: 100,  arcId: 'svg-arc-level', textId: 'deck-level-val', fmt: function(v){ return Math.round(v)+''; } }
+    };
+
     setInterval(function () {
-      gd.forEach(function (g) {
-        var el = document.getElementById(g.id);
-        if (el) { var v = g.base + (Math.random()-0.5)*g.d; el.textContent = g.fmt(v); }
+      Object.keys(deckSensors).forEach(function(k) {
+        var s = deckSensors[k];
+        var val = s.base + (Math.random() - 0.5) * s.d;
+        var clamped = Math.max(s.rMin, Math.min(s.rMax, val));
+        var pct = (clamped - s.rMin) / (s.rMax - s.rMin);
+        var currentAngle = pct * 180;
+        
+        // Exact SensorGauge.jsx arc formula: describeArc(50, 50, 40, 180, 180 + currentAngle)
+        var arcPath = describeArc(50, 50, 40, 180, 180 + currentAngle);
+        
+        var pathEl = document.getElementById(s.arcId);
+        var textEl = document.getElementById(s.textId);
+        if (pathEl) pathEl.setAttribute('d', arcPath);
+        if (textEl) textEl.textContent = s.fmt(val);
       });
-    }, 3200);
+
+      // Update Sync Timestamp
+      var timeEl = document.getElementById('last-sync-time');
+      if (timeEl) {
+        var now = new Date();
+        timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+    }, 2800);
+
+    // Interactive Actuator Functions
+    function triggerActuator(cmd) {
+      var btn = document.getElementById('btn-feed');
+      var lastCmd = document.getElementById('actuator-last-cmd');
+      if (btn) {
+        btn.textContent = 'DISPENSING...';
+        btn.style.opacity = '0.7';
+        setTimeout(function() {
+          btn.textContent = 'FEED DISPENSED ✓';
+          btn.style.background = '#22c55e';
+          btn.style.opacity = '1';
+          if (lastCmd) lastCmd.innerHTML = 'Last Action: <span style="color:#22c55e;">FEED_SERVO_DISPENSE</span> @ ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+          setTimeout(function() {
+            btn.textContent = 'DISPENSE FEED';
+            btn.style.background = 'linear-gradient(135deg,#0ea5e9,#2563eb)';
+          }, 2000);
+        }, 800);
+      }
+    }
+
+    function setPumpMode(mode) {
+      var btnAuto = document.getElementById('btn-pump-auto');
+      var btnOn = document.getElementById('btn-pump-on');
+      var btnOff = document.getElementById('btn-pump-off');
+      var lastCmd = document.getElementById('actuator-last-cmd');
+
+      [btnAuto, btnOn, btnOff].forEach(function(b) {
+        if(b) {
+          b.style.boxShadow = 'none';
+          b.style.background = 'rgba(255,255,255,0.05)';
+          b.style.border = '1px solid rgba(255,255,255,0.1)';
+          b.style.color = 'var(--text-muted)';
+        }
+      });
+
+      if (mode === 'pump_auto' && btnAuto) {
+        btnAuto.style.background = '#17a2b8';
+        btnAuto.style.color = '#fff';
+        btnAuto.style.boxShadow = '0 0 10px rgba(23,162,184,0.5)';
+      } else if (mode === 'pump_on' && btnOn) {
+        btnOn.style.background = '#22c55e';
+        btnOn.style.color = '#fff';
+        btnOn.style.boxShadow = '0 0 10px rgba(34,197,94,0.5)';
+      } else if (mode === 'pump_off' && btnOff) {
+        btnOff.style.background = '#ef4444';
+        btnOff.style.color = '#fff';
+        btnOff.style.boxShadow = '0 0 10px rgba(239,68,68,0.5)';
+      }
+
+      if (lastCmd) {
+        lastCmd.innerHTML = 'Last Action: <span style="color:var(--primary);">' + mode.toUpperCase() + '</span> @ ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      }
+    }
+
+    // Blinking cursor style
+    var style = document.createElement('style');
+    style.textContent = '@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}';
+    document.head.appendChild(style);
   </script>
 </body>
 </html>
