@@ -1,26 +1,63 @@
+import axios from 'axios';
 import { SENSOR_FIELDS } from '../constants/sensorConstants';
 
-const API_ENV = import.meta.env.VITE_API_URL;
-const BASE_URL = API_ENV ? `${API_ENV}/api` : '/api';
+// ─────────────────────────────────────────────────────────────────────────────
+// Axios client
+//
+// Base URL strategy:
+//   • No VITE_API_URL set  →  baseURL = '/api'
+//     Vite dev-server proxies /api → http://localhost:5000 (or configured target)
+//     Nginx in production proxies /api → backend
+//
+//   • VITE_API_URL = 'https://example.com'  →  baseURL = 'https://example.com/api'
+//     The env var must NOT already include /api to avoid /api/api.
+//
+// Never hardcode localhost:5000 or any IP here.
+// ─────────────────────────────────────────────────────────────────────────────
+const _envOrigin = import.meta.env.VITE_API_URL; // e.g. 'https://example.com' or undefined
 
-// Sends one request to the backend and automatically adds the JWT token.
-async function request(endpoint, options = {}) {
+export const apiClient = axios.create({
+  baseURL: _envOrigin ? `${_envOrigin}/api` : '/api',
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Request interceptor — attach JWT token automatically.
+apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  const headers = { 'Content-Type': 'application/json', ...options.headers };
-
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(data?.error || data?.errors?.[0]?.msg || `Request failed (${response.status})`);
+// Response interceptor — unwrap data; normalise errors.
+apiClient.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    const data = error.response?.data;
+    const message =
+      data?.error ||
+      data?.errors?.[0]?.msg ||
+      `Request failed (${error.response?.status ?? 'network error'})`;
+    return Promise.reject(new Error(message));
   }
+);
 
-  return data;
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: multipart/form-data upload (JWT auto-attached via interceptor).
+// ─────────────────────────────────────────────────────────────────────────────
+function postForm(endpoint, method, formData) {
+  return apiClient.request({
+    method,
+    url: endpoint,
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shape converters
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Converts a tank record from the backend into the frontend device shape.
 function toDeviceFromTank(tank) {
@@ -80,125 +117,101 @@ function toReadingRows(row, deviceId) {
   return readings;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth API  →  /api/auth/...
+// ─────────────────────────────────────────────────────────────────────────────
 export const authApi = {
   // Public auth routes.
-  register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
-  googleLogin: (idToken) => request('/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
-  verifyEmail: (username, code) => request('/auth/verify-email', { method: 'POST', body: JSON.stringify({ username, code }) }),
-  resendVerification: (username, email) => request('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ username, email }) }),
-  getMe: () => request('/auth/me'),
-  updateProfile: (body) => request('/auth/me', { method: 'PUT', body: JSON.stringify(body) }),
-  sendEmailOtp: (email) => request('/auth/profile/verify-email/send', { method: 'POST', body: JSON.stringify({ email }) }),
-  confirmEmailOtp: (code) => request('/auth/profile/verify-email/confirm', { method: 'POST', body: JSON.stringify({ code }) }),
-  sendPhoneOtp: (phoneNumber) => request('/auth/profile/verify-phone/send', { method: 'POST', body: JSON.stringify({ phoneNumber }) }),
-  confirmPhoneOtp: () => request('/auth/profile/verify-phone/confirm', { method: 'POST' }),
+  register: (body) => apiClient.post('/auth/register', body),
+  login: (body) => apiClient.post('/auth/login', body),
+  googleLogin: (idToken) => apiClient.post('/auth/google', { idToken }),
+  verifyEmail: (username, code) => apiClient.post('/auth/verify-email', { username, code }),
+  resendVerification: (username, email) => apiClient.post('/auth/resend-verification', { username, email }),
+  getMe: () => apiClient.get('/auth/me'),
+  updateProfile: (body) => apiClient.put('/auth/me', body),
+  sendEmailOtp: (email) => apiClient.post('/auth/profile/verify-email/send', { email }),
+  confirmEmailOtp: (code) => apiClient.post('/auth/profile/verify-email/confirm', { code }),
+  sendPhoneOtp: (phoneNumber) => apiClient.post('/auth/profile/verify-phone/send', { phoneNumber }),
+  confirmPhoneOtp: () => apiClient.post('/auth/profile/verify-phone/confirm'),
   uploadProfilePicture: (imageFile) => {
     const fd = new FormData();
     fd.append('profilePicture', imageFile);
-    return requestForm('/auth/profile/picture', 'POST', fd);
+    return postForm('/auth/profile/picture', 'POST', fd);
   },
-  deleteProfilePicture: () => request('/auth/profile/picture', { method: 'DELETE' }),
+  deleteProfilePicture: () => apiClient.delete('/auth/profile/picture'),
 
   // Forgot Password APIs
-  forgotPasswordInit: async (username) => {
-    return request('/auth/forgot-password/init', {
-      method: 'POST',
-      body: JSON.stringify({ username }),
-    });
-  },
-
-  forgotPasswordVerifyEmail: async (username, email) => {
-    return request('/auth/forgot-password/verify-email', {
-      method: 'POST',
-      body: JSON.stringify({ username, email }),
-    });
-  },
-
-  forgotPasswordVerifyCode: async (username, code) => {
-    return request('/auth/forgot-password/verify-code', {
-      method: 'POST',
-      body: JSON.stringify({ username, code }),
-    });
-  },
-
-  forgotPasswordReset: async (username, code, newPassword) => {
-    return request('/auth/forgot-password/reset', {
-      method: 'POST',
-      body: JSON.stringify({ username, code, newPassword }),
-    });
-  },
+  forgotPasswordInit: (username) =>
+    apiClient.post('/auth/forgot-password/init', { username }),
+  forgotPasswordVerifyEmail: (username, email) =>
+    apiClient.post('/auth/forgot-password/verify-email', { username, email }),
+  forgotPasswordVerifyCode: (username, code) =>
+    apiClient.post('/auth/forgot-password/verify-code', { username, code }),
+  forgotPasswordReset: (username, code, newPassword) =>
+    apiClient.post('/auth/forgot-password/reset', { username, code, newPassword }),
 
   // Admin-only routes.
-  createAdmin: (body) => request('/auth/create-admin', { method: 'POST', body: JSON.stringify(body) }),
-  createUser: (body) => request('/auth/create-user', { method: 'POST', body: JSON.stringify(body) }),
-  listWorkers: () => request('/auth/workers'),
-  getUsersByAdmin: () => request('/auth/users'),
-  deleteUserByAdmin: (userId) => request(`/auth/users/${userId}`, { method: 'DELETE' }),
+  createAdmin: (body) => apiClient.post('/auth/create-admin', body),
+  createUser: (body) => apiClient.post('/auth/create-user', body),
+  listWorkers: () => apiClient.get('/auth/workers'),
+  getUsersByAdmin: () => apiClient.get('/auth/users'),
+  deleteUserByAdmin: (userId) => apiClient.delete(`/auth/users/${userId}`),
 
   // SUPER_ADMIN-only routes.
-  getAdminsBySuperAdmin: () => request('/auth/admins'),
-  deleteAdminBySuperAdmin: (adminId) => request(`/auth/admins/${adminId}`, { method: 'DELETE' }),
+  getAdminsBySuperAdmin: () => apiClient.get('/auth/admins'),
+  deleteAdminBySuperAdmin: (adminId) => apiClient.delete(`/auth/admins/${adminId}`),
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Alert API  →  /api/alerts/...
+// ─────────────────────────────────────────────────────────────────────────────
 export const alertApi = {
-  list: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return request(`/alerts?${qs}`);
-  },
-  resolve: (alertId) => request('/alerts/resolve', { method: 'POST', body: JSON.stringify({ alertId }) }),
+  list: (params = {}) => apiClient.get('/alerts', { params }),
+  resolve: (alertId) => apiClient.post('/alerts/resolve', { alertId }),
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Device / Tank API  →  /api/tanks/...
+// ─────────────────────────────────────────────────────────────────────────────
 export const deviceApi = {
   // GET /api/tanks
   list: async () => {
-    const tanks = await request('/tanks');
+    const tanks = await apiClient.get('/tanks');
     return Array.isArray(tanks) ? tanks.map(toDeviceFromTank) : [];
   },
 
   // POST /api/tanks/register
   create: async ({ productKey, deviceName }) => {
-    const created = await request('/tanks/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        productKey: String(productKey),
-        name: deviceName || `Device ${productKey}`,
-      }),
+    const created = await apiClient.post('/tanks/register', {
+      productKey: String(productKey),
+      name: deviceName || `Device ${productKey}`,
     });
-
     return created?.tank ? toDeviceFromTank(created.tank) : created;
   },
 
   // POST /api/tanks/:tankId/assign-user
-  assignUser: (tankId, userId) => request(`/tanks/${tankId}/assign-user`, { method: 'POST', body: JSON.stringify({ userId }) }),
+  assignUser: (tankId, userId) =>
+    apiClient.post(`/tanks/${tankId}/assign-user`, { userId }),
 
   // POST /api/tanks/:tankId/unassign-user
-  unassignUser: (tankId, userId) => request(`/tanks/${tankId}/unassign-user`, { method: 'POST', body: JSON.stringify({ userId }) }),
+  unassignUser: (tankId, userId) =>
+    apiClient.post(`/tanks/${tankId}/unassign-user`, { userId }),
 
   // POST /api/tanks/add-product (SUPER_ADMIN only)
-  addProduct: async (tankId, productKey) => {
-    return request('/tanks/add-product', {
-      method: 'POST',
-      body: JSON.stringify({ tankId, productKey }),
-    });
-  },
+  addProduct: (tankId, productKey) =>
+    apiClient.post('/tanks/add-product', { tankId, productKey }),
 
   // DELETE /api/tanks/:tankId
-  deleteTank: (tankId, name) => request(`/tanks/${tankId}`, {
-    method: 'DELETE',
-    body: JSON.stringify({ name }),
-  }),
+  deleteTank: (tankId, name) =>
+    apiClient.delete(`/tanks/${tankId}`, { data: { name } }),
 
   // POST /api/tanks/:tankId/actuators
-  actuate: (tankId, command) => request(`/tanks/${tankId}/actuators`, {
-    method: 'POST',
-    body: JSON.stringify({ command }),
-  }),
+  actuate: (tankId, command) =>
+    apiClient.post(`/tanks/${tankId}/actuators`, { command }),
 
   // GET /api/tanks/:tankId/status
   get: async (tankId) => {
-    const status = await request(`/tanks/${tankId}/status`);
-
+    const status = await apiClient.get(`/tanks/${tankId}/status`);
     return {
       deviceId: status.tankId,
       deviceName: status.name,
@@ -210,12 +223,13 @@ export const deviceApi = {
   },
 
   // PATCH /api/tanks/:tankId/thresholds
-  updateThresholds: (tankId, thresholds) => request(`/tanks/${tankId}/thresholds`, {
-    method: 'PATCH',
-    body: JSON.stringify(thresholds),
-  }),
+  updateThresholds: (tankId, thresholds) =>
+    apiClient.patch(`/tanks/${tankId}/thresholds`, thresholds),
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Sensor utilities
+// ─────────────────────────────────────────────────────────────────────────────
 export function extractReadingsFromDevice(device) {
   if (!device) return [];
   const deviceId = device.deviceId || device.tankId;
@@ -250,36 +264,41 @@ export function extractReadingsFromDevice(device) {
   return latestReadings;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Sensor API  →  /api/sensors/...
+// ─────────────────────────────────────────────────────────────────────────────
 export const sensorApi = {
   // Public sensor log route used by the hardware or test clients.
-  log: (body) => request('/sensors/log', { method: 'POST', body: JSON.stringify(body) }),
+  log: (body) => apiClient.post('/sensors/log', body),
 
   // Reads the current tank status and converts it into a simple sensor list.
   latest: async (deviceId) => {
-    const status = await request(`/tanks/${deviceId}/status`);
+    const status = await apiClient.get(`/tanks/${deviceId}/status`);
     return extractReadingsFromDevice(status);
   },
 
   // Fetches Influx history and reshapes it for charts and tables.
   history: async ({ deviceId, sensorId, from, to }) => {
-    const query = new URLSearchParams();
+    const params = {};
 
     if (from) {
       const parsedFrom = new Date(from);
       if (!Number.isNaN(parsedFrom.getTime())) {
-        query.set('from', parsedFrom.toISOString());
+        params.from = parsedFrom.toISOString();
       }
     }
 
     if (to) {
       const parsedTo = new Date(to);
       if (!Number.isNaN(parsedTo.getTime())) {
-        query.set('to', parsedTo.toISOString());
+        params.to = parsedTo.toISOString();
       }
     }
 
-    const querySuffix = query.toString() ? `?${query.toString()}` : '';
-    const rows = await request(`/sensors/history/${encodeURIComponent(deviceId)}${querySuffix}`);
+    const rows = await apiClient.get(
+      `/sensors/history/${encodeURIComponent(deviceId)}`,
+      { params }
+    );
     if (!Array.isArray(rows)) return [];
 
     const historyReadings = [];
@@ -291,7 +310,6 @@ export const sensorApi = {
         if (sensorId && reading.sensorId !== sensorId && reading.sensorType.sensorName !== sensorId) {
           continue;
         }
-
         historyReadings.push(reading);
       }
     }
@@ -301,12 +319,14 @@ export const sensorApi = {
 
   // Raw chart data for TankTimeSeriesChart (returns rows as-is from InfluxDB).
   chartHistory: async (deviceId) => {
-    const rows = await request(`/sensors/history/${encodeURIComponent(deviceId)}`);
+    const rows = await apiClient.get(`/sensors/history/${encodeURIComponent(deviceId)}`);
     return Array.isArray(rows) ? rows : [];
   },
 };
 
-// ── Fish Species Catalogue ──────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Fish Species Catalogue
+// ─────────────────────────────────────────────────────────────────────────────
 import carpImg from '../assets/fish/carp.png';
 import catfishImg from '../assets/fish/catfish.png';
 import dwarfGouramiImg from '../assets/fish/dwarf-gourami.png';
@@ -338,47 +358,39 @@ const BUNDLED_FISH_IMAGES = {
 };
 
 // Images are stored locally on the backend and served at /uploads/fish/
+// Nginx and Vite dev-server both proxy /uploads to the backend.
 // Use getImageUrl() to build the correct src for any imageUrl from the DB.
-const BACKEND_ORIGIN = import.meta.env.VITE_API_URL || '';
+//
+// IMPORTANT: /uploads is NOT under /api — do NOT prefix it with the API base URL.
+const _backendOrigin = import.meta.env.VITE_API_URL || '';
 
 export function getImageUrl(imageUrl) {
   if (!imageUrl) return null;
   if (BUNDLED_FISH_IMAGES[imageUrl]) return BUNDLED_FISH_IMAGES[imageUrl];
   if (imageUrl.startsWith('http')) return imageUrl;          // already absolute
-  return `${BACKEND_ORIGIN}${imageUrl}`;                     // e.g. /uploads/fish/fish-xxx.jpg
+  // e.g. /uploads/fish/fish-xxx.jpg  →  keep as relative in production
+  return `${_backendOrigin}${imageUrl}`;
 }
 
-/** Send a multipart/form-data request (for file uploads). JWT auto-attached. */
-async function requestForm(endpoint, method, formData) {
-  const token = localStorage.getItem('token');
-  const headers = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  // Do NOT set Content-Type — browser sets it with boundary automatically for FormData
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, { method, headers, body: formData });
-  const data = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new Error(data?.error || data?.errors?.[0]?.msg || `Request failed (${response.status})`);
-  }
-  return data;
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Fish API  →  /api/fish/...
+// ─────────────────────────────────────────────────────────────────────────────
 export const fishApi = {
   // GET /api/fish?search=<query>
   list: (search = '') => {
-    const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-    return request(`/fish${qs}`);
+    const params = search ? { search } : {};
+    return apiClient.get('/fish', { params });
   },
 
   // GET /api/fish/:id
-  get: (id) => request(`/fish/${id}`),
+  get: (id) => apiClient.get(`/fish/${id}`),
 
   // POST /api/fish  (SUPER_ADMIN only) — send as FormData to support image upload
   create: (fields, imageFile) => {
     const fd = new FormData();
     Object.entries(fields).forEach(([k, v]) => { if (v != null && v !== '') fd.append(k, v); });
     if (imageFile) fd.append('image', imageFile);
-    return requestForm('/fish', 'POST', fd);
+    return postForm('/fish', 'POST', fd);
   },
 
   // PUT /api/fish/:id  (SUPER_ADMIN only)
@@ -387,17 +399,18 @@ export const fishApi = {
     Object.entries(fields).forEach(([k, v]) => { if (v != null && v !== '') fd.append(k, v); });
     if (imageFile) fd.append('image', imageFile);
     if (removeImage) fd.append('removeImage', 'true');
-    return requestForm(`/fish/${id}`, 'PUT', fd);
+    return postForm(`/fish/${id}`, 'PUT', fd);
   },
 
   // DELETE /api/fish/:id  (SUPER_ADMIN only)
-  delete: (id) => request(`/fish/${id}`, { method: 'DELETE' }),
+  delete: (id) => apiClient.delete(`/fish/${id}`),
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Device Request API  →  /api/device-requests/...
+// ─────────────────────────────────────────────────────────────────────────────
 export const deviceRequestApi = {
-  create: (body) => request('/device-requests', { method: 'POST', body: JSON.stringify(body) }),
-  list: () => request('/device-requests'),
-  delete: (id) => request(`/device-requests/${id}`, { method: 'DELETE' }),
+  create: (body) => apiClient.post('/device-requests', body),
+  list: () => apiClient.get('/device-requests'),
+  delete: (id) => apiClient.delete(`/device-requests/${id}`),
 };
-
-
