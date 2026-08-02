@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
+import PublicNav from '../components/PublicNav';
 import '../styles/auth.css';
 
 function EyeIcon({ show }) {
@@ -70,6 +70,7 @@ export default function Register() {
 
   return (
     <div className="auth-wrapper">
+      <PublicNav />
       <div className="auth-page register-page">
         <div className="auth-card register-card">
           <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>

@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Reveal, ScrollProgress } from '../../utils/animations';
 
+import PublicNav from '../../components/PublicNav';
 import '../../styles/navigation.css';
 
 import mockupImg   from '../../assets/Mockup.png';
@@ -143,6 +144,7 @@ export default function Landing() {
       className={`font-sans text-[#1e293b] bg-[#090e17] min-h-screen flex flex-col ${pageReady ? 'page-ready' : 'page-loading'}`}
       style={{ fontFamily: "'Outfit', sans-serif" }}
     >
+      <PublicNav />
       {/* Custom Keyframe Animations */}
       <style>{`
         @keyframes rise-bubble {

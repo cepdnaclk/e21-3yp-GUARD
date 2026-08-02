@@ -6,6 +6,7 @@ import qr from '../assets/qr.jpg';
 export default function MobileAppDownload() {
   return (
     <div className="mad-wrapper">
+      <PublicNav />
       <div className="mad-page">
         <div className="mad-card">
           <h1 className="mad-title">Download Mobile App</h1>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../services/api';
-
+import PublicNav from '../components/PublicNav';
 import '../styles/auth.css';
+
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
@@ -63,6 +64,7 @@ export default function VerifyEmail() {
 
   return (
     <div className="auth-wrapper">
+      <PublicNav />
       <div className="auth-page verify-email-page">
         <div className="auth-card verify-email-card">
           <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>

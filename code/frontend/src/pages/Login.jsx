@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ForgotPasswordFlow from '../components/auth/ForgotPasswordFlow';
 import EmailVerificationBanner from '../components/auth/EmailVerificationBanner';
-
+import PublicNav from '../components/PublicNav';
 import '../styles/auth.css';
 
 function EyeIcon({ show }) {

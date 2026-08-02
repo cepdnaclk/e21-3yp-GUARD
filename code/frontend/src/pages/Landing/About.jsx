@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Reveal, ScrollProgress } from '../../utils/animations';
+import PublicNav from '../../components/PublicNav';
 import tempSensor from '../../assets/temp.jpg';
 import tdsSensor from '../../assets/tds.jpg';
 import ultrasonicSensor from '../../assets/ultrasonic.jpg';
@@ -66,6 +67,7 @@ export default function About() {
       className={`font-sans text-[#1e293b] bg-white min-h-screen flex flex-col ${pageReady ? 'page-ready' : 'page-loading'}`}
       style={{ fontFamily: "'Outfit', sans-serif" }}
     >
+      <PublicNav />
       <style>{`
         .page-loading { opacity: 0; }
         .page-ready   { opacity: 1; transition: opacity 0.5s ease; }

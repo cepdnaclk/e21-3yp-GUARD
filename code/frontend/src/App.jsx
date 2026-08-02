@@ -18,7 +18,7 @@ import FishInfo from './pages/FishInfo';
 import MobileAppDownload from './pages/MobileAppDownload';
 import DemoPage from './pages/DemoPage';
 
-import PublicLayout from './components/PublicLayout';
+
 
 /* ── Scrolls to top of page on every route change ── */
 function ScrollToTop() {
@@ -70,15 +70,13 @@ export default function App() {
     <>
       <ScrollToTop />
       <Routes>
-        {/* Public site layout with steady persistent navigation bar */}
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<Landing />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/mobile-download" element={<MobileAppDownload />} />
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-          <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
-        </Route>
+        {/* Public pages — each manages its own PublicNav */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/mobile-download" element={<MobileAppDownload />} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/verify-email" element={<PublicRoute><VerifyEmail /></PublicRoute>} />
 
         {/* Demo sandbox — full sub-tree handled inside DemoPage */}
         <Route path="/demo/*" element={<PrivateRoute><DemoPage /></PrivateRoute>} />
