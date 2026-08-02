@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Modal } from 'react-native';
-import { deviceApi, sensorApi } from '../services/api';
+import { deviceApi, extractReadingsFromDevice } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -15,10 +15,14 @@ function TankCard({ device, readings, onPress }) {
   const styles = getStyles(theme);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={styles.tankCard}
+      onPress={onPress}
+      activeOpacity={0.88}
+    >
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{device.deviceName || `Tank ${device.deviceId}`}</Text>
-        <View style={[styles.statusDot, { backgroundColor: isOnline ? theme.success : theme.danger }]} />
+        <Text style={styles.tankName}>{device.deviceName || `Tank ${device.deviceId}`}</Text>
+        <View style={[styles.statusDot, isOnline ? styles.onlineDot : styles.offlineDot]} />
       </View>
 
       {/* Hardware Fault Banner */}
@@ -29,39 +33,33 @@ function TankCard({ device, readings, onPress }) {
         if (device.tdsOk === false) brokenSensors.push('TDS');
         if (device.phOk === false) brokenSensors.push('pH');
         if (device.turbOk === false) brokenSensors.push('Turbidity');
-        
-        if (brokenSensors.length > 0) {
-          return (
-            <View style={{ backgroundColor: theme.danger, padding: 8, borderRadius: 6, marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="warning" size={16} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>
-                Hardware Fault: {brokenSensors.join(', ')} disconnected
-              </Text>
-            </View>
-          );
-        }
-        return null;
+        if (brokenSensors.length === 0) return null;
+        return (
+          <View style={styles.faultBanner}>
+            <Text style={styles.faultBannerText}>
+              🔌 Hardware Fault: {brokenSensors.join(', ')} disconnected
+            </Text>
+          </View>
+        );
       })()}
 
       <View style={styles.sensorGrid}>
         {readings.length > 0 ? (
-          readings.map(r => {
+          readings.map((r) => {
             const name = (r.sensorType?.sensorName || r.sensorTypeName || '').replace(/\s+/g, '').toLowerCase();
             const meta = SENSOR_META[name];
             if (!meta) return null;
-
-            const iconName = name.includes('temp') ? 'thermometer' : name.includes('ph') ? 'flask-outline' : name.includes('tds') ? 'water-outline' : name.includes('turb') ? 'waves' : 'chart-bubble';
-
             return (
               <View key={r.sensorId} style={styles.sensorItem}>
-                <MaterialCommunityIcons name={iconName} size={24} color={theme.primary} style={{ marginBottom: 4 }} />
                 <Text style={styles.sensorLabel}>{meta.label}</Text>
-                <Text style={styles.sensorValue}>{r.value !== null ? r.value : '--'} {meta.unit}</Text>
+                <Text style={styles.sensorValue}>
+                  {r.value} <Text style={styles.sensorUnit}>{meta.unit}</Text>
+                </Text>
               </View>
             );
           })
         ) : (
-          <Text style={styles.noData}>No sensor data available.</Text>
+          <Text style={styles.noReadingsText}>No readings yet</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -85,17 +83,11 @@ export default function DashboardScreen({ navigation }) {
       const devs = await deviceApi.list();
       setDevices(devs);
 
-      const results = await Promise.all(
-        devs.map(async (d) => {
-          try {
-            const readings = await sensorApi.latest(d.deviceId);
-            return [d.deviceId, Array.isArray(readings) ? readings : []];
-          } catch {
-            return [d.deviceId, []];
-          }
-        })
-      );
-      setSensorData(Object.fromEntries(results));
+      const initialSensorData = {};
+      for (const d of devs) {
+        initialSensorData[d.deviceId] = extractReadingsFromDevice(d);
+      }
+      setSensorData(initialSensorData);
     } catch (err) {
       console.error('Dashboard load error:', err);
     } finally {

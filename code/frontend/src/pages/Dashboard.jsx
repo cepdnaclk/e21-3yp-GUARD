@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { deviceApi, sensorApi, alertApi } from '../services/api';
+import { deviceApi, alertApi, extractReadingsFromDevice } from '../services/api';
 import { SENSOR_META } from '../constants/sensorConstants';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 import SensorGauge from '../components/SensorGauge';
@@ -133,22 +133,19 @@ export default function Dashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const devs = await deviceApi.list();
+        const [devs, dbAlerts] = await Promise.all([
+          deviceApi.list(),
+          alertApi.list({ resolved: false }),
+        ]);
+
         setDevices(devs);
 
-        const results = await Promise.all(
-          devs.map(async (d) => {
-            try {
-              const readings = await sensorApi.latest(d.deviceId);
-              return [d.deviceId, Array.isArray(readings) ? readings : []];
-            } catch {
-              return [d.deviceId, []];
-            }
-          })
-        );
-        setSensorData(Object.fromEntries(results));
+        const initialSensorData = {};
+        for (const d of devs) {
+          initialSensorData[d.deviceId] = extractReadingsFromDevice(d);
+        }
+        setSensorData(initialSensorData);
 
-        const dbAlerts = await alertApi.list({ resolved: false });
         const alertsByTankAndType = {};
         dbAlerts.forEach(a => {
           const tId = a.tankId;

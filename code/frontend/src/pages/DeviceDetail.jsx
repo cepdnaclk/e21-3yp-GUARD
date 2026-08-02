@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { deviceApi, sensorApi, authApi } from '../services/api';
+import { deviceApi, authApi, extractReadingsFromDevice } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { SENSOR_UNITS } from '../constants/sensorConstants';
 import useOnlineStatus from '../hooks/useOnlineStatus';
@@ -13,29 +13,48 @@ import '../styles/device-detail.css'; /* styles migrated — kept for btn-danger
 function buildLocalAlerts(device, readings) {
   const nextAlerts = [];
 
-  if (!device) return nextAlerts;
+  if (!device || !readings) return nextAlerts;
 
-  if (device.status !== 'online') {
-    nextAlerts.push({
-      id: `${device.deviceId}-offline`,
-      type: 'Status',
-      message: 'Device appears offline.',
-      value: device.status,
-      createdAt: new Date().toISOString(),
-      resolved: false,
-    });
-  }
+  readings.forEach(r => {
+    const name = (r.sensorType?.sensorName || r.sensorTypeName || '').toLowerCase();
+    const val = r.value;
 
-  if (!Array.isArray(readings) || readings.length === 0) {
-    nextAlerts.push({
-      id: `${device.deviceId}-no-readings`,
-      type: 'Data',
-      message: 'No sensor readings received yet.',
-      value: '-',
-      createdAt: new Date().toISOString(),
-      resolved: false,
-    });
-  }
+    if (name === 'temperature' && device.thresholds?.tempMin != null && device.thresholds?.tempMax != null) {
+      if (val < device.thresholds.tempMin) {
+        nextAlerts.push({ id: `local-temp-min`, type: 'Temperature Low', message: `Temperature is low (${val}°C < ${device.thresholds.tempMin}°C)` });
+      } else if (val > device.thresholds.tempMax) {
+        nextAlerts.push({ id: `local-temp-max`, type: 'Temperature High', message: `Temperature is high (${val}°C > ${device.thresholds.tempMax}°C)` });
+      }
+    }
+
+    if (name === 'ph' && device.thresholds?.phMin != null && device.thresholds?.phMax != null) {
+      if (val < device.thresholds.phMin) {
+        nextAlerts.push({ id: `local-ph-min`, type: 'pH Low', message: `pH is low (${val} < ${device.thresholds.phMin})` });
+      } else if (val > device.thresholds.phMax) {
+        nextAlerts.push({ id: `local-ph-max`, type: 'pH High', message: `pH is high (${val} > ${device.thresholds.phMax})` });
+      }
+    }
+
+    if (name === 'tds' && device.thresholds?.tdsMin != null && device.thresholds?.tdsMax != null) {
+      if (val < device.thresholds.tdsMin) {
+        nextAlerts.push({ id: `local-tds-min`, type: 'TDS Low', message: `TDS is low (${val} ppm < ${device.thresholds.tdsMin} ppm)` });
+      } else if (val > device.thresholds.tdsMax) {
+        nextAlerts.push({ id: `local-tds-max`, type: 'TDS High', message: `TDS is high (${val} ppm > ${device.thresholds.tdsMax} ppm)` });
+      }
+    }
+
+    if (name === 'turbidity' && device.thresholds?.turbidityMax != null) {
+      if (val > device.thresholds.turbidityMax) {
+        nextAlerts.push({ id: `local-turb-max`, type: 'Turbidity High', message: `Turbidity is high (${val} NTU > ${device.thresholds.turbidityMax} NTU)` });
+      }
+    }
+
+    if ((name === 'water level' || name === 'waterlevel') && device.thresholds?.waterLevelThreshold != null) {
+      if (val < device.thresholds.waterLevelThreshold) {
+        nextAlerts.push({ id: `local-water-low`, type: 'Water Level Low', message: `Water level is low (${val}% < ${device.thresholds.waterLevelThreshold}%)` });
+      }
+    }
+  });
 
   return nextAlerts;
 }
@@ -58,16 +77,17 @@ export default function DeviceDetail() {
 
   const loadData = async () => {
     try {
-      const [dev, latest] = await Promise.all([
-        deviceApi.get(id),
-        sensorApi.latest(id),
-      ]);
+      const devPromise = deviceApi.get(id);
+      const workersPromise = role === 'ADMIN' ? authApi.listWorkers() : Promise.resolve([]);
+
+      const [dev, workers] = await Promise.all([devPromise, workersPromise]);
+      const latest = extractReadingsFromDevice(dev);
+
       setDevice(dev);
       setReadings(latest);
       setAlerts(buildLocalAlerts(dev, latest));
 
       if (role === 'ADMIN') {
-        const workers = await authApi.listWorkers();
         setAllWorkers(workers);
       }
     } catch (err) {

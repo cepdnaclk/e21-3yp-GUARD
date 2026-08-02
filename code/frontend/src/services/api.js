@@ -216,6 +216,32 @@ export const deviceApi = {
   }),
 };
 
+export function extractReadingsFromDevice(device) {
+  if (!device) return [];
+  const deviceId = device.deviceId || device.tankId;
+  const currentStats = device.currentStats || {};
+  const updatedAt = device.updatedAt;
+  const latestReadings = [];
+
+  for (const [key, sensorName] of SENSOR_FIELDS) {
+    const value = currentStats[key];
+
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    latestReadings.push({
+      id: `${deviceId}-${key}`,
+      sensorId: key,
+      sensorType: { sensorName },
+      value,
+      readingTime: currentStats.lastReadingTime || updatedAt || new Date().toISOString(),
+    });
+  }
+
+  return latestReadings;
+}
+
 export const sensorApi = {
   // Public sensor log route used by the hardware or test clients.
   log: (body) => request('/sensors/log', { method: 'POST', body: JSON.stringify(body) }),
@@ -223,26 +249,7 @@ export const sensorApi = {
   // Reads the current tank status and converts it into a simple sensor list.
   latest: async (deviceId) => {
     const status = await request(`/tanks/${deviceId}/status`);
-    const { currentStats = {}, updatedAt } = status;
-    const latestReadings = [];
-
-    for (const [key, sensorName] of SENSOR_FIELDS) {
-      const value = currentStats[key === 'temp' ? 'temp' : key];
-
-      if (value === null || value === undefined) {
-        continue;
-      }
-
-      latestReadings.push({
-        id: `${deviceId}-${key}`,
-        sensorId: key,
-        sensorType: { sensorName },
-        value,
-        readingTime: currentStats.lastReadingTime || updatedAt || new Date().toISOString(),
-      });
-    }
-
-    return latestReadings;
+    return extractReadingsFromDevice(status);
   },
 
   // Fetches Influx history and reshapes it for charts and tables.

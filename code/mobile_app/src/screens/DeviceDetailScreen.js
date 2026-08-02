@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, TouchableOpacity, Alert } from 'react-native';
-import { deviceApi, sensorApi } from '../services/api';
+import { deviceApi, extractReadingsFromDevice } from '../services/api';
 import { getSocket } from '../services/socket';
 import { SENSOR_META } from '../constants/sensorConstants';
 import { useAuth } from '../context/AuthContext';
@@ -46,9 +46,7 @@ export default function DeviceDetailScreen({ route, navigation }) {
     try {
       const d = await deviceApi.get(deviceId);
       setDevice(d);
-
-      const r = await sensorApi.latest(deviceId);
-      setReadings(Array.isArray(r) ? r : []);
+      setReadings(extractReadingsFromDevice(d));
     } catch (err) {
       console.error('Failed to load device details:', err);
     } finally {

@@ -152,18 +152,23 @@ export const getAllTanks = asyncHandler(async (req, res) => {
 
   const tanks = await prisma.tank.findMany({ where });
 
-  const tanksWithWorkers = await Promise.all(
-    tanks.map(async (tank) => {
-      let workers = [];
-      if (Array.isArray(tank.workerIds) && tank.workerIds.length > 0) {
-        workers = await prisma.user.findMany({
-          where: { id: { in: tank.workerIds } },
-          select: { id: true, username: true, fullName: true },
-        });
-      }
-      return { ...tank, workers };
-    })
-  );
+  const allWorkerIds = uniqueIds(tanks.flatMap((tank) => tank.workerIds || []));
+  let workerMap = new Map();
+
+  if (allWorkerIds.length > 0) {
+    const workers = await prisma.user.findMany({
+      where: { id: { in: allWorkerIds } },
+      select: { id: true, username: true, fullName: true },
+    });
+    workerMap = new Map(workers.map((w) => [w.id, w]));
+  }
+
+  const tanksWithWorkers = tanks.map((tank) => {
+    const workers = Array.isArray(tank.workerIds)
+      ? tank.workerIds.map((id) => workerMap.get(id)).filter(Boolean)
+      : [];
+    return { ...tank, workers };
+  });
 
   const processed = tanksWithWorkers.map((tank) => {
     const hasValues = tank.lastTemp !== null && tank.lastPh !== null;
