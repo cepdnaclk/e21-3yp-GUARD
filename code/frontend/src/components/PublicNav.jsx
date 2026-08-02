@@ -1,28 +1,35 @@
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import guardLogo from '../assets/guard-logo.png';
 import '../styles/navigation.css';
 
-const NAV_ITEMS = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/about', label: 'About' },
-  { to: { pathname: '/', hash: '#contacts' }, label: 'Contact' },
-  { to: '/login', label: 'Sign In' },
-  { to: '/register', label: 'Sign Up' },
-];
-
-const MOBILE_APP = { to: '/mobile-download', label: 'Download Mobile App' };
-
-/* Download glyph matching the blue app-icon artwork: bars, arrow and tray with a partial progress ring */
-
+function RoundedMobileIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="mobile-app-btn-icon-svg" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="6" y="3" width="12" height="18" rx="3" ry="3" />
+      <path d="M12 17h.01" />
+      <path d="M12 7v5m-2.5-2.5L12 12l2.5-2.5" />
+    </svg>
+  );
+}
 
 export default function PublicNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const contactActive = location.pathname === '/' && location.hash === '#contacts';
 
-  /* If the user clicks a nav link for the page they're already on, scroll to top */
   function handleNavClick(targetPath) {
     if (location.pathname === targetPath) {
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
+  }
+
+  function handleContactClick(e) {
+    e.preventDefault();
+    if (location.pathname === '/') {
+      document.getElementById('contacts')?.scrollIntoView({ behavior: 'smooth' });
+      window.history.pushState(null, '', '#contacts');
+    } else {
+      navigate('/#contacts');
     }
   }
 
@@ -41,30 +48,43 @@ export default function PublicNav() {
       </Link>
 
       <div className="site-nav-links">
-        {NAV_ITEMS.map((item) =>
-          item.label === 'Contact' ? (
-            <Link
-              key={item.label}
-              to="/#contacts"
-              className={contactActive ? 'site-nav-link active' : 'site-nav-link'}
-            >
-              {item.label}
-            </Link>
-          ) : (
-            <NavLink
-              key={item.label}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => (isActive ? 'site-nav-link active' : 'site-nav-link')}
-              onClick={() =>
-                handleNavClick(typeof item.to === 'string' ? item.to : item.to.pathname)
-              }
-            >
-              {item.label}
-            </NavLink>
-          )
-        )}
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) => (isActive && !contactActive ? 'site-nav-link active' : 'site-nav-link')}
+          onClick={() => handleNavClick('/')}
+        >
+          Home
+        </NavLink>
+        <NavLink
+          to="/about"
+          className={({ isActive }) => (isActive ? 'site-nav-link active' : 'site-nav-link')}
+          onClick={() => handleNavClick('/about')}
+        >
+          About
+        </NavLink>
+        <a
+          href="/#contacts"
+          onClick={handleContactClick}
+          className={contactActive ? 'site-nav-link active' : 'site-nav-link'}
+        >
+          Contact
+        </a>
+      </div>
 
+      <div className="site-nav-actions">
+        <Link to="/mobile-download" className="mobile-app-btn">
+          <span className="mobile-app-btn-icon" aria-hidden="true">
+            <RoundedMobileIcon />
+          </span>
+          <span className="mobile-app-btn-label">Download Mobile App</span>
+        </Link>
+        <NavLink to="/login" className="site-nav-link site-nav-btn-outline">
+          Sign In
+        </NavLink>
+        <NavLink to="/register" className="site-nav-link site-nav-btn-solid">
+          Sign Up
+        </NavLink>
       </div>
     </nav>
   );

@@ -1,19 +1,37 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import GoogleSignInButton from '../components/auth/GoogleSignInButton';
-import guardLogo from '../assets/guard-logo.png';
 import PublicNav from '../components/PublicNav';
 import '../styles/auth.css';
 
+function EyeIcon({ show }) {
+  if (show) {
+    // Classic eye icon (open)
+    return (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+  }
+  // Classic eye slash icon (closed/hidden)
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
 export default function Register() {
   const navigate = useNavigate();
-  const { register, googleLogin } = useAuth();
+  const { register } = useAuth();
   const [form, setForm] = useState({
     username: '', password: '', fullName: '', email: '', phoneNumber: '', address: '',
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -50,72 +68,71 @@ export default function Register() {
     }
   };
 
-  const handleGoogleCredential = async (idToken) => {
-    setError('');
-    setBusy(true);
-    try {
-      await googleLogin(idToken);
-    } catch (err) {
-      setError(err.message || 'Google sign up failed.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <div className="auth-wrapper">
       <PublicNav />
-      <div className="auth-page login-page">
-        <div className="auth-card login-card register-card">
-        <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>
-        <h1>Create Account</h1>
-        <p className="subtitle">Register for G.U.A.R.D Dashboard</p>
+      <div className="auth-page register-page">
+        <div className="auth-card register-card">
+          <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>
+          <h1>Create Account</h1>
+          <p className="subtitle">Sign up for G.U.A.R.D Dashboard</p>
 
-        {error && <p className="error-msg">{error}</p>}
+          {error && <p className="error-msg">{error}</p>}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Full Name *</label>
-            <input type="text" value={form.fullName} onChange={set('fullName')} placeholder="John Doe" required />
-          </div>
-          <div className="form-group">
-            <label>Username *</label>
-            <input type="text" value={form.username} onChange={set('username')} placeholder="johndoe" required minLength={3} />
-          </div>
-          <div className="form-group">
-            <label>Password *</label>
-            <input type="password" value={form.password} onChange={set('password')} placeholder="Min 8 characters" required minLength={8} />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input type="email" value={form.email} onChange={set('email')} placeholder="john@example.com" />
-          </div>
-          <div className="form-group">
-            <label>Phone Number</label>
-            <input type="text" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="+1234567890" />
-          </div>
-          <div className="form-group">
-            <label>Address</label>
-            <input type="text" value={form.address} onChange={set('address')} placeholder="Your address" />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? 'Creating...' : 'Create Account'}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Full Name *</label>
+              <input type="text" value={form.fullName} onChange={set('fullName')} required placeholder="John Doe" />
+            </div>
+            <div className="form-group">
+              <label>Username *</label>
+              <input type="text" value={form.username} onChange={set('username')} required placeholder="johndoe" />
+            </div>
+            <div className="form-group">
+              <label>Password *</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={set('password')}
+                  required
+                  placeholder="Min. 6 characters"
+                  style={{ paddingRight: '2.75rem' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-400 transition-colors focus:outline-none flex items-center justify-center p-1"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                >
+                  <EyeIcon show={showPassword} />
+                </button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Email</label>
+              <input type="email" value={form.email} onChange={set('email')} placeholder="john@example.com" />
+            </div>
+            <div className="form-group">
+              <label>Phone Number</label>
+              <input type="text" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="+1234567890" />
+            </div>
+            <div className="form-group">
+              <label>Address</label>
+              <input type="text" value={form.address} onChange={set('address')} placeholder="Your address" />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={busy}>
+              {busy ? 'Creating...' : 'Create Account'}
+            </button>
+          </form>
 
-        <div className="auth-or-divider">or</div>
-
-        <GoogleSignInButton
-          onCredential={handleGoogleCredential}
-          text="signup_with"
-          onError={setError}
-        />
-
-        <p className="auth-footer">
-          Already have an account? <Link to="/login">Sign In</Link>
-        </p>
+          <p className="auth-footer">
+            Already have an account? <Link to="/login">Sign In</Link>
+          </p>
+        </div>
       </div>
     </div>
-  </div>
   );
 }

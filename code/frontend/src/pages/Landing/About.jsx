@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Reveal, ScrollProgress } from '../../utils/animations';
-// landing.css and about.css migrated to Tailwind below.
 import tempSensor from '../../assets/temp.jpg';
 import tdsSensor from '../../assets/tds.jpg';
 import ultrasonicSensor from '../../assets/ultrasonic.jpg';
 import phsensor from '../../assets/ph.jpg';
-import turbiditySensor from '../../assets/turbidity.jpg'
+import turbiditySensor from '../../assets/turbidity.jpg';
 import pump from '../../assets/pump.jpeg';
 import feeder from '../../assets/feeder.jpeg';
 import PublicNav from '../../components/PublicNav';
-import dashboardMockup from '../../assets/dashboard.png';
+import dashboardDark from '../../assets/dashboard_dark.png';
+import dashboardWhite from '../../assets/dashboard_white.png';
 
 const SENSORS = [
   {
@@ -150,23 +150,15 @@ export default function About() {
             </div>
           </Reveal>
 
-          <div className="flex flex-col gap-6">
-            {pairRows(SENSORS).map((pair, rowIdx) => (
-              <div className="grid grid-cols-2 gap-6 max-[768px]:grid-cols-1" key={rowIdx}>
-                {pair.map((sensor, i) => (
-                  <Reveal key={sensor.name} direction="scale" delay={i * 120}>
-                    <div className="flex items-center gap-5 bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-5 hover:border-sky-400/30 transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
-                      <div className="w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-white border border-[#e2e8f0]">
-                        <img src={sensor.img} alt={sensor.alt} className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-[#0f172a] text-[1.05rem] m-0 mb-1">{sensor.name}</p>
-                        <p className="text-[#475569] text-[0.88rem] leading-relaxed m-0">{sensor.spec}</p>
-                      </div>
-                    </div>
-                  </Reveal>
-                ))}
-              </div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6">
+            {SENSORS.map((s, i) => (
+              <Reveal key={s.name} direction="up" delay={i * 100}>
+                <div className="bg-[#f8fafc] rounded-2xl p-6 border border-[#e2e8f0] h-full flex flex-col items-center text-center">
+                  <img src={s.img} alt={s.alt} className="w-24 h-24 object-contain mb-4 rounded-xl shadow-sm" />
+                  <h3 className="text-[1.1rem] font-bold text-[#0f172a] mb-2">{s.name}</h3>
+                  <p className="text-[#475569] text-[0.88rem] leading-relaxed m-0">{s.spec}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -175,33 +167,27 @@ export default function About() {
       {/* ── Actuators ── */}
       <section className="py-[6rem] px-[4rem] bg-[#f8fafc]" id="actuators">
         <div className="max-w-[1100px] mx-auto">
-          <Reveal direction="right">
-            <div className="mb-10">
+          <Reveal direction="up">
+            <div className="mb-10 text-center">
               <span className="text-xs font-bold uppercase tracking-[1.5px] text-sky-500 block mb-2">Actuators</span>
-              <h2 className="text-[2rem] font-extrabold text-[#0f172a] mb-3">Automated actuators for control and response</h2>
-              <p className="text-[#475569] text-[1rem]">
-                Actuators automate water flow, drainage and feeding to keep systems within safe parameters.
+              <h2 className="text-[2rem] font-extrabold text-[#0f172a] mb-3">Automated physical controls</h2>
+              <p className="text-[#475569] text-[1rem] max-w-[700px] mx-auto">
+                Relay drivers and servos enable automated water replenishment and feeding schedules.
               </p>
             </div>
           </Reveal>
 
-          <div className="flex flex-col gap-6">
-            {pairRows(ACTUATORS).map((pair, rowIdx) => (
-              <div className="grid grid-cols-2 gap-6 max-[768px]:grid-cols-1" key={rowIdx}>
-                {pair.map((act, i) => (
-                  <Reveal key={act.name} direction="scale" delay={i * 120}>
-                    <div className="flex items-center gap-5 bg-white border border-[#e2e8f0] rounded-2xl p-5 hover:border-sky-400/30 transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
-                      <div className="w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-sky-50 border border-sky-100 flex items-center justify-center text-2xl">
-                        ⚙️
-                      </div>
-                      <div>
-                        <p className="font-bold text-[#0f172a] text-[1.05rem] m-0 mb-1">{act.name}</p>
-                        <p className="text-[#475569] text-[0.88rem] leading-relaxed m-0">{act.desc}</p>
-                      </div>
-                    </div>
-                  </Reveal>
-                ))}
-              </div>
+          <div className="grid grid-cols-2 gap-6 max-[768px]:grid-cols-1">
+            {ACTUATORS.map((a, i) => (
+              <Reveal key={a.name} direction="up" delay={i * 120}>
+                <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-[#e2e8f0] flex gap-6 items-center">
+                  <img src={a.img} alt={a.name} className="w-28 h-28 object-contain rounded-xl border border-slate-100 p-2" />
+                  <div>
+                    <h3 className="text-[1.15rem] font-bold text-[#0f172a] mb-2">{a.name}</h3>
+                    <p className="text-[#475569] text-[0.9rem] leading-relaxed m-0">{a.desc}</p>
+                  </div>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -209,24 +195,28 @@ export default function About() {
 
       {/* ── Software ── */}
       <section className="py-[6rem] px-[4rem] bg-white" id="software">
-        <div className="max-w-[1100px] mx-auto grid grid-cols-2 gap-12 items-center max-[768px]:grid-cols-1">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-12 items-center">
           <Reveal direction="left">
             <div>
-              <span className="text-xs font-bold uppercase tracking-[1.5px] text-sky-500 block mb-2">Software</span>
+              <span className="text-xs font-bold uppercase tracking-[1.5px] text-sky-500 block mb-2">Software Ecosystem</span>
               <h2 className="text-[2rem] font-extrabold text-[#0f172a] mb-4 leading-[1.2]">Connected management tools for the full GUARD workflow</h2>
               <p className="text-[#475569] text-[1rem] leading-relaxed m-0">
-                It includes a management system for device and tank management, worker management, a
-                notification system, actuator control, and historical value analysis.
+                It includes a comprehensive management system for device and tank tracking, worker management, instant notification alerts, actuator controls, and historical time-series analytics.
               </p>
             </div>
           </Reveal>
 
           <Reveal direction="right">
-            <div className="rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-[#e2e8f0]">
+            <div className="relative rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-[#cbd5e1] group cursor-pointer">
               <img
-                src={dashboardMockup}
-                alt="GUARD Software Dashboard Illustration"
-                className="w-full h-auto block"
+                src={dashboardDark}
+                alt="GUARD Software Dashboard Illustration (Dark)"
+                className="w-full h-auto block transition-all duration-700 ease-in-out group-hover:scale-102"
+              />
+              <img
+                src={dashboardWhite}
+                alt="GUARD Software Dashboard Illustration (White)"
+                className="w-full h-auto block absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700 ease-in-out group-hover:scale-102"
               />
             </div>
           </Reveal>
@@ -244,15 +234,30 @@ export default function About() {
           </div>
           <div>
             <h3 className="text-[1rem] font-bold mb-4">Quick Links</h3>
-            {[['#about','About'],['#services','Services'],['#problems','Problems'],['#cta','Call to action']].map(([href, label]) => (
-              <a key={href} href={href} className="block text-slate-400 hover:text-sky-400 text-[0.9rem] mb-2 no-underline transition-colors">{label}</a>
-            ))}
+            <div className="flex flex-col gap-2">
+              <a href="#hardware" className="text-slate-400 hover:text-sky-400 text-[0.9rem] no-underline transition-colors">Hardware Architecture</a>
+              <a href="#sensors" className="text-slate-400 hover:text-sky-400 text-[0.9rem] no-underline transition-colors">Sensors & Actuators</a>
+              <a href="#software" className="text-slate-400 hover:text-sky-400 text-[0.9rem] no-underline transition-colors">Software Dashboard</a>
+              <a
+                href="https://cepdnaclk.github.io/e21-3yp-GUARD/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sky-400 hover:text-cyan-300 font-semibold text-[0.9rem] no-underline transition-colors mt-1"
+              >
+                Project Documentation (GitHub Pages) ↗
+              </a>
+            </div>
           </div>
           <div>
             <h3 className="text-[1rem] font-bold mb-4">Contact</h3>
-            <p className="text-slate-400 text-[0.9rem] mb-1">Email: guardyp26@gmail.com</p>
-            <p className="text-slate-400 text-[0.9rem] mb-1">Phone: +94 70 195 0210</p>
-            <p className="text-slate-400 text-[0.9rem]">Location: Sri Lanka</p>
+            <p className="text-slate-400 text-[0.9rem] mb-1.5 select-text">
+              Email:{' '}
+              <a href="mailto:guardyp26@gmail.com" className="text-sky-400 hover:underline font-medium select-text">
+                guardyp26@gmail.com
+              </a>
+            </p>
+            <p className="text-slate-400 text-[0.9rem] mb-1.5 select-text">Phone: +94 70 195 0219</p>
+            <p className="text-slate-400 text-[0.9rem] select-text">Location: Sri Lanka</p>
           </div>
         </div>
         <div className="border-t border-white/[0.08] mx-8" />

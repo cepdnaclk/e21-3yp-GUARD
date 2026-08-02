@@ -357,13 +357,17 @@ function FishDetailDrawer({ fish, tanks, role, onClose, onEdit, onDelete, onRefr
               <>
                 <select
                   id="fish-tank-select"
-                  className="w-full px-3 py-[0.7rem] border-[1.5px] border-white/20 dark:border-white/[0.08] bg-white/30 dark:bg-white/[0.05] rounded-lg text-[0.9rem] text-text-main dark:text-[#e6edf3] outline-none focus:border-primary mb-3"
+                  className="w-full px-3 py-[0.7rem] border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-[0.9rem] text-slate-800 dark:text-slate-100 outline-none focus:border-primary mb-3 cursor-pointer shadow-sm"
                   value={selectedTankId}
                   onChange={(e) => { setSelectedTankId(e.target.value); setPresetMsg(null); }}
                 >
-                  <option value="">— Select a tank to compare —</option>
+                  <option value="" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+                    — Select a tank to compare —
+                  </option>
                   {tanks.map(t => (
-                    <option key={t.deviceId} value={t.deviceId}>{t.deviceName || t.deviceId} ({t.deviceId})</option>
+                    <option key={t.deviceId} value={t.deviceId} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+                      {t.deviceName || t.deviceId} ({t.deviceId})
+                    </option>
                   ))}
                 </select>
 

@@ -7,6 +7,7 @@
 @tailwind components;
 @tailwind utilities;
 /* ========== Reset & Base ========== */
+html { scroll-behavior: smooth; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -38,6 +39,19 @@ img[src*="guard-logo"] {
 [data-theme='dark'] img[src*="guard-logo"],
 .dark img[src*="guard-logo"] {
   filter: brightness(1) contrast(1) drop-shadow(0 2px 8px rgba(14, 165, 233, 0.35));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SELECT OPTION DARK MODE VISIBILITY FIX
+   ═══════════════════════════════════════════════════════════ */
+select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+.dark select option,
+[data-theme='dark'] select option {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -417,4 +431,36 @@ body.page-fade-enter {
 
 @media (prefers-reduced-motion: reduce) {
   body.page-fade-enter { animation: none; }
+  .reveal-wrapper { opacity: 1 !important; transform: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLL REVEAL ANIMATIONS (Appear while scrolling down)
+   ═══════════════════════════════════════════════════════════ */
+.reveal-wrapper {
+  opacity: 0;
+  will-change: opacity, transform;
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-wrapper.reveal-up {
+  transform: translateY(45px);
+}
+
+.reveal-wrapper.reveal-left {
+  transform: translateX(-45px);
+}
+
+.reveal-wrapper.reveal-right {
+  transform: translateX(45px);
+}
+
+.reveal-wrapper.reveal-scale {
+  transform: scale(0.9) translateY(30px);
+}
+
+.reveal-wrapper.revealed {
+  opacity: 1;
+  transform: translateY(0) translateX(0) scale(1);
+}
+
