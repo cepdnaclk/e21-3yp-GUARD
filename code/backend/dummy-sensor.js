@@ -42,8 +42,23 @@ async function start() {
 
     client.on('connect', () => {
         console.log('✅ Connected to MQTT broker!');
+        
+        const commandTopic = `device/${tankId}/command`;
+        client.subscribe(commandTopic, (err) => {
+            if (!err) {
+                console.log(`🎧 Listening for incoming actuator commands on: ${commandTopic}`);
+            }
+        });
+
+        const thresholdTopic = `device/${tankId}/set/+`;
+        client.subscribe(thresholdTopic, (err) => {
+            if (!err) {
+                console.log(`🎧 Listening for incoming threshold updates on: ${thresholdTopic}`);
+            }
+        });
+
         console.log('📡 Starting to send dummy sensor data every 5 seconds...');
-        console.log('Press Ctrl+C to stop.');
+        console.log('Press Ctrl+C to stop.\n');
         
         setInterval(() => {
             const time = new Date().toISOString();
@@ -63,6 +78,23 @@ async function start() {
 
             console.log(`[${time}] Published data -> Temp: ${temp}, pH: ${ph}, TDS: ${tds}, Turb: ${turbidity}, WL: ${waterlevel}`);
         }, 5000); // every 5 seconds
+    });
+
+    client.on('message', (topic, message) => {
+        if (topic === `device/${tankId}/command`) {
+            const command = message.toString();
+            console.log(`\n🔔 [ACTUATOR TRIGGERED] Received command from frontend: >>> ${command.toUpperCase()} <<<`);
+            
+            if (command === 'feed') console.log('   🐟 Dispensing food...');
+            if (command === 'pump_on') console.log('   💧 Turning pump ON...');
+            if (command === 'pump_off') console.log('   🛑 Turning pump OFF...');
+            if (command === 'pump_auto') console.log('   🤖 Setting pump to AUTO mode...');
+            console.log('');
+        } else if (topic.startsWith(`device/${tankId}/set/`)) {
+            const key = topic.split('/').pop();
+            const value = message.toString();
+            console.log(`\n⚙️ [THRESHOLD UPDATED] Received new threshold for ${key.toUpperCase()}: >>> ${value} <<<`);
+        }
     });
 
     client.on('error', (err) => {
