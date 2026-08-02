@@ -19,8 +19,8 @@ void initActuators() {
   ESP32PWM::allocateTimer(2);
   ESP32PWM::allocateTimer(3);
   myServo.setPeriodHertz(50);
-  myServo.attach(servoPin, 500, 2400);
-  myServo.write(90); // Start stopped
+  myServo.attach(servoPin, 500, 2500);
+  myServo.write(90); // Start stopped (Center position)
   Serial.println("[SERVO] Attached and ready");
 }
 
@@ -99,14 +99,18 @@ void handleServo() {
     servoActive = true;
     commandFeedRequested = false; // Clear request flag
     servoStartTime = millis();
-    myServo.write(180); // Start spin
-    Serial.println("[SERVO] Asynchronous Feed started — spinning for 3 seconds");
+    myServo.write(180); // Changed to 180 to rotate the opposite direction!
+    Serial.println("[SERVO] Asynchronous Feed started — testing write(180)");
   }
 
-  if (servoActive && (millis() - servoStartTime >= SERVO_RUN_TIME)) {
-    myServo.write(90);  // Stop spin
-    servoActive = false;
-    Serial.println("[SERVO] Asynchronous Feed complete");
+  if (servoActive) {
+    unsigned long elapsed = millis() - servoStartTime;
+    
+    if (elapsed >= SERVO_RUN_TIME) {
+      myServo.write(90);  // Stop command (Center position)
+      servoActive = false;
+      Serial.println("[SERVO] Asynchronous Feed complete");
+    }
   }
 }
 
