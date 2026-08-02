@@ -7,7 +7,7 @@ import phsensor from '../../assets/ph.jpg';
 import turbiditySensor from '../../assets/turbidity.jpg';
 import pump from '../../assets/pump.jpeg';
 import feeder from '../../assets/feeder.jpeg';
-import PublicNav from '../../components/PublicNav';
+
 import dashboardDark from '../../assets/dashboard_dark.png';
 import dashboardWhite from '../../assets/dashboard_white.png';
 

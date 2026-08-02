@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../services/api';
-import PublicNav from '../components/PublicNav';
+
 import '../styles/auth.css';
 
 export default function VerifyEmail() {

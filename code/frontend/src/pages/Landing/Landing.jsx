@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Reveal, ScrollProgress } from '../../utils/animations';
-import PublicNav from '../../components/PublicNav';
+
 import '../../styles/navigation.css';
 
 import mockupImg   from '../../assets/Mockup.png';
