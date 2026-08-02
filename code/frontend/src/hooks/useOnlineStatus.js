@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const ONLINE_TIMEOUT_MS = 30_000;
+const ONLINE_TIMEOUT_MS = 40_000;
 const TICK_INTERVAL_MS = 5_000;
 
 /**
- * Tracks whether a device is "online" based on a 30-second heartbeat timeout.
+ * Tracks whether a device is "online" based on a 40-second heartbeat timeout.
  *
  * @param {string|Date|null} initialLastTime – the last-reading timestamp from the API.
  * @returns {{ isOnline: boolean, lastSeen: Date|null, markSeen: () => void }}
