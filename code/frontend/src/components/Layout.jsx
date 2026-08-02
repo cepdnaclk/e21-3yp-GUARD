@@ -44,7 +44,7 @@ export default function Layout() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* ── Top Navigation Bar ── */}
-      <nav className="sticky top-0 z-50 flex items-center px-6 min-h-[64px] flex-shrink-0 bg-white/75 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-colors duration-300">
+      <nav className="sticky top-0 z-[9999] flex items-center px-6 min-h-[64px] flex-shrink-0 bg-white/75 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-colors duration-300">
 
         {/* Brand */}
         <div 

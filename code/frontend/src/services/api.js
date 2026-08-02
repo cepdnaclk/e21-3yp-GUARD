@@ -224,7 +224,15 @@ export function extractReadingsFromDevice(device) {
   const latestReadings = [];
 
   for (const [key, sensorName] of SENSOR_FIELDS) {
-    const value = currentStats[key];
+    let value = currentStats[key];
+
+    if (value === null || value === undefined) {
+      if (key === 'pH') value = currentStats.ph ?? device.lastPh ?? device.lastPH;
+      else if (key === 'temp') value = currentStats.temperature ?? device.lastTemp;
+      else if (key === 'tds') value = device.lastTds;
+      else if (key === 'turbidity') value = device.lastTurb;
+      else if (key === 'waterLevel') value = currentStats.waterlevel ?? device.lastWaterLevel;
+    }
 
     if (value === null || value === undefined) {
       continue;
@@ -235,7 +243,7 @@ export function extractReadingsFromDevice(device) {
       sensorId: key,
       sensorType: { sensorName },
       value,
-      readingTime: currentStats.lastReadingTime || updatedAt || new Date().toISOString(),
+      readingTime: currentStats.lastReadingTime || device.lastReadingTime || updatedAt || new Date().toISOString(),
     });
   }
 

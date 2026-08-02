@@ -188,24 +188,19 @@ export const getAllTanks = asyncHandler(async (req, res) => {
 export const getTankStatus = asyncHandler(async (req, res) => {
   const { tankId } = req.params;
 
+  const accessible = await findAccessibleTank(tankId, req.user);
+  if (!accessible) {
+    throw new AppError("Tank not found or access denied.", 404);
+  }
+
   const tank = await prisma.tank.findUnique({
-    where: { tankId },
+    where: { id: accessible.id },
     include: {
       workers: {
         select: { id: true, fullName: true, username: true }
       }
     }
   });
-
-  if (!tank) {
-    throw new AppError("Tank not found.", 404);
-  }
-
-  // Verify access
-  const accessible = await findAccessibleTank(tankId, req.user);
-  if (!accessible) {
-    throw new AppError("Access denied.", 403);
-  }
 
   return res.json({
     name: tank.name,

@@ -15,7 +15,7 @@ import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../constan
 import { formatChartTime } from '../utils/formatUtils';
 import GlassDatePicker from '../components/DatePicker';
 
-function transformReadingsToChartData(items) {
+function transformReadingsToChartData(items, isAllSensors = false) {
   const grouped = new Map();
 
   items.forEach((reading) => {
@@ -36,7 +36,11 @@ function transformReadingsToChartData(items) {
     const row = grouped.get(timeKey);
     const field = SENSOR_ID_TO_FIELD[reading.sensorId];
     if (field) {
-      row[field] = Number(reading.value);
+      let numVal = Number(reading.value);
+      if (isAllSensors && field === 'turbidity' && !Number.isNaN(numVal)) {
+        numVal = Number((numVal / 100).toFixed(2));
+      }
+      row[field] = numVal;
     }
   });
 
@@ -56,7 +60,7 @@ export default function SensorHistory() {
   const [devices, setDevices] = useState([]);
   const [readings, setReadings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showGraph, setShowGraph] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [fetchInfo, setFetchInfo] = useState('');
   const [hasFetched, setHasFetched] = useState(false);
@@ -112,6 +116,7 @@ export default function SensorHistory() {
       const fetched = await sensorApi.history(params);
       setReadings(fetched);
       setHasFetched(true);
+      setShowGraph(true);
       setFetchInfo(
         fetched.length > 0
           ? `Loaded ${fetched.length} reading${fetched.length !== 1 ? 's' : ''}.`
@@ -138,9 +143,9 @@ export default function SensorHistory() {
   const clearReadings = () => {
     setReadings([]);
     setHasFetched(false);
+    setShowGraph(false);
     setFetchError('');
     setFetchInfo('');
-    setShowAnalytics(false);
   };
 
   const downloadReport = () => {
@@ -171,9 +176,9 @@ export default function SensorHistory() {
   };
 
   const set = (field) => (e) => setFilters((prev) => ({ ...prev, [field]: e.target.value }));
-  const chartData = transformReadingsToChartData(readings);
+  const isAllSensors = !filters.sensorId;
+  const chartData = useMemo(() => transformReadingsToChartData(readings, isAllSensors), [readings, isAllSensors]);
   const selectedLineConfig = filters.sensorId ? getLineConfig(filters.sensorId) : null;
-  const displayAnalyticsMessage = showAnalytics && readings.length === 0;
 
   return (
     <>
@@ -242,106 +247,104 @@ export default function SensorHistory() {
           </button>
           <button
             className="btn action-btn"
-            onClick={() => setShowAnalytics((value) => !value)}
-            disabled={!filters.deviceId}
-            type="button"
-          >
-            Analytics
-          </button>
-          <button
-            className="btn action-btn"
             onClick={downloadReport}
             disabled={readings.length === 0}
             type="button"
           >
             Download Report
           </button>
+          <button
+            className="btn action-btn"
+            onClick={() => setShowGraph((prev) => !prev)}
+            disabled={readings.length === 0}
+            type="button"
+          >
+            {showGraph ? 'Hide Graph' : 'Show Graph'}
+          </button>
         </div>
       </div>
 
-      <div className="card">
-        {showAnalytics && readings.length > 0 && (
-          <div>
-            <h4 className="mb-4 text-[1.1rem] font-bold text-text-main dark:text-slate-200">Analytics</h4>
-            <div className="w-full min-h-[360px] overflow-x-auto p-4">
-              <ResponsiveContainer width="100%" height={360}>
-                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="time"
-                    tickFormatter={formatChartTime}
-                    minTickGap={24}
-                    tick={{ fill: '#334155', fontSize: 11 }}
-                  />
-                  <YAxis tick={{ fill: '#334155', fontSize: 12 }} />
-                  <Tooltip
-                    labelFormatter={formatChartTime}
-                    contentStyle={{
-                      backgroundColor: '#ffffff',
-                      borderRadius: '12px',
-                      border: 'none',
-                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-                      padding: '12px'
-                    }}
-                    labelStyle={{
-                      color: '#0f172a',
-                      fontWeight: '700',
-                      marginBottom: '8px',
-                      display: 'block',
-                      borderBottom: '1px solid #f1f5f9',
-                      paddingBottom: '4px'
-                    }}
-                    itemStyle={{
-                      padding: '2px 0',
-                      fontWeight: '500'
-                    }}
-                  />
-                  <Legend />
-                  {filters.sensorId ? (
-                    selectedLineConfig ? (
+      {showGraph && readings.length > 0 && (
+        <div className="card mb-6">
+          <h4 className="mb-4 text-[1.1rem] font-bold text-text-main dark:text-slate-200">
+            Sensor History Analytics Graph ({filters.sensorId ? (selectedLineConfig?.label || filters.sensorId) : 'All Sensors'})
+          </h4>
+          <div className="w-full min-h-[360px] overflow-x-auto p-2">
+            <ResponsiveContainer width="100%" height={360}>
+              <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis
+                  dataKey="time"
+                  tickFormatter={formatChartTime}
+                  minTickGap={24}
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                />
+                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
+                <Tooltip
+                  labelFormatter={formatChartTime}
+                  contentStyle={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: '12px',
+                    border: 'none',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                    padding: '12px'
+                  }}
+                  labelStyle={{
+                    color: '#0f172a',
+                    fontWeight: '700',
+                    marginBottom: '8px',
+                    display: 'block',
+                    borderBottom: '1px solid #f1f5f9',
+                    paddingBottom: '4px'
+                  }}
+                  itemStyle={{
+                    padding: '2px 0',
+                    fontWeight: '500'
+                  }}
+                />
+                <Legend />
+                {filters.sensorId ? (
+                  selectedLineConfig ? (
+                    <Line
+                      type="monotone"
+                      dataKey={selectedLineConfig.key}
+                      name={`${selectedLineConfig.label}${selectedLineConfig.unit ? ` (${selectedLineConfig.unit})` : ''}`}
+                      stroke={selectedLineConfig.color}
+                      strokeWidth={2.5}
+                      dot={false}
+                      connectNulls
+                    />
+                  ) : null
+                ) : (
+                  SENSOR_TYPES.map((sensor) => {
+                    const config = getLineConfig(sensor.id);
+                    if (!config) return null;
+
+                    return (
                       <Line
+                        key={config.key}
                         type="monotone"
-                        dataKey={selectedLineConfig.key}
-                        name={selectedLineConfig.label}
-                        stroke={selectedLineConfig.color}
+                        dataKey={config.key}
+                        name={config.key === 'turbidity' ? 'Turbidity (NTU ÷ 100)' : `${config.label}${config.unit ? ` (${config.unit})` : ''}`}
+                        stroke={config.color}
                         strokeWidth={2}
                         dot={false}
                         connectNulls
                       />
-                    ) : null
-                  ) : (
-                    SENSOR_TYPES.map((sensor) => {
-                      const config = getLineConfig(sensor.id);
-                      if (!config) return null;
-
-                      return (
-                        <Line
-                          key={config.key}
-                          type="monotone"
-                          dataKey={config.key}
-                          name={config.label}
-                          stroke={config.color}
-                          strokeWidth={2}
-                          dot={false}
-                          connectNulls
-                        />
-                      );
-                    })
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+                    );
+                  })
+                )}
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-        )}
+        </div>
+      )}
 
-        {displayAnalyticsMessage && (
-          <p className="mt-3 text-center p-8 bg-white/[0.04] border border-white/10 rounded-xl text-text-muted">
-            No data available for analytics
-          </p>
-        )}
-
+      <div className="card">
         {sortedReadings.length === 0 ? (
-          <div className="empty-state"><p>{hasFetched ? 'No readings found for the selected filters.' : 'Select a device and click Fetch.'}</p></div>
+          <div className="empty-state">
+            <p>{hasFetched ? 'No readings found for the selected filters.' : 'Select a device and click Fetch.'}</p>
+          </div>
         ) : (
           <>
             <p className="text-text-muted text-base mb-3">

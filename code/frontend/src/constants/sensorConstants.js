@@ -56,7 +56,7 @@ export const SENSOR_TYPES = [
 export const SENSOR_LINE_CONFIG = {
   temp:       { key: 'temp',       label: 'Temperature', color: '#2563eb', unit: '°C' },
   pH:         { key: 'pH',         label: 'pH',          color: '#7c3aed', unit: '' },
-  tds:        { key: 'tds',        label: 'TDS',         color: '#0f766e', unit: 'ppm' },
+  tds:        { key: 'tds',        label: 'TDS',         color: '#db2777', unit: 'ppm' },
   turbidity:  { key: 'turbidity',  label: 'Turbidity',   color: '#ea580c', unit: 'NTU' },
   waterLevel: { key: 'waterLevel', label: 'Water Level', color: '#16a34a', unit: '%' },
 };

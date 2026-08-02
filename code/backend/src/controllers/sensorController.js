@@ -3,6 +3,7 @@ import { Point } from '@influxdata/influxdb-client';
 import { writeApi, queryApi } from '../lib/influx.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AppError } from '../lib/AppError.js';
+import { findAccessibleTank } from '../lib/tankAccess.js';
 
 // (Optional) HTTP route for testing via Postman — ESP32 now uses MQTT instead.
 export const logData = asyncHandler(async (req, res) => {
@@ -41,29 +42,16 @@ export const getTankHistory = asyncHandler(async (req, res) => {
   const { tankId } = req.params;
   const { from, to } = req.query;
 
-  let accessWhere = null;
-
-  if (req.user.role === "ADMIN") {
-    accessWhere = { tankId, adminId: req.user.userId };
-  } else if (req.user.role === "USER") {
-    accessWhere = { tankId, workerIds: { has: req.user.userId } };
-  } else {
-    throw new AppError("Access denied.", 403);
-  }
-
-  const tank = await prisma.tank.findFirst({
-    where: accessWhere,
-    select: { id: true },
-  });
+  const tank = await findAccessibleTank(tankId, req.user);
 
   if (!tank) {
     throw new AppError("Tank not found or no access.", 404);
   }
 
-  // Sanitise tankId to prevent Flux injection
-  const safeTankId = tankId.replace(/[^a-zA-Z0-9_-]/g, '');
+  // Sanitise canonical tankId from DB to prevent Flux injection and preserve correct casing (e.g. "GUARD-300")
+  const safeTankId = tank.tankId.replace(/[^a-zA-Z0-9_-]/g, '');
 
-  let rangeClause = '|> range(start: -24h)';
+  let rangeClause = '|> range(start: -30d)';
 
   if (from || to) {
     const parsedFrom = from ? new Date(from) : null;
@@ -87,7 +75,7 @@ export const getTankHistory = asyncHandler(async (req, res) => {
   }
 
   // 1. Calculate dynamic sampling interval based on range
-  const fromDate = from ? new Date(from) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const toDate = to ? new Date(to) : new Date();
   const diffHours = (toDate - fromDate) / (1000 * 60 * 60);
 

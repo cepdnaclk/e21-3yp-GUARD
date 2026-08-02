@@ -27,6 +27,20 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
+   G.U.A.R.D LOGO LIGHT MODE CONTRAST
+   Darker, high-contrast filtering on light mode & public pages
+   ═══════════════════════════════════════════════════════════ */
+img[src*="guard-logo"] {
+  filter: brightness(0.6) contrast(1.4) drop-shadow(0 2px 8px rgba(2, 132, 199, 0.45));
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+[data-theme='dark'] img[src*="guard-logo"],
+.dark img[src*="guard-logo"] {
+  filter: brightness(1) contrast(1) drop-shadow(0 2px 8px rgba(14, 165, 233, 0.35));
+}
+
+/* ═══════════════════════════════════════════════════════════
    BODY — Dynamic Mesh Gradient Canvas
    ═══════════════════════════════════════════════════════════ */
 body {

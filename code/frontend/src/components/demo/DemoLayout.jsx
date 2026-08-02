@@ -48,7 +48,7 @@ export default function DemoLayout() {
     <div className="flex flex-col min-h-screen">
 
       {/* ── Top Navigation ── */}
-      <nav className="sticky top-0 z-50 flex items-center px-7 min-h-[62px] flex-shrink-0 bg-[rgba(1,35,61,0.78)] dark:bg-[rgba(8,14,24,0.82)] backdrop-blur-2xl border-b border-white/[0.08] dark:border-white/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.18)]">
+      <nav className="sticky top-0 z-[9999] flex items-center px-7 min-h-[62px] flex-shrink-0 bg-[rgba(1,35,61,0.78)] dark:bg-[rgba(8,14,24,0.82)] backdrop-blur-2xl border-b border-white/[0.08] dark:border-white/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.18)]">
 
         {/* Brand */}
         <div className="flex items-center gap-0 text-[#f0f6fc] font-bold text-2xl tracking-[0.08em]">
