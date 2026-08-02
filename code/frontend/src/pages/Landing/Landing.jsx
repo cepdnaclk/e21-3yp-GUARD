@@ -70,15 +70,15 @@ function ScrollSyncedMockup() {
       // Progress ratio: 0 when element enters viewport bottom, 1 when near top
       const progress = Math.min(Math.max((windowHeight - rect.top) / (windowHeight + rect.height), 0), 1);
 
-      // Interpolate 3D rotation, float translation, and scale synced with scroll
-      const rotateY = -12 + progress * 16;
-      const rotateX = 8 - progress * 10;
-      const translateY = 25 - progress * 45;
-      const scale = 0.95 + progress * 0.1;
+      // Interpolate 3D rotation, float translation, and slide left (translateX) synced with scroll
+      const translateX = 60 - progress * 90;
+      const rotateY = -10 + progress * 12;
+      const rotateX = 6 - progress * 8;
+      const translateY = 15 - progress * 35;
       const opacity = Math.min(progress * 2.2, 1);
 
       setTransformStyle({
-        transform: `perspective(1200px) rotateY(${rotateY.toFixed(2)}deg) rotateX(${rotateX.toFixed(2)}deg) translateY(${translateY.toFixed(2)}px) scale(${scale.toFixed(2)})`,
+        transform: `perspective(1200px) translateX(${translateX.toFixed(2)}px) translateY(${translateY.toFixed(2)}px) rotateY(${rotateY.toFixed(2)}deg) rotateX(${rotateX.toFixed(2)}deg) scale(1)`,
         opacity,
         transition: 'transform 0.15s ease-out, opacity 0.3s ease-out',
       });
@@ -212,7 +212,6 @@ export default function Landing() {
       `}</style>
 
       <ScrollProgress />
-      <PublicNav />
 
       {/* ── 1. Hero ── */}
       <section

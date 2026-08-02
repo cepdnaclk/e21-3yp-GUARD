@@ -62,7 +62,6 @@ export default function Login() {
   if (showForgot) {
     return (
       <div className="auth-wrapper">
-        <PublicNav />
         <div className="auth-page login-page">
           <ForgotPasswordFlow
             onClose={() => setShowForgot(false)}

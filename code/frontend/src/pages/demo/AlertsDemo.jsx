@@ -36,13 +36,13 @@ export default function AlertsDemo() {
           <div className="flex gap-3 ml-auto items-end">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-semibold text-[#204968] dark:text-slate-400">📧 Email Alerts</label>
-              <button type="button" className="h-[38px] min-w-[100px] px-4 py-[0.6rem] rounded-lg font-bold inline-flex items-center justify-center bg-gradient-to-br from-success to-green-700 text-white opacity-70 cursor-not-allowed" disabled>
+              <button type="button" className="h-[38px] min-w-[105px] px-4 py-[0.5rem] rounded-xl font-bold inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-blue-600 dark:from-sky-400 dark:to-blue-500 text-white shadow-[0_4px_14px_rgba(14,165,233,0.35)] opacity-80 cursor-not-allowed" disabled>
                 Enabled
               </button>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-sm font-semibold text-[#204968] dark:text-slate-400">🤖 Telegram Alerts</label>
-              <button type="button" className="h-[38px] min-w-[100px] px-4 py-[0.6rem] rounded-lg font-bold inline-flex items-center justify-center bg-gradient-to-br from-success to-green-700 text-white opacity-70 cursor-not-allowed" disabled>
+              <button type="button" className="h-[38px] min-w-[105px] px-4 py-[0.5rem] rounded-xl font-bold inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-blue-600 dark:from-sky-400 dark:to-blue-500 text-white shadow-[0_4px_14px_rgba(14,165,233,0.35)] opacity-80 cursor-not-allowed" disabled>
                 Enabled
               </button>
             </div>

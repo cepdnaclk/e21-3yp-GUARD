@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useTour } from '../../context/TourContext';
 import guardLogo from '../../assets/guard-logo.png';
-// layout.css migrated to Tailwind below. tour.css is in main.jsx (global).
 
 const BASE_NAV = [
   { to: '/demo/dashboard', label: 'Dashboard',     id: 'nav-dashboard' },
@@ -14,22 +13,24 @@ const BASE_NAV = [
   { to: '/demo/fish',      label: 'Fish Info',     id: 'nav-fish' },
 ];
 
+/** Shared pill styles for nav links — matches Layout.jsx design system */
 const NAV_LINK_BASE =
-  'px-4 py-[0.35rem] rounded-full border border-white/12 text-white/78 text-[0.88rem] font-medium no-underline transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] whitespace-nowrap backdrop-blur-[4px] tracking-[0.01em] hover:bg-white/10 hover:border-white/25 hover:text-white hover:-translate-y-px';
+  'px-4 py-[0.4rem] rounded-full text-[0.88rem] font-semibold no-underline transition-all duration-300 ease-out whitespace-nowrap tracking-wide select-none ' +
+  'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 hover:-translate-y-0.5';
+
 const NAV_LINK_ACTIVE =
-  'bg-primary/22 border-sky-400/50 text-white shadow-[0_0_14px_rgba(14,165,233,0.20)]';
+  '!text-white bg-gradient-to-r from-sky-500 to-blue-600 shadow-[0_4px_14px_rgba(14,165,233,0.35)] dark:shadow-[0_0_18px_rgba(14,165,233,0.45)] scale-[1.02]';
+
+/** Glass icon button styling — matches Layout.jsx design system */
+const ICON_BTN =
+  'w-[38px] h-[38px] bg-slate-100/80 dark:bg-white/10 border border-slate-200/80 dark:border-white/15 rounded-xl flex items-center justify-center cursor-pointer text-slate-700 dark:text-slate-200 backdrop-blur-md text-[0.95rem] transition-all duration-200 hover:bg-slate-200/80 dark:hover:bg-white/20 hover:text-slate-900 dark:hover:text-white hover:scale-105 hover:shadow-md';
 
 export default function DemoLayout() {
   const { user, role, logout } = useAuth();
   const navigate = useNavigate();
-  const { toggleTheme } = useTheme();
-  const { skipTour, isTourActive } = useTour();
+  const { theme, toggleTheme } = useTheme();
+  const { isTourActive } = useTour();
 
-  /**
-   * Keeps the `tour-active` class on <html> in sync with isTourActive.
-   * This lets CSS elevate the topnav z-index above the driver.js overlay,
-   * so the active NavLink (and theme toggle) are always visible.
-   */
   useEffect(() => {
     if (isTourActive) {
       document.documentElement.classList.add('tour-active');
@@ -47,24 +48,28 @@ export default function DemoLayout() {
   return (
     <div className="flex flex-col min-h-screen">
 
-      {/* ── Top Navigation ── */}
-      <nav className="sticky top-0 z-[9999] flex items-center px-7 min-h-[62px] flex-shrink-0 bg-[rgba(1,35,61,0.78)] dark:bg-[rgba(8,14,24,0.82)] backdrop-blur-2xl border-b border-white/[0.08] dark:border-white/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.18)]">
+      {/* ── Top Navigation (Matches Layout.jsx design system) ── */}
+      <nav className="sticky top-0 z-[9999] flex items-center px-6 min-h-[64px] flex-shrink-0 bg-white/75 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-colors duration-300">
 
         {/* Brand */}
-        <div className="flex items-center gap-0 text-[#f0f6fc] font-bold text-2xl tracking-[0.08em]">
+        <div 
+          onClick={() => navigate('/demo/dashboard')}
+          className="flex items-center gap-2.5 cursor-pointer group select-none"
+        >
           <img
             src={guardLogo}
             alt="G.U.A.R.D"
-            className="w-[50px] h-[50px] object-contain drop-shadow-[0_0_6px_rgba(14,165,233,0.4)]"
+            className="w-[42px] h-[42px] object-contain drop-shadow-[0_2px_8px_rgba(14,165,233,0.35)] transition-transform duration-300 group-hover:scale-105"
           />
-          <span>G.U.A.R.D</span>
-          {/* .demo-mode-badge */}
-          <span className="ml-2 text-xs bg-amber-400/20 text-amber-300 border border-amber-400/30 rounded-full px-2 py-0.5 font-bold">
+          <span className="font-extrabold text-xl tracking-wider bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent">
+            G.U.A.R.D
+          </span>
+          <span className="ml-1 text-xs bg-amber-400/20 text-amber-600 dark:text-amber-300 border border-amber-400/30 rounded-full px-2.5 py-0.5 font-bold">
             🎭 Demo
           </span>
         </div>
 
-        {/* Each NavLink has a stable id so tour steps can target them */}
+        {/* Each NavLink has a stable id for driver.js targeting */}
         <div className="flex items-center gap-2 ml-8 flex-1 overflow-x-auto py-2 scrollbar-hide">
           {navItems.map((item) => (
             <NavLink
@@ -82,38 +87,31 @@ export default function DemoLayout() {
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+        <div className="flex items-center gap-2.5 ml-auto flex-shrink-0">
 
-          {/* Exit demo */}
-          <button
-            className="px-3 py-[0.35rem] text-[0.82rem] font-semibold text-white/80 bg-white/8 border border-white/12 rounded-full backdrop-blur-[4px] hover:bg-white/14 hover:text-white transition-all duration-200 whitespace-nowrap"
-            onClick={skipTour}
-            title="Exit demo and go to your live dashboard"
-          >
-            ✕ Exit Demo
-          </button>
-
-          {/* id="tour-theme-toggle" — targeted by Step 7 of the tour */}
+          {/* Theme Toggle Button — Targeted by Step 7 of the tour */}
           <button
             id="tour-theme-toggle"
-            className="relative w-[46px] h-[26px] bg-white/10 dark:bg-primary/12 border-2 border-white/25 dark:border-sky-400/40 rounded-full cursor-pointer flex items-center mr-2 backdrop-blur-[4px] hover:bg-white/16 hover:border-white/40 transition-all duration-300"
-            title="Toggle Light / Dark mode"
+            className={ICON_BTN}
             onClick={toggleTheme}
-            aria-label="Toggle Dark Mode"
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+            aria-label="Toggle Theme"
           >
-            <span className="w-[18px] h-[18px] bg-white/90 dark:bg-sky-400 rounded-full ml-[2px] shadow-[0_1px_4px_rgba(0,0,0,0.3)] dark:shadow-[0_0_8px_rgba(56,189,248,0.6)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:translate-x-5" />
+            {theme === 'dark' ? '☀️' : '🌙'}
           </button>
 
+          {/* Profile */}
           <button
-            className="w-[34px] h-[34px] bg-white/10 border border-white/15 rounded-lg flex items-center justify-center cursor-pointer text-[#f0f6fc] backdrop-blur-[4px] text-[0.85rem] hover:bg-white/[0.18] hover:border-white/30 hover:scale-105 transition-all duration-200"
+            className={ICON_BTN}
             title="Profile"
             onClick={() => navigate('/demo/profile')}
           >
             👤
           </button>
 
+          {/* Sign Out */}
           <button
-            className="bg-white/8 border border-white/12 text-white/78 cursor-pointer text-[1.6rem] px-[0.35rem] py-[0.1rem] rounded-lg leading-none hover:text-sky-400 hover:bg-sky-400/12 hover:border-sky-400/30 transition-all duration-200"
+            className={ICON_BTN}
             onClick={logout}
             title="Sign out"
           >

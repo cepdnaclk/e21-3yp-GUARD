@@ -4,7 +4,8 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { useDemo } from '../../context/DemoContext';
-import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../../constants/sensorConstants';
+import { useTheme } from '../../context/ThemeContext';
+import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD, getSensorLineColor } from '../../constants/sensorConstants';
 import { formatChartTime } from '../../utils/formatUtils';
 // sensor-history.css migrated to Tailwind (SensorHistory.jsx)
 
@@ -24,6 +25,8 @@ function transformReadingsToChartData(items) {
 }
 
 export default function SensorHistoryDemo() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { demoDevices, demoSensorHistory } = useDemo();
   const [selectedDevice, setSelectedDevice] = useState(demoDevices[0]?.deviceId || '');
   const [selectedSensors, setSelectedSensors] = useState(['temp', 'pH']);
@@ -85,7 +88,10 @@ export default function SensorHistoryDemo() {
             <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis dataKey="time" tickFormatter={formatChartTime} tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
+              <YAxis
+                reversed={selectedSensors.length === 1 && selectedSensors[0] === 'waterLevel'}
+                tick={{ fontSize: 11 }}
+              />
               <Tooltip labelFormatter={(v) => new Date(v).toLocaleString()} />
               <Legend />
               {selectedSensors.map(sId => {
@@ -97,7 +103,7 @@ export default function SensorHistoryDemo() {
                     type="monotone"
                     dataKey={cfg.key}
                     name={`${cfg.label}${cfg.unit ? ` (${cfg.unit})` : ''}`}
-                    stroke={cfg.color}
+                    stroke={getSensorLineColor(cfg.key, isDark)}
                     strokeWidth={2}
                     dot={false}
                     connectNulls

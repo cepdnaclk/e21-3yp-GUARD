@@ -36,9 +36,9 @@ export const SENSOR_UNITS = {
   temperature:  '°C',
   ph:           '',
   turbidity:    'NTU',
-  'water level': '%',
-  waterlevel:   '%',
-  tds:          'ppm',
+  'water level': ' cm',
+  waterlevel:   ' cm',
+  tds:          ' ppm',
 };
 
 // ---------- Sensor-type list for filter dropdowns ----------
@@ -54,12 +54,18 @@ export const SENSOR_TYPES = [
 // ---------- Chart line configuration ----------
 
 export const SENSOR_LINE_CONFIG = {
-  temp:       { key: 'temp',       label: 'Temperature', color: '#2563eb', unit: '°C' },
-  pH:         { key: 'pH',         label: 'pH',          color: '#7c3aed', unit: '' },
-  tds:        { key: 'tds',        label: 'TDS',         color: '#db2777', unit: 'ppm' },
-  turbidity:  { key: 'turbidity',  label: 'Turbidity',   color: '#ea580c', unit: 'NTU' },
-  waterLevel: { key: 'waterLevel', label: 'Water Level', color: '#16a34a', unit: '%' },
+  temp:       { key: 'temp',       label: 'Temperature', color: '#2563eb', darkColor: '#facc15', unit: '°C' },
+  pH:         { key: 'pH',         label: 'pH',          color: '#7c3aed', darkColor: '#c084fc', unit: '' },
+  tds:        { key: 'tds',        label: 'TDS',         color: '#db2777', darkColor: '#f472b6', unit: 'ppm' },
+  turbidity:  { key: 'turbidity',  label: 'Turbidity',   color: '#ea580c', darkColor: '#f97316', unit: 'NTU' },
+  waterLevel: { key: 'waterLevel', label: 'Water Level', color: '#16a34a', darkColor: '#4ade80', unit: 'cm' },
 };
+
+export function getSensorLineColor(sensorKey, isDark = false) {
+  const cfg = SENSOR_LINE_CONFIG[sensorKey];
+  if (!cfg) return '#2563eb';
+  return isDark ? (cfg.darkColor || cfg.color) : cfg.color;
+}
 
 // ---------- Sensor-ID to chart-data field mapping ----------
 

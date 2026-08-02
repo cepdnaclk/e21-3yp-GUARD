@@ -49,9 +49,11 @@ function buildLocalAlerts(device, readings) {
       }
     }
 
-    if ((name === 'water level' || name === 'waterlevel') && device.thresholds?.waterLevelThreshold != null) {
-      if (val < device.thresholds.waterLevelThreshold) {
-        nextAlerts.push({ id: `local-water-low`, type: 'Water Level Low', message: `Water level is low (${val}% < ${device.thresholds.waterLevelThreshold}%)` });
+    if (name === 'water level' || name === 'waterlevel') {
+      if (device.thresholds?.waterLevelThreshold != null && val > device.thresholds.waterLevelThreshold) {
+        nextAlerts.push({ id: `local-water-low`, type: 'Water Level Low', message: `Water level is low (distance ${val} cm > max ${device.thresholds.waterLevelThreshold} cm)` });
+      } else if (device.thresholds?.waterStopThreshold != null && val < device.thresholds.waterStopThreshold) {
+        nextAlerts.push({ id: `local-water-high`, type: 'Water Level High', message: `Water level is high (distance ${val} cm < min ${device.thresholds.waterStopThreshold} cm)` });
       }
     }
   });
@@ -207,7 +209,7 @@ export default function DeviceDetail() {
       <div className="card">
         <div className="card-header">
           <h3>Latest Readings</h3>
-          <Link to={`/sensors/history?device_id=${id}`} className="btn btn-outline btn-sm">View History</Link>
+          <Link to={`/analytics?device_id=${device?.deviceId || id}`} className="btn btn-outline btn-sm">View History</Link>
         </div>
         {readings.length === 0 ? (
           <div className="empty-state"><p>No sensor data received yet.</p></div>

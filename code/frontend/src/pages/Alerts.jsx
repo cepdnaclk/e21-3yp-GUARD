@@ -12,12 +12,12 @@ const CHIP_RESOLVED   = `${CHIP_BASE} bg-green-800/8 dark:bg-green-400/10 text-g
 /** Glass input for selects and form controls */
 const GLASS_SELECT = 'bg-white/40 dark:bg-white/[0.05] backdrop-blur-sm border-[1.5px] border-white/20 dark:border-white/10 rounded-[10px] text-text-main dark:text-[#e6edf3] px-[0.9rem] py-[0.65rem] text-[0.95rem] outline-none transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,165,233,0.15)]';
 
-/** Pref toggle button builder */
+/** Pref toggle button builder — aligns with primary app theme */
 function prefBtnClass(active, busy) {
-  const base = 'h-[38px] min-w-[100px] px-4 py-[0.6rem] rounded-lg font-bold inline-flex items-center justify-center text-[0.95rem] cursor-pointer transition-all duration-200 disabled:opacity-50';
+  const base = 'h-[38px] min-w-[105px] px-4 py-[0.5rem] rounded-xl font-bold inline-flex items-center justify-center text-[0.88rem] cursor-pointer transition-all duration-200 select-none disabled:opacity-50';
   return active
-    ? `${base} bg-gradient-to-br from-success to-green-700 text-white hover:-translate-y-px hover:shadow-[0_4px_8px_rgba(34,197,94,0.3)]`
-    : `${base} bg-gradient-to-br from-danger to-red-700 text-white hover:-translate-y-px hover:shadow-[0_4px_8px_rgba(239,68,68,0.3)]`;
+    ? `${base} bg-gradient-to-r from-sky-500 to-blue-600 dark:from-sky-400 dark:to-blue-500 text-white shadow-[0_4px_14px_rgba(14,165,233,0.35)] dark:shadow-[0_0_18px_rgba(14,165,233,0.45)] hover:scale-[1.02] hover:-translate-y-px`
+    : `${base} bg-slate-200/80 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-300/80 dark:border-white/15 hover:bg-slate-300/80 dark:hover:bg-white/20 hover:-translate-y-px`;
 }
 
 export default function Alerts() {

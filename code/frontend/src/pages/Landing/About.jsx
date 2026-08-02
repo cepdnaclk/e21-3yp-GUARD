@@ -72,7 +72,6 @@ export default function About() {
       `}</style>
 
       <ScrollProgress />
-      <PublicNav />
 
       {/* ── Hero / Intro ── */}
       <section className="py-[6rem] px-[4rem] bg-gradient-to-b from-[#0d1627] to-[#0f2744] text-white" id="about-page">

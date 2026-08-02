@@ -70,7 +70,6 @@ export default function Register() {
 
   return (
     <div className="auth-wrapper">
-      <PublicNav />
       <div className="auth-page register-page">
         <div className="auth-card register-card">
           <button className="card-close-btn" onClick={() => navigate('/')} aria-label="Go back">&times;</button>

@@ -11,8 +11,9 @@ import {
   YAxis,
 } from 'recharts';
 import { deviceApi, sensorApi } from '../services/api';
-import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../constants/sensorConstants';
+import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD, getSensorLineColor } from '../constants/sensorConstants';
 import { formatChartTime } from '../utils/formatUtils';
+import { useTheme } from '../context/ThemeContext';
 import GlassDatePicker from '../components/DatePicker';
 
 function transformReadingsToChartData(items, isAllSensors = false) {
@@ -54,8 +55,12 @@ function getLineConfig(sensorId) {
 }
 
 export default function SensorHistory() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [searchParams] = useSearchParams();
-  const initialDeviceId = searchParams.get('device_id') || searchParams.get('deviceId') || '';
+  const urlDeviceId = searchParams.get('device_id') || searchParams.get('deviceId') || searchParams.get('id') || '';
+  const urlFrom = searchParams.get('from') || '';
+  const urlTo = searchParams.get('to') || '';
 
   const [devices, setDevices] = useState([]);
   const [readings, setReadings] = useState([]);
@@ -67,39 +72,48 @@ export default function SensorHistory() {
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' (Newest first) or 'asc' (Oldest first)
 
   const [filters, setFilters] = useState({
-    deviceId: initialDeviceId,
+    deviceId: urlDeviceId,
     sensorId: '',
-    from: '',
-    to: '',
+    from: urlFrom,
+    to: urlTo,
   });
 
+  // Keep filters in sync with URL parameters
+  useEffect(() => {
+    if (urlDeviceId || urlFrom || urlTo) {
+      setFilters((prev) => ({
+        ...prev,
+        ...(urlDeviceId ? { deviceId: urlDeviceId } : {}),
+        ...(urlFrom ? { from: urlFrom } : {}),
+        ...(urlTo ? { to: urlTo } : {}),
+      }));
+    }
+  }, [urlDeviceId, urlFrom, urlTo]);
+
+  // Load device list from backend
   useEffect(() => {
     deviceApi.list()
       .then((devs) => {
         setDevices(devs);
-        if (!initialDeviceId && Array.isArray(devs) && devs.length > 0) {
-          setFilters((prev) => ({ ...prev, deviceId: devs[0].deviceId }));
-        }
         setFetchError('');
+        // If no device_id in URL and no device selected yet, default to first device
+        if (!urlDeviceId && Array.isArray(devs) && devs.length > 0) {
+          setFilters((prev) => (prev.deviceId ? prev : { ...prev, deviceId: devs[0].deviceId }));
+        }
       })
       .catch((err) => {
         setFetchError(err?.message || 'Failed to load devices.');
       });
-  }, []);
+  }, [urlDeviceId]);
 
-  // Auto-fetch if device_id in URL
-  useEffect(() => {
-    if (initialDeviceId) fetchHistory();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchHistory = async () => {
-    if (!filters.deviceId) {
+  const fetchHistoryFor = async (targetDeviceId = filters.deviceId, sensorId = filters.sensorId, from = filters.from, to = filters.to) => {
+    if (!targetDeviceId) {
       setFetchError('Please select a device first.');
       setFetchInfo('');
       return;
     }
 
-    if (filters.from && filters.to && new Date(filters.from) > new Date(filters.to)) {
+    if (from && to && new Date(from) > new Date(to)) {
       setFetchError('"From" date must be before "To" date.');
       setFetchInfo('');
       return;
@@ -109,18 +123,23 @@ export default function SensorHistory() {
     setFetchError('');
     setFetchInfo('');
     try {
-      const params = { deviceId: filters.deviceId };
-      if (filters.sensorId) params.sensorId = filters.sensorId;
-      if (filters.from) params.from = filters.from;
-      if (filters.to) params.to = filters.to;
+      const params = { deviceId: targetDeviceId };
+      if (sensorId) params.sensorId = sensorId;
+      if (from) params.from = from;
+      if (to) params.to = to;
       const fetched = await sensorApi.history(params);
       setReadings(fetched);
       setHasFetched(true);
       setShowGraph(true);
+
+      const dateRangeStr = (from || to)
+        ? ` (Range: ${from ? `From ${new Date(from).toLocaleString()}` : ''}${from && to ? ' — ' : ''}${to ? `To ${new Date(to).toLocaleString()}` : ''})`
+        : '';
+
       setFetchInfo(
         fetched.length > 0
-          ? `Loaded ${fetched.length} reading${fetched.length !== 1 ? 's' : ''}.`
-          : 'Fetch completed: no readings found for the selected filters.'
+          ? `Loaded ${fetched.length} reading${fetched.length !== 1 ? 's' : ''} for device ${targetDeviceId}${dateRangeStr}.`
+          : `Fetch completed: no readings found for device ${targetDeviceId}${dateRangeStr}.`
       );
     } catch (err) {
       setReadings([]);
@@ -130,6 +149,16 @@ export default function SensorHistory() {
       setLoading(false);
     }
   };
+
+  const fetchHistory = () => fetchHistoryFor(filters.deviceId, filters.sensorId, filters.from, filters.to);
+
+  // Auto-fetch whenever device_id URL parameter is present or changes
+  useEffect(() => {
+    const target = urlDeviceId || filters.deviceId;
+    if (target) {
+      fetchHistoryFor(target, filters.sensorId, filters.from, filters.to);
+    }
+  }, [urlDeviceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sort fetched readings by readingTime ascending or descending
   const sortedReadings = useMemo(() => {
@@ -279,7 +308,12 @@ export default function SensorHistory() {
                   minTickGap={24}
                   tick={{ fill: '#64748b', fontSize: 11 }}
                 />
-                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
+                <YAxis
+                  reversed={filters.sensorId === 'waterLevel'}
+                  domain={filters.sensorId === 'waterLevel' ? [0, 200] : ['auto', 'auto']}
+                  tickFormatter={(val) => (filters.sensorId === 'waterLevel' ? `${val} cm` : val)}
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                />
                 <Tooltip
                   labelFormatter={formatChartTime}
                   contentStyle={{
@@ -309,7 +343,7 @@ export default function SensorHistory() {
                       type="monotone"
                       dataKey={selectedLineConfig.key}
                       name={`${selectedLineConfig.label}${selectedLineConfig.unit ? ` (${selectedLineConfig.unit})` : ''}`}
-                      stroke={selectedLineConfig.color}
+                      stroke={getSensorLineColor(selectedLineConfig.key, isDark)}
                       strokeWidth={2.5}
                       dot={false}
                       connectNulls
@@ -326,7 +360,7 @@ export default function SensorHistory() {
                         type="monotone"
                         dataKey={config.key}
                         name={config.key === 'turbidity' ? 'Turbidity (NTU ÷ 100)' : `${config.label}${config.unit ? ` (${config.unit})` : ''}`}
-                        stroke={config.color}
+                        stroke={getSensorLineColor(config.key, isDark)}
                         strokeWidth={2}
                         dot={false}
                         connectNulls
@@ -347,8 +381,14 @@ export default function SensorHistory() {
           </div>
         ) : (
           <>
-            <p className="text-text-muted text-base mb-3">
-              Showing {sortedReadings.length} reading{sortedReadings.length !== 1 ? 's' : ''} (Sorted by time {sortOrder === 'desc' ? '⬇️ Newest first' : '⬆️ Oldest first'})
+            <p className="text-text-muted text-base mb-3 font-medium flex flex-wrap items-center gap-2">
+              <span>Showing {sortedReadings.length} reading{sortedReadings.length !== 1 ? 's' : ''}</span>
+              {(filters.from || filters.to) && (
+                <span className="px-2.5 py-1 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-semibold border border-sky-500/20">
+                  📅 {filters.from ? `From ${new Date(filters.from).toLocaleString()}` : ''} {filters.from && filters.to ? '— ' : ''}{filters.to ? `To ${new Date(filters.to).toLocaleString()}` : ''}
+                </span>
+              )}
+              <span className="text-xs text-slate-500">(Sorted by time {sortOrder === 'desc' ? '⬇️ Newest first' : '⬆️ Oldest first'})</span>
             </p>
             <div className="table-wrap">
               <table>

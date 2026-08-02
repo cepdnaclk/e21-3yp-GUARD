@@ -246,8 +246,9 @@ export default function Devices() {
                   <td>{d.deviceName || '—'}</td>
                   <td>{Array.isArray(d.workers) && d.workers.length > 0 ? d.workers.map(w => w.fullName || w.username).join(', ') : '—'}</td>
                   <td>{new Date(d.createdAt).toLocaleDateString()}</td>
-                  <td>
+                  <td className="flex gap-2 justify-end">
                     <Link to={`/devices/${d.deviceId}`} className="btn btn-outline btn-sm">Details</Link>
+                    <Link to={`/analytics?device_id=${d.deviceId}`} className="btn btn-outline btn-sm">View History</Link>
                   </td>
                 </tr>
               ))}

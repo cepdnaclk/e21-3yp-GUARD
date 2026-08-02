@@ -26,6 +26,8 @@ function buildSeriesOption(series, chartData, isDark) {
   const tooltipBg = isDark ? '#161b22' : '#ffffff';
   const tooltipBorder = isDark ? '1px solid #30363d' : '1px solid #f1f5f9';
 
+  const lineColor = isDark ? (series.darkColor || series.color) : series.color;
+
   return {
     grid: { top: 20, right: 24, bottom: 70, left: 50 },
     tooltip: {
@@ -63,7 +65,14 @@ function buildSeriesOption(series, chartData, isDark) {
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: textColor, fontSize: 12 },
+      inverse: series.key === 'waterLevel',
+      min: series.key === 'waterLevel' ? 0 : undefined,
+      max: series.key === 'waterLevel' ? 200 : undefined,
+      axisLabel: {
+        color: textColor,
+        fontSize: 12,
+        formatter: (val) => series.key === 'waterLevel' ? `${val} cm` : val,
+      },
       splitLine: { lineStyle: { color: axisLineColor, type: 'dashed' } }
     },
     series: [
@@ -73,8 +82,8 @@ function buildSeriesOption(series, chartData, isDark) {
         smooth: true,
         showSymbol: false,
         connectNulls: true,
-        lineStyle: { color: series.color, width: 2 },
-        itemStyle: { color: series.color },
+        lineStyle: { color: lineColor, width: 2.5 },
+        itemStyle: { color: lineColor },
         data: chartData.map((row) => row[series.key] ?? null)
       }
     ]
