@@ -252,11 +252,13 @@ export default function Profile() {
             {user.profilePicture ? (
               <img src={getImageUrl(user.profilePicture)} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-[4rem] select-none">👤</div>
+              <div className="w-full h-full flex items-center justify-center text-slate-400 select-none">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M 20 21 v -2 a 4 4 0 0 0 -4 -4 H 8 a 4 4 0 0 0 -4 4 v 2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
             )}
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <label htmlFor="profile-upload" className="text-white text-[1.75rem] cursor-pointer p-4 flex items-center justify-center" title="Upload New Photo">
-                📷
+              <label htmlFor="profile-upload" className="text-white text-[1.5rem] cursor-pointer p-4 flex items-center justify-center" title="Upload New Photo">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M 23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               </label>
               <input id="profile-upload" type="file" accept="image/*" onChange={handlePhotoUpload} disabled={saving} className="hidden" />
             </div>
@@ -294,8 +296,9 @@ export default function Profile() {
           </div>
         )}
         {devEmailOtp && (
-          <div className="p-4 rounded-lg text-[0.9rem] font-medium bg-sky-50 dark:bg-sky-900/20 text-primary border border-sky-200/50 dark:border-sky-400/20 font-mono">
-            ⚙️ <strong>[DEV MOCK]</strong> Email Verification Code: <code>{devEmailOtp}</code>
+          <div className="p-4 rounded-lg text-[0.9rem] font-medium bg-sky-50 dark:bg-sky-900/20 text-primary border border-sky-200/50 dark:border-sky-400/20 font-mono flex items-center gap-2">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span><strong>[DEV MOCK]</strong> Email Verification Code: <code>{devEmailOtp}</code></span>
           </div>
         )}
 
@@ -306,7 +309,10 @@ export default function Profile() {
           <div className="flex flex-col gap-2">
             <label className={FIELD_LABEL}>
               <span>Username</span>
-              <span className="text-[0.75rem] text-text-muted font-bold tracking-[0.5px]">🔒 LOCKED</span>
+              <span className="inline-flex items-center gap-1 text-[0.75rem] text-text-muted font-bold tracking-[0.5px]">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                LOCKED
+              </span>
             </label>
             <input type="text" className={FIELD_INPUT} value={form.username} disabled placeholder="Username" />
           </div>
@@ -334,8 +340,8 @@ export default function Profile() {
             <label className={FIELD_LABEL}>
               <span>Email Address</span>
               {isEmailModified
-                ? <span className={BADGE_PENDING}>⚠️ UNVERIFIED</span>
-                : <span className={BADGE_VERIFIED}>✅ VERIFIED</span>
+                ? <span className={BADGE_PENDING}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1"><path d="M 10.29 3.86 L 1.82 18 a 2 2 0 0 0 1.71 3 h 16.94 a 2 2 0 0 0 1.71 -3 L 13.71 3.86 a 2 2 0 0 0 -3.42 0 z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>UNVERIFIED</span>
+                : <span className={BADGE_VERIFIED}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1"><polyline points="20 6 9 17 4 12"/></svg>VERIFIED</span>
               }
             </label>
             <div className="flex gap-3">
@@ -380,10 +386,10 @@ export default function Profile() {
             <label className={FIELD_LABEL}>
               <span>Phone Number (for Telegram Alert Notifications)</span>
               {isPhoneModified
-                ? <span className={BADGE_PENDING}>⚠️ UNVERIFIED</span>
+                ? <span className={BADGE_PENDING}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1"><path d="M 10.29 3.86 L 1.82 18 a 2 2 0 0 0 1.71 3 h 16.94 a 2 2 0 0 0 1.71 -3 L 13.71 3.86 a 2 2 0 0 0 -3.42 0 z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>UNVERIFIED</span>
                 : user.phoneVerified
-                  ? <span className={BADGE_VERIFIED}>✅ VERIFIED (TELEGRAM BOT)</span>
-                  : <span className={BADGE_UNVERIFIED}>❌ NOT VERIFIED</span>
+                  ? <span className={BADGE_VERIFIED}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1"><polyline points="20 6 9 17 4 12"/></svg>VERIFIED (TELEGRAM BOT)</span>
+                  : <span className={BADGE_UNVERIFIED}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>NOT VERIFIED</span>
               }
             </label>
             <div className="flex gap-3 max-[768px]:flex-col">
@@ -426,19 +432,19 @@ export default function Profile() {
                       rel="noopener noreferrer"
                       className="text-[0.75rem] font-semibold text-primary bg-primary/10 hover:bg-primary hover:text-white px-3 py-1 rounded-full transition-colors"
                     >
-                      Open Bot 📲
+                      Open Bot &rarr;
                     </a>
                   </div>
 
                   <div className="flex-1 flex flex-col gap-2">
                     <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
-                      1. Open our Telegram Bot: <a href="https://t.me/GUARD_yp_bot" target="_blank" rel="noopener noreferrer" className="text-primary underline font-bold">G.U.A.R.D Bot 🤖</a> (or scan the QR code / search <code>@GUARD_yp_bot</code> in Telegram).
+                      1. Open our Telegram Bot: <a href="https://t.me/GUARD_yp_bot" target="_blank" rel="noopener noreferrer" className="text-primary underline font-bold">G.U.A.R.D Bot</a> (or scan the QR code / search <code>@GUARD_yp_bot</code> in Telegram).
                     </p>
                     <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
                       2. Send this 6-digit OTP code to the bot: <span className="font-mono text-[1.15rem] bg-primary/10 px-[0.4rem] py-[0.1rem] rounded border border-dashed border-primary/30 text-primary font-bold">{devPhoneOtp}</span>
                     </p>
                     <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
-                      3. The bot will respond by asking to share your contact details. Click the <b>Share Contact 📱</b> button in your Telegram app.
+                      3. The bot will respond by asking to share your contact details. Click the <b>Share Contact</b> button in your Telegram app.
                     </p>
                     <p className="text-[0.875rem] text-text-main dark:text-slate-300 m-0 leading-[1.4]">
                       4. Once the bot replies confirming successful verification, click the <b>Confirm Bot Verification</b> button below.

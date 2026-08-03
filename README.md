@@ -1,15 +1,15 @@
 # G.U.A.R.D — General Unit for Aquatic Risk Detection
 
-> Smart IoT monitoring & alert system for multi-tank aquatic facilities — featuring a Tailwind CSS Glassmorphism Dual-Mode UI, role-based access control, real-time WebSocket telemetry, and a guided onboarding tour.
+> Smart IoT monitoring & alert system for multi-tank aquatic facilities — featuring a Tailwind CSS Glassmorphism Dual-Mode UI, role-based access control, real-time WebSocket telemetry, ultrasonic water level depth modeling (0–200 cm), interactive analytics routing, and a guided onboarding tour.
 
 **Third Year Project — Team 08 · Department of Computer Engineering, University of Peradeniya**
 
-| Index    | Name     |
-| -------- | -------- |
-| E/21/036 | Ashan    |
-| E/21/067 | Asindu   |
-| E/21/231 | Thisen   |
-| E/21/362 | Shashika |
+| Index    | Name                |
+| -------- | ------------------- |
+| E/21/039 | Ravindu Ashan       |
+| E/21/067 | Asindu Chandasekara |
+| E/21/231 | Thisen Lakdinu      |
+| E/21/362 | Shashika Sathsarani |
 
 ---
 
@@ -46,18 +46,20 @@ G.U.A.R.D is an enterprise-grade aquaculture real-time monitoring and alerting s
 - **Manual Testing Delay:** Replaces slow, manual water testing with automated real-time telemetry.
 - **24/7 Multi-Tank Surveillance:** Continuous monitoring across dozens of tanks simultaneously.
 - **Alert Flooding Prevention:** Built-in in-memory throttling and database-level alert deduplication.
-- **Hardware Disconnection Detection:** Real-time health check for individual sensors (Temp, pH, TDS, Turbidity, Water Level).
+- **Hardware Disconnection Detection:** Real-time online/offline heartbeat indicator (40-second timeout) for individual tanks and sensors.
 - **Onboarding Paradox:** First-time users are never dropped into an empty dashboard — a guided tour runs in a fully-populated demo sandbox.
 
 **Key capabilities:**
 
-- **Real-Time Telemetry Gauges:** Dynamic SVG arc gauges for Temperature (°C), pH, TDS (ppm), Turbidity (NTU), and Water Level (%).
-- **Tailwind CSS Glassmorphism Dual-Mode UI:** "Milky Frost" light mode and "Obsidian Glow" dark mode with glassmorphic cards (`bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl rounded-2xl`).
+- **Real-Time Telemetry Gauges:** Dynamic SVG arc gauges for Temperature (°C), pH, TDS (ppm), Turbidity (NTU), and Water Level (cm depth from ultrasonic sensor).
+- **Ultrasonic Water Level Model:** Measures distance (0–200 cm) from top-mounted ultrasonic sensor to water surface. Features inverted Y-axis chart graphing (200 cm to 0 cm) to visually align high water level with the top of graphs.
+- **Tailwind CSS Glassmorphism Dual-Mode UI:** "Milky Frost" light mode and "Obsidian Glow" dark mode with glassmorphic cards, canary yellow (`#facc15`) temperature series in dark mode, clean vector SVG graphics across all components, and theme-synced navigation controls.
 - **Multi-Channel Alerts:** Real-time WebSocket alerts (`socket.io`), visual toast notifications, email delivery (SMTP), and Telegram Bot verification (`@GUARD_yp_bot`).
 - **Role-Based Access Control:** `SUPER_ADMIN`, `ADMIN`, and `USER` account management with tank assignment.
-- **Interactive Analytics:** Sensor history visualization powered by Recharts with a custom glass date picker (`react-day-picker`).
-- **Fish Species Knowledge Base:** Comprehensive fish species library with optimal water parameter ranges cross-referenced against tank thresholds (`FishDetailDrawer` & `AddEditModal`).
-- **Guided Onboarding Tour:** Role-aware `driver.js` tour across a `/demo` sandbox environment — separate from live data, auto-skippable, and resumable via the "🗺️ Tour" button.
+- **Interactive & Route-Aware Analytics:** Sensor history visualization with direct device URL linking (`/analytics?device_id=...` & `/sensors/history`), automatic device pre-selection, date range badges (`Filtered Date Range`), and custom glass date pickers (`react-day-picker`).
+- **Steady & Responsive Navigation Bar:** Persistent navigation header across public landing pages and authenticated routes with responsive flex-wrapping, pinned right-side controls, and zero layout jumps.
+- **Fish Species Knowledge Base:** Comprehensive fish species library with optimal water parameter ranges (Temperature, pH, TDS, Turbidity) displayed directly on every species card and detailed drawer analysis cross-referenced against tank thresholds (`FishDetailDrawer` & `AddEditModal`).
+- **Guided Onboarding Tour:** Role-aware `driver.js` tour across a `/demo` sandbox environment — separate from live data, auto-skippable, and resumable via the "Tour" button.
 - **ESP32 Device Security:** Device authentication with bcrypt-hashed device secrets.
 
 ---
@@ -65,44 +67,30 @@ G.U.A.R.D is an enterprise-grade aquaculture real-time monitoring and alerting s
 ## System Architecture
 
 ```
-                                ┌──────────────────────────────────────┐
-  ESP32 Devices                 │          G.U.A.R.D Backend           │
-  (per tank)                    │        Node.js / Express             │
-  ┌──────────┐  MQTT publish    │                                      │
-  │ Tank 1   │─────────────────▶│  ┌───────────┐  ┌───────────────┐  │
-  └──────────┘                  │  │MQTT Client│  │  REST API     │  │
-  ┌──────────┐                  │  └─────┬─────┘  └───────┬───────┘  │
-  │ Tank 2   │─────────────────▶│        │                │           │
-  └──────────┘  topic:          │        ▼                ▼           │
-  ┌──────────┐  aquamonitor/    │  ┌──────────────────────────────┐   │
-  │ Tank N   │─────────────────▶│  │        Prisma ORM            │   │
-  └──────────┘  devices/<uid>   │  └──────────────┬───────────────┘   │
-                /data           │                 │                    │
-                                │      ┌──────────▼─────────┐        │
-┌────────────────┐              │      │     MongoDB         │        │
-│  HiveMQ Cloud  │              │      │   port 27017        │        │
-│  / Mosquitto   │              │      └────────────────────┘        │
-│  port 1883/8883│              │  ┌─────────────────────────────┐   │
-└────────────────┘              │  │  InfluxDB (Time-Series)     │   │
-                                │  │   port 8086                 │   │
-                                │  └─────────────────────────────┘   │
-                                │  ┌──────────────────────────────┐  │
-                                │  │  Alert Engine (rule-based)   │  │
-                                │  └──────────┬───────────────────┘  │
-                                └─────────────┼──────────────────────┘
-                                              │ WebSocket (socket.io)
-                                              │ REST API (JWT-protected)
-                                              ▼
-                                ┌─────────────────────────────────┐
-                                │      React Dashboard UI         │
-                                │  Tailwind CSS Glassmorphism     │
-                                │  port 5173 (Vite dev)           │
-                                │                                  │
-                                │  ┌──────────────────────────┐   │
-                                │  │  /demo  Onboarding Tour  │   │
-                                │  │  (driver.js + demoData)  │   │
-                                │  └──────────────────────────┘   │
-                                └─────────────────────────────────┘
+                                      End-to-End IoT Architecture
+
+┌───────────────────┐    Data (Pub)    ┌──────────────────────┐  Process Data  ┌──────────────────────────────────┐ Status / Control  ┌─────────────────────────────────┐
+│   IoT Node(s)     │─────────────────▶│ MQTT Message Broker  │<─────────────>│   Central Application Server     │<─────────────────>│    User Interface (Dashboard)   │
+│ (Multiple Nodes   │                  │  HiveMQ / Mosquitto  │   / Commands  │ ┌──────────────────────────────┐ │ (REST / WebSocket)│   React 19 + Vite Dashboard     │
+│    Possible)      │                  │   Pub / Sub Broker   │               │ │ 📈 Data Processing           │ │                   │   Tailwind Glassmorphic UI      │
+└───────────────────┘                  └──────────────────────┘               │ ├──────────────────────────────┤ │                   │        Status & Control         │
+                                                                              │ │ 🚨 Alert Engine              │ │                   └─────────────────────────────────┘
+                                                                              │ ├──────────────────────────────┤ │
+                                                                              │ │ 🎛️ Control Logic             │ │
+                                                                              │ └──────────────┬───────────────┘ │
+                                                                              └────────────────┼──────────────────┘
+                                                                                               │ Archive & Log
+                                                                                               ▼
+                                                                              ┌──────────────────────────────────┐
+                                                                              │         Database Cluster         │
+                                                                              │ ┌──────────────────────────────┐ │
+                                                                              │ │ TimeSeries (InfluxDB style)  │ │
+                                                                              │ │ → Store Data                 │ │
+                                                                              │ ├──────────────────────────────┤ │
+                                                                              │ │ Document (MongoDB style)     │ │
+                                                                              │ │ → Store State                │ │
+                                                                              │ └──────────────────────────────┘ │
+                                                                              └──────────────────────────────────┘
 ```
 
 **End-to-end data flow:**
@@ -488,15 +476,17 @@ socket.on("alert", (alertData) => {
 
 Thresholds are **per-device** and configurable from the Devices → Details panel. Default system values:
 
-| Alert Type        | Condition                         | Default Threshold |
-| ----------------- | --------------------------------- | ----------------- |
-| `TEMP_HIGH`       | `temperature > TEMP_MAX`          | **32 °C**         |
-| `TEMP_LOW`        | `temperature < TEMP_MIN`          | **20 °C**         |
-| `PH_HIGH`         | `ph > PH_MAX`                     | **8.5**           |
-| `PH_LOW`          | `ph < PH_MIN`                     | **6.5**           |
-| `TDS_HIGH`        | `tds > TDS_MAX`                   | **800 ppm**       |
-| `TURBIDITY_HIGH`  | `turbidity > TURBIDITY_MAX`       | **50 NTU**        |
-| `WATER_LEVEL_LOW` | `water_level < WATER_LEVEL_MIN`   | **20 %**          |
+> **Water Level Note:** Water level is measured as distance (0–200 cm) from the top-mounted ultrasonic sensor to the water surface. A smaller distance represents a higher water level. Therefore, `WATER_LEVEL_LOW` triggers when measured distance exceeds the maximum allowed distance threshold.
+
+| Alert Type        | Condition                               | Default Threshold |
+| ----------------- | --------------------------------------- | ----------------- |
+| `TEMP_HIGH`       | `temperature > TEMP_MAX`                | **32 °C**         |
+| `TEMP_LOW`        | `temperature < TEMP_MIN`                | **20 °C**         |
+| `PH_HIGH`         | `ph > PH_MAX`                           | **8.5**           |
+| `PH_LOW`          | `ph < PH_MIN`                           | **6.5**           |
+| `TDS_HIGH`        | `tds > TDS_MAX`                         | **800 ppm**       |
+| `TURBIDITY_HIGH`  | `turbidity > TURBIDITY_MAX`             | **50 NTU**        |
+| `WATER_LEVEL_LOW` | `water_level > WATER_LEVEL_MAX_DIST`   | **80 cm (distance)**|
 
 ---
 
@@ -540,12 +530,13 @@ VITE_SOCKET_URL=http://localhost:5000
 
 ## Developer Helper Scripts
 
-Root scripts to manage full-stack services:
+Root scripts and helper commands to manage full-stack services and documentation:
 
-| Script         | Command                                | Purpose                                                         |
-| :------------- | :------------------------------------- | :-------------------------------------------------------------- |
-| **Start All**  | `./start_all.ps1` or `start_all.bat`  | Starts Backend (port 5000) and Frontend (port 5173)             |
-| **Kill All**   | `./kill_all.ps1` or `kill_all.bat`    | Terminates all Node.js background processes and frees ports     |
+| Script / Command | Command | Purpose |
+| :--- | :--- | :--- |
+| **Start All** | `./start_all.ps1` or `start_all.bat` | Starts Backend (port 5000) and Frontend (port 5173) |
+| **Kill All** | `./kill_all.ps1` or `kill_all.bat` | Terminates all Node.js background processes and frees ports |
+| **Docs Preview** | `npx -y live-server docs` | Serves the GitHub Pages documentation site locally with live reload |
 
 ---
 
@@ -608,6 +599,33 @@ npm run dev
 
 ---
 
+## Documentation Site (GitHub Pages)
+
+To serve and preview the GitHub Pages documentation site locally with live reloading:
+
+```powershell
+npx -y live-server docs
+```
+
+Or using absolute path:
+
+```powershell
+npx -y live-server "c:\Users\ravin\Documents\Projects\e21-3yp-GUARD\docs"
+```
+
+---
+
+## Documentation & Project Manuals
+
+Direct links to project documentation and user manuals:
+
+- 🌐 **Project Page**: [https://projects.ce.pdn.ac.lk/3yp/e21/GUARD/](https://projects.ce.pdn.ac.lk/3yp/e21/GUARD/)
+- 📘 **User Manual (Hardware)**: [Direct Download Link](https://drive.google.com/uc?export=download&id=1JOS3uGWiJEPekHrz9HF-d42750VWIrLt)
+- 📗 **User Manual (Software)**: [Direct Download Link](https://drive.google.com/uc?export=download&id=1pJbCoCFuLEz7tZp47iNzlGxMiktU6Fu-)
+- ⚡ **Quick Start Guide**: [Direct Download Link](https://drive.google.com/uc?export=download&id=1pJbCoCFuLEz7tZp47iNzlGxMiktU6Fu-)
+
+---
+
 ## ESP32 / Firmware Integration
 
 Each G.U.A.R.D hardware node is an ESP32 microcontroller fitted with:
@@ -618,7 +636,7 @@ Each G.U.A.R.D hardware node is an ESP32 microcontroller fitted with:
 | pH Probe + Amplifier | pH (0–14) | Analog |
 | TDS Probe | TDS (ppm) | Analog |
 | Turbidity Sensor | Turbidity (NTU) | Analog |
-| Ultrasonic / Float | Water Level (%) | Digital |
+| JSN-SR04T / HC-SR04 Ultrasonic | Water Level (0–200 cm distance) | Digital / Trigger-Echo |
 
 The firmware publishes a JSON payload to `aquamonitor/devices/<deviceUid>/data` every configurable interval (default 30 s). The backend verifies `device_secret` using bcrypt before recording telemetry.
 

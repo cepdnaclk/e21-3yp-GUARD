@@ -111,7 +111,7 @@ function TankCard({ device, readings, recentAlerts }) {
         >
           {/* .tank-card-alert */}
           <div className="bg-red-500/15 border border-red-500/40 rounded-xl px-[0.85rem] py-[0.55rem] flex items-center gap-2 text-red-300 text-[0.8rem] font-semibold transition-all hover:bg-red-500/25 hover:scale-[1.01]">
-            <span className="text-base">⚠️</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M 10.29 3.86 L 1.82 18 a 2 2 0 0 0 1.71 3 h 16.94 a 2 2 0 0 0 1.71 -3 L 13.71 3.86 a 2 2 0 0 0 -3.42 0 z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
               Active Issues ({Object.keys(recentAlerts[device.deviceId]).length})
             </span>

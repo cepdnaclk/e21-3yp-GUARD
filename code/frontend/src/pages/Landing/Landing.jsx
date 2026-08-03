@@ -116,6 +116,36 @@ export default function Landing() {
   const location = useLocation();
   const [pageReady, setPageReady] = useState(false);
 
+  /* ── Order G.U.A.R.D state & form handlers ── */
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderForm, setOrderForm] = useState({
+    name: '',
+    email: '',
+    contactNo: '',
+    numberOfDevices: 1,
+    notes: '',
+  });
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderBusy, setOrderBusy] = useState(false);
+  const [orderError, setOrderError] = useState('');
+
+  const DARK_INPUT =
+    'w-full bg-slate-950/90 border border-slate-700/80 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition-all font-sans text-sm';
+
+  const handleOrderSubmit = async (e) => {
+    e.preventDefault();
+    setOrderError('');
+    setOrderBusy(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setOrderSuccess(true);
+    } catch (err) {
+      setOrderError(err.message || 'Failed to submit request. Please try again.');
+    } finally {
+      setOrderBusy(false);
+    }
+  };
+
   const scrollToSection = (id) => (e) => {
     if (e) e.preventDefault();
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -469,9 +499,158 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 7. Footer ── */}
+      {/* ── 7. Call to Action / Order G.U.A.R.D Section ── */}
+      <section className="bg-gradient-to-b from-[#090e17] via-[#0b1322] to-[#060911] text-white py-20 px-6 md:px-16 text-center relative overflow-hidden" id="order">
+        <div className="absolute inset-0 bg-radial-gradient from-sky-500/10 via-transparent to-transparent pointer-events-none" />
+        <div className="max-w-[800px] mx-auto relative z-10">
+          <Reveal direction="up">
+            <div className="bg-gradient-to-br from-white/[0.05] to-white/[0.02] backdrop-blur-xl border border-sky-500/20 rounded-3xl p-10 md:p-14 shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
+              <span className="text-xs font-bold uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 px-4 py-1.5 rounded-full inline-block mb-4">
+                Deploy in Your Hatchery
+              </span>
+              <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight m-0">
+                Ready to Automate Your Aquaculture?
+              </h2>
+              <p className="text-slate-300 mt-4 text-base md:text-lg max-w-[620px] mx-auto mb-8 leading-relaxed">
+                Join commercial hatcheries &amp; aquarium operators using G.U.A.R.D to continuously monitor telemetry, eliminate water quality loss, and control actuators remotely.
+              </p>
+              <button
+                onClick={() => setShowOrderModal(!showOrderModal)}
+                className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-lg font-bold px-9 py-4 rounded-full border-none cursor-pointer shadow-[0_8px_25px_rgba(14,165,233,0.35)] transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
+              >
+                <span>{showOrderModal ? 'Close Request Form' : 'Get Started with G.U.A.R.D'}</span>
+                <span className="text-xl">→</span>
+              </button>
+
+              {/* Expanding Order Request Card */}
+              <div
+                style={{
+                  maxHeight: showOrderModal ? '1200px' : '0px',
+                  opacity: showOrderModal ? 1 : 0,
+                  overflow: 'hidden',
+                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                  textAlign: 'left',
+                  marginTop: showOrderModal ? '2rem' : '0',
+                }}
+              >
+                <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-6 md:p-8 shadow-2xl text-white">
+                  <div className="text-center mb-6">
+                    <h3 className="text-xl md:text-2xl font-bold m-0 text-white">Order G.U.A.R.D Hardware Nodes</h3>
+                    <p className="text-slate-400 mt-1.5 text-xs md:text-sm">
+                      Submit your requirements below and our team will get in touch with a customized hardware quote &amp; deployment plan.
+                    </p>
+                  </div>
+
+                  {orderSuccess ? (
+                    <div className="text-center py-6">
+                      <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3 border border-emerald-500/40">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      </div>
+                      <h3 className="text-xl font-bold mb-2 text-white">Request Submitted Successfully!</h3>
+                      <p className="text-slate-400 text-sm max-w-[420px] mx-auto">
+                        Thank you! Team 08 will review your requirements and reach out via email/phone shortly.
+                      </p>
+                      <button
+                        type="button"
+                        className="mt-5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                        onClick={() => {
+                          setOrderSuccess(false);
+                          setOrderForm({ name: '', email: '', contactNo: '', numberOfDevices: 1, notes: '' });
+                        }}
+                      >
+                        Submit Another Request
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleOrderSubmit} className="flex flex-col gap-4">
+                      {orderError && <p className="text-red-400 text-xs font-semibold m-0">{orderError}</p>}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-slate-300 text-xs font-semibold">Full Name *</label>
+                          <input
+                            type="text"
+                            className={DARK_INPUT}
+                            value={orderForm.name}
+                            onChange={(e) => setOrderForm({ ...orderForm, name: e.target.value })}
+                            required
+                            placeholder="John Doe"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <label className="text-slate-300 text-xs font-semibold">Email Address *</label>
+                          <input
+                            type="email"
+                            className={DARK_INPUT}
+                            value={orderForm.email}
+                            onChange={(e) => setOrderForm({ ...orderForm, email: e.target.value })}
+                            required
+                            placeholder="john@example.com"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-slate-300 text-xs font-semibold">Contact Number *</label>
+                          <input
+                            type="text"
+                            className={DARK_INPUT}
+                            value={orderForm.contactNo}
+                            onChange={(e) => setOrderForm({ ...orderForm, contactNo: e.target.value })}
+                            required
+                            placeholder="+94 77 123 4567"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <label className="text-slate-300 text-xs font-semibold">Number of Devices Needed * (Max 20)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="20"
+                            className={DARK_INPUT}
+                            value={orderForm.numberOfDevices}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              setOrderForm({ ...orderForm, numberOfDevices: val > 20 ? 20 : val < 1 ? 1 : val || '' });
+                            }}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-300 text-xs font-semibold">Special Notes / Requirements</label>
+                        <textarea
+                          rows="3"
+                          className={`${DARK_INPUT} resize-y`}
+                          value={orderForm.notes}
+                          onChange={(e) => setOrderForm({ ...orderForm, notes: e.target.value })}
+                          placeholder="Tell us about your aquarium / hatchery setup (number of tanks, target species, actuator preferences, etc.)"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-lg border-none cursor-pointer mt-2 text-sm md:text-base transition-all shadow-lg disabled:opacity-60"
+                        disabled={orderBusy}
+                      >
+                        {orderBusy ? 'Submitting Request...' : 'Submit Hardware Request'}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── 8. Footer ── */}
       <footer className="bg-[#060911] text-white border-t border-slate-800 pt-16 pb-8 px-6 md:px-16" id="contacts">
-        <div className="max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-10 mb-12">
+        <div className="max-w-[1100px] mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1.1fr_1fr] gap-8 mb-12">
           <div>
             <div className="text-2xl font-extrabold bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent tracking-wider mb-4">
               G.U.A.R.D
@@ -502,12 +681,55 @@ export default function Landing() {
                 How to Connect
               </a>
               <a
+                href="#order"
+                onClick={scrollToSection('order')}
+                className="text-slate-400 hover:text-sky-400 text-sm no-underline transition-colors cursor-pointer"
+              >
+                Order G.U.A.R.D
+              </a>
+              <a
                 href="https://cepdnaclk.github.io/e21-3yp-GUARD/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sky-400 hover:text-cyan-300 font-semibold text-sm no-underline transition-colors flex items-center gap-1.5"
               >
-                Project Documentation (GitHub Pages) ↗
+                GitHub Pages)↗
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-bold text-white mb-4">Downloads</h3>
+            <div className="flex flex-col gap-2.5">
+              <a
+                href="https://drive.google.com/uc?export=download&id=1JOS3uGWiJEPekHrz9HF-d42750VWIrLt"
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="text-slate-400 hover:text-sky-400 text-sm no-underline transition-colors flex items-center gap-1.5"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>User Manual (Hardware)</span>
+              </a>
+              <a
+                href="https://drive.google.com/uc?export=download&id=1pJbCoCFuLEz7tZp47iNzlGxMiktU6Fu-"
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="text-slate-400 hover:text-sky-400 text-sm no-underline transition-colors flex items-center gap-1.5"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>User Manual (Software)</span>
+              </a>
+              <a
+                href="https://drive.google.com/uc?export=download&id=1pJbCoCFuLEz7tZp47iNzlGxMiktU6Fu-"
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="text-slate-400 hover:text-sky-400 text-sm no-underline transition-colors flex items-center gap-1.5"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Quick Start Guide</span>
               </a>
             </div>
           </div>

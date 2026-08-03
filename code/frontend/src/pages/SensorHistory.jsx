@@ -384,11 +384,15 @@ export default function SensorHistory() {
             <p className="text-text-muted text-base mb-3 font-medium flex flex-wrap items-center gap-2">
               <span>Showing {sortedReadings.length} reading{sortedReadings.length !== 1 ? 's' : ''}</span>
               {(filters.from || filters.to) && (
-                <span className="px-2.5 py-1 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-semibold border border-sky-500/20">
-                  📅 {filters.from ? `From ${new Date(filters.from).toLocaleString()}` : ''} {filters.from && filters.to ? '— ' : ''}{filters.to ? `To ${new Date(filters.to).toLocaleString()}` : ''}
+                <span className="px-2.5 py-1 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-semibold border border-sky-500/20 inline-flex items-center gap-1.5">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span>{filters.from ? `From ${new Date(filters.from).toLocaleString()}` : ''} {filters.from && filters.to ? '— ' : ''}{filters.to ? `To ${new Date(filters.to).toLocaleString()}` : ''}</span>
                 </span>
               )}
-              <span className="text-xs text-slate-500">(Sorted by time {sortOrder === 'desc' ? '⬇️ Newest first' : '⬆️ Oldest first'})</span>
+              <span className="text-xs text-slate-500 inline-flex items-center gap-1">
+                <svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor"><path d={sortOrder === 'desc' ? "M 10 15 L 4 8 H 16 Z" : "M 10 5 L 4 12 H 16 Z"}/></svg>
+                <span>(Sorted by time {sortOrder === 'desc' ? 'Newest first' : 'Oldest first'})</span>
+              </span>
             </p>
             <div className="table-wrap">
               <table>

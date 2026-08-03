@@ -226,7 +226,7 @@ export default function About() {
 
       {/* ── Footer ── */}
       <footer className="bg-[#0d1627] text-white border-t border-white/[0.08]" id="contacts">
-        <div className="max-w-[1100px] mx-auto px-8 py-14 grid grid-cols-[1.5fr_1fr_1fr] gap-12 max-[768px]:grid-cols-1 max-[768px]:gap-8">
+        <div className="max-w-[1100px] mx-auto px-8 py-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1.1fr_1fr] gap-8">
           <div>
             <div className="text-[1.5rem] font-extrabold text-sky-400 tracking-[1px] mb-4">G.U.A.R.D</div>
             <p className="text-slate-400 text-[0.9rem] leading-relaxed">
@@ -245,7 +245,42 @@ export default function About() {
                 rel="noopener noreferrer"
                 className="text-sky-400 hover:text-cyan-300 font-semibold text-[0.9rem] no-underline transition-colors mt-1"
               >
-                Project Documentation (GitHub Pages) ↗
+                GitHub Pages)↗
+              </a>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-[1rem] font-bold mb-4">Downloads</h3>
+            <div className="flex flex-col gap-2">
+              <a
+                href="https://drive.google.com/uc?export=download&id=1JOS3uGWiJEPekHrz9HF-d42750VWIrLt"
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="text-slate-400 hover:text-sky-400 text-[0.9rem] no-underline transition-colors flex items-center gap-1.5"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>User Manual (Hardware)</span>
+              </a>
+              <a
+                href="https://drive.google.com/uc?export=download&id=1pJbCoCFuLEz7tZp47iNzlGxMiktU6Fu-"
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="text-slate-400 hover:text-sky-400 text-[0.9rem] no-underline transition-colors flex items-center gap-1.5"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>User Manual (Software)</span>
+              </a>
+              <a
+                href="https://drive.google.com/uc?export=download&id=1pJbCoCFuLEz7tZp47iNzlGxMiktU6Fu-"
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="text-slate-400 hover:text-sky-400 text-[0.9rem] no-underline transition-colors flex items-center gap-1.5"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Quick Start Guide</span>
               </a>
             </div>
           </div>

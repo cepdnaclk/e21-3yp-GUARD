@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import guardLogo from '../assets/guard-logo.png';
+import { useTheme } from '../context/ThemeContext';
 import '../styles/navigation.css';
 
 function RoundedMobileIcon() {
@@ -15,6 +16,7 @@ function RoundedMobileIcon() {
 export default function PublicNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const contactActive = location.pathname === '/' && location.hash === '#contacts';
 
   function handleNavClick(targetPath) {

@@ -45,7 +45,10 @@ export default function EmailVerificationBanner({ username, onVerified }) {
 
   return (
     <div className="email-verify-banner">
-      <strong>📧 Email not verified.</strong> Enter the 6-digit code sent to your email
+      <strong className="inline-flex items-center gap-1.5">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M 4 4 h 16 c 1.1 0 2 0.9 2 2 v 12 c 0 1.1 -0.9 2 -2 2 H 4 c -1.1 0 -2 -0.9 -2 -2 V 6 c 0 -1.1 0.9 -2 2 -2 z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <span>Email not verified.</span>
+      </strong> Enter the 6-digit code sent to your email
       to activate your account.
 
       {error && <p className="email-verify-error">{error}</p>}

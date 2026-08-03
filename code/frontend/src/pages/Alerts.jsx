@@ -205,7 +205,10 @@ export default function Alerts() {
               <div className="flex gap-3 ml-auto items-end max-[900px]:ml-0 max-[900px]:w-full max-[900px]:mt-4 max-[900px]:pt-4 max-[900px]:border-t max-[900px]:border-dashed max-[900px]:border-white/20">
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-sm font-semibold text-[#204968] dark:text-slate-400">📧 Email Alerts</label>
+                  <label className="text-sm font-semibold text-[#204968] dark:text-slate-400 inline-flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M 4 4 h 16 c 1.1 0 2 0.9 2 2 v 12 c 0 1.1 -0.9 2 -2 2 H 4 c -1.1 0 -2 -0.9 -2 -2 V 6 c 0 -1.1 0.9 -2 2 -2 z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <span>Email Alerts</span>
+                  </label>
                   <button
                     type="button"
                     className={prefBtnClass(user.emailAlertsEnabled, togglingPref === 'email')}
@@ -217,7 +220,10 @@ export default function Alerts() {
                 </div>
 
                 <div className="flex flex-col gap-1 relative">
-                  <label className="text-sm font-semibold text-[#204968] dark:text-slate-400">🤖 Telegram Alerts</label>
+                  <label className="text-sm font-semibold text-[#204968] dark:text-slate-400 inline-flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    <span>Telegram Alerts</span>
+                  </label>
                   <button
                     type="button"
                     className={prefBtnClass(user.telegramAlertsEnabled, togglingPref === 'telegram')}
