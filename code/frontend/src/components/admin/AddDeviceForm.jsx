@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { deviceApi } from '../../services/api';
 import { formatProductKey } from '../../utils/formatUtils';
-import '../../styles/CreateAccountForm.css';
+// CreateAccountForm.css deprecated — form uses base.css bridge classes
 
 /**
  * SUPER_ADMIN form for adding a new device to the inventory.

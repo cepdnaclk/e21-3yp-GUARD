@@ -1,19 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import ReactECharts from 'echarts-for-react';
 import { deviceApi, sensorApi } from '../services/api';
 import { SENSOR_TYPES, SENSOR_LINE_CONFIG, SENSOR_ID_TO_FIELD } from '../constants/sensorConstants';
 import { formatChartTime } from '../utils/formatUtils';
-import '../styles/sensor-history.css';
+import { useTheme } from '../context/ThemeContext';
+import GlassDatePicker from '../components/DatePicker';
+// sensor-history.css migrated to Tailwind below
 
 function transformReadingsToChartData(items) {
   const grouped = new Map();
@@ -49,9 +42,72 @@ function getLineConfig(sensorId) {
   return SENSOR_LINE_CONFIG[sensorId] || null;
 }
 
+function buildChartOption(chartData, lineConfigs, isDark) {
+  const textColor = isDark ? '#ffffff' : '#334155';
+  const titleColor = isDark ? '#ffffff' : '#0f172a';
+  const axisLineColor = isDark ? '#30363d' : '#d8e0eb';
+  const tooltipBg = isDark ? '#161b22' : '#ffffff';
+  const tooltipBorder = isDark ? '1px solid #30363d' : '1px solid #f1f5f9';
+
+  return {
+    grid: { top: 40, right: 24, bottom: 70, left: 50 },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: tooltipBg,
+      borderWidth: 0,
+      extraCssText: 'border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); padding: 12px;',
+      textStyle: { color: textColor },
+      formatter: (params) => {
+        if (!params || params.length === 0) return '';
+        const raw = chartData[params[0].dataIndex];
+        const title = raw ? formatChartTime(raw.time) : params[0].axisValueLabel;
+        const rows = params
+          .filter((p) => p.data !== null && p.data !== undefined)
+          .map((p) => '<div style="padding:2px 0;font-weight:500;color:' + textColor + ';">' + p.marker + ' ' + p.seriesName + ': ' + p.data + '</div>')
+          .join('');
+        return '<div style="font-weight:700;margin-bottom:8px;border-bottom:' + tooltipBorder + ';padding-bottom:4px;color:' + titleColor + ';">' + title + '</div>' + rows;
+      }
+    },
+    legend: {
+      data: lineConfigs.map((c) => c.label),
+      top: 0,
+      textStyle: { color: textColor }
+    },
+    xAxis: {
+      type: 'category',
+      data: chartData.map((row) => formatChartTime(row.time)),
+      axisLabel: {
+        color: textColor,
+        fontSize: 11,
+        rotate: 30,
+        hideOverlap: true
+      },
+      axisLine: { lineStyle: { color: axisLineColor } }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: textColor, fontSize: 12 },
+      splitLine: { lineStyle: { color: axisLineColor, type: 'dashed' } }
+    },
+    series: lineConfigs.map((config) => ({
+      name: config.label,
+      type: 'line',
+      smooth: true,
+      showSymbol: false,
+      connectNulls: true,
+      lineStyle: { color: config.color, width: 2 },
+      itemStyle: { color: config.color },
+      data: chartData.map((row) => row[config.key] ?? null)
+    }))
+  };
+}
+
 export default function SensorHistory() {
   const [searchParams] = useSearchParams();
   const initialDeviceId = searchParams.get('device_id') || searchParams.get('deviceId') || '';
+
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const [devices, setDevices] = useState([]);
   const [readings, setReadings] = useState([]);
@@ -167,11 +223,13 @@ export default function SensorHistory() {
 
   return (
     <>
-      <h3 className="sensor-history-title">Sensor History</h3>
+      {/* .sensor-history-title */}
+      <h1 className="text-[1.6rem] font-bold tracking-tight text-text-main dark:text-[#e6edf3] mb-5">Sensor History</h1>
 
       <div className="card">
         {fetchError ? <p className="error-msg">{fetchError}</p> : null}
-        {fetchInfo ? <p className="sensor-history-summary">{fetchInfo}</p> : null}
+        {/* .sensor-history-summary */}
+        {fetchInfo ? <p className="text-text-muted text-base mb-3">{fetchInfo}</p> : null}
         <div className="filters">
           <div className="form-group">
             <label>Device *</label>
@@ -195,11 +253,21 @@ export default function SensorHistory() {
           </div>
           <div className="form-group">
             <label>From</label>
-            <input className='form-input' type="datetime-local" value={filters.from} onChange={set('from')} />
+            <GlassDatePicker
+              id="sensor-history-from"
+              label="From date & time"
+              value={filters.from}
+              onChange={(v) => setFilters((prev) => ({ ...prev, from: v }))}
+            />
           </div>
           <div className="form-group">
             <label>To</label>
-            <input className='form-input' type="datetime-local" value={filters.to} onChange={set('to')} />
+            <GlassDatePicker
+              id="sensor-history-to"
+              label="To date & time"
+              value={filters.to}
+              onChange={(v) => setFilters((prev) => ({ ...prev, to: v }))}
+            />
           </div>
         </div>
 
@@ -237,8 +305,10 @@ export default function SensorHistory() {
       <div className="card">
         {showAnalytics && readings.length > 0 && (
           <div>
-            <h4 className="sensor-history-chart-title">Analytics</h4>
-            <div className="sensor-chart-wrap">
+            {/* .sensor-history-chart-title */}
+            <h4 className="mb-4 text-[1.1rem] font-bold text-text-main dark:text-slate-200">Analytics</h4>
+            {/* .sensor-chart-wrap */}
+            <div className="w-full min-h-[360px] overflow-x-auto p-4">
               <ResponsiveContainer width="100%" height={360}>
                 <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -310,7 +380,7 @@ export default function SensorHistory() {
         )}
 
         {displayAnalyticsMessage && (
-          <p className="sensor-history-summary sensor-history-empty-note">
+          <p className="mt-3 text-center p-8 bg-white/[0.04] border border-white/10 rounded-xl text-text-muted">
             No data available for analytics
           </p>
         )}
@@ -319,7 +389,8 @@ export default function SensorHistory() {
           <div className="empty-state"><p>{hasFetched ? 'No readings found for the selected filters.' : 'Select a device and click Fetch.'}</p></div>
         ) : (
           <>
-            <p className="sensor-history-summary">
+            {/* .sensor-history-summary */}
+            <p className="text-text-muted text-base mb-3">
               Showing {readings.length} reading{readings.length !== 1 ? 's' : ''}
             </p>
             <div className="table-wrap">

@@ -1,7 +1,11 @@
+/* DEPRECATED — sensor-history.css: styles migrated to Tailwind in SensorHistory.jsx */
 /* ========== Sensor History ========== */
 .sensor-history-title {
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 .sensor-history-summary {
@@ -14,15 +18,17 @@
   margin-bottom: 1rem;
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--text-main);
+  color: var(--text);
 }
 
 .sensor-history-empty-note {
   margin-top: 0.75rem;
   text-align: center;
   padding: 2rem;
-  background: var(--c-rgba-255-255-255-0-05);
+  background: var(--glass-bg-subtle);
+  border: 1px solid var(--glass-border-subtle);
   border-radius: 12px;
+  color: var(--text-muted);
 }
 
 .sensor-chart-wrap {
@@ -49,11 +55,29 @@
   box-shadow: none !important;
 }
 
+/* Styled select/input in filters */
 .form-input {
-  background-color: var(--c-e6ecf0);
-  border: 2px solid var(--c-fff);
-  /* border-radius: 8px; */
-  color: var(--c-333);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: 1.5px solid var(--glass-border-subtle);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+[data-theme='dark'] .form-input {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: #e6edf3;
 }
 
 .btn.action-btn {

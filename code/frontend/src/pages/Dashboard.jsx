@@ -6,41 +6,56 @@ import useOnlineStatus from '../hooks/useOnlineStatus';
 import SensorGauge from '../components/SensorGauge';
 import WaterTankLevel from '../components/WaterTankLevel';
 import { getSocket } from '../services/socket';
-import '../styles/dashboard.css';
+// dashboard.css migrated to Tailwind below (gauge classes are now in SensorGauge.jsx).
 
-function TankCard({ device, readings, recentAlerts, onSensorUpdate, onMarkSeen }) {
+function TankCard({ device, readings, recentAlerts }) {
   const { isOnline } = useOnlineStatus(device.currentStats?.lastReadingTime);
 
-  // Real-time socket updates bubble up from the parent, but we track online per-card here.
-  // The parent calls onMarkSeen when socket data arrives for this device.
-
   return (
-    <div className="tank-card">
-      <Link to={`/devices/${device.deviceId}`} className="tank-card-main-link">
-        <div className="tank-card-header">
-          <span className="tank-name">{device.deviceName || `Tank ${device.deviceId}`}</span>
-          <span className={`tank-status-dot ${isOnline ? 'active' : 'offline'}`} />
+    /*
+      .tank-card → dual-mode glass panel
+      Light: bg-white/72 backdrop-blur-[20px] border border-white/80
+      Dark:  dark:bg-[rgba(8,15,26,0.88)] dark:border-sky-400/15
+    */
+    <div className="bg-white/72 dark:bg-[rgba(8,15,26,0.88)] backdrop-blur-[20px] rounded-[20px] border border-white/80 dark:border-sky-400/15 p-6 w-full min-h-64 flex flex-col shadow-[0_8px_28px_rgba(14,52,84,0.10),0_2px_8px_rgba(14,52,84,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.50)] transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(14,52,84,0.18),0_0_20px_rgba(14,165,233,0.10)] hover:border-sky-400/40 dark:hover:border-sky-400/35">
+
+      {/* .tank-card-main-link */}
+      <Link to={`/devices/${device.deviceId}`} className="no-underline text-inherit flex-1 flex flex-col">
+
+        {/* .tank-card-header → flex justify-between items-center mb-4 */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-[1.15rem] font-bold text-[#1e293b] dark:text-[#f0f6fc] tracking-[-0.01em]">
+            {device.deviceName || `Tank ${device.deviceId}`}
+          </span>
+          {/* Online status dot */}
+          <span
+            className={[
+              'w-5 h-5 rounded-full flex-shrink-0',
+              isOnline
+                ? 'bg-success shadow-[0_0_8px_rgba(34,197,94,0.55),0_0_16px_rgba(34,197,94,0.25)]'
+                : 'bg-danger shadow-[0_0_8px_rgba(239,68,68,0.55)]',
+            ].join(' ')}
+          />
         </div>
-        
+
         {/* Hardware Fault Banner */}
         {(() => {
           const brokenSensors = [];
-          if (device.tempOk === false) brokenSensors.push('Temp');
+          if (device.tempOk === false)  brokenSensors.push('Temp');
           if (device.waterOk === false) brokenSensors.push('Water Level');
-          if (device.tdsOk === false) brokenSensors.push('TDS');
-          if (device.phOk === false) brokenSensors.push('pH');
-          if (device.turbOk === false) brokenSensors.push('Turbidity');
-          
-          if (brokenSensors.length > 0) {
-            return (
-              <div className="hardware-fault-banner" style={{backgroundColor: '#ff4444', color: 'white', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid #cc0000'}}>
-                <span>🔌 Hardware Fault: {brokenSensors.join(', ')} disconnected</span>
-              </div>
-            );
-          }
-          return null;
+          if (device.tdsOk === false)   brokenSensors.push('TDS');
+          if (device.phOk === false)    brokenSensors.push('pH');
+          if (device.turbOk === false)  brokenSensors.push('Turbidity');
+          if (brokenSensors.length === 0) return null;
+          return (
+            <div className="bg-red-500 text-white px-3 py-[6px] text-xs font-bold flex items-center gap-[6px] border-b border-red-700 -mx-6 mb-3">
+              🔌 Hardware Fault: {brokenSensors.join(', ')} disconnected
+            </div>
+          );
         })()}
-        <div className="sensor-tile-grid">
+
+        {/* .sensor-tile-grid → grid auto-fit with min 100px */}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(100px,1fr))] gap-3 mt-2 items-center">
           {readings.length > 0 ? (
             readings.map((r) => {
               const name = (r.sensorType?.sensorName || r.sensorTypeName || '').replace(/\s+/g, '').toLowerCase();
@@ -81,19 +96,23 @@ function TankCard({ device, readings, recentAlerts, onSensorUpdate, onMarkSeen }
               );
             })
           ) : (
-            <p className="no-readings">No readings yet</p>
+            <p className="text-text-muted dark:text-slate-600 text-[0.8rem] col-span-full text-center py-3">
+              No readings yet
+            </p>
           )}
         </div>
       </Link>
-      
+
+      {/* .tank-card-alert-link */}
       {Object.keys(recentAlerts[device.deviceId] || {}).length > 0 && (
-        <Link 
-          to={`/alerts?device_id=${device.deviceId}&highlight=active`} 
-          className="tank-card-alert-link"
+        <Link
+          to={`/alerts?device_id=${device.deviceId}&highlight=active`}
+          className="no-underline block mt-4"
         >
-          <div className="tank-card-alert">
-            <span className="alert-icon">⚠️</span>
-            <span className="alert-text">
+          {/* .tank-card-alert */}
+          <div className="bg-red-500/15 border border-red-500/40 rounded-xl px-[0.85rem] py-[0.55rem] flex items-center gap-2 text-red-300 text-[0.8rem] font-semibold transition-all hover:bg-red-500/25 hover:scale-[1.01]">
+            <span className="text-base">⚠️</span>
+            <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
               Active Issues ({Object.keys(recentAlerts[device.deviceId]).length})
             </span>
           </div>
@@ -129,18 +148,13 @@ export default function Dashboard() {
         );
         setSensorData(Object.fromEntries(results));
 
-        // Fetch real alerts from the database
         const dbAlerts = await alertApi.list({ resolved: false });
-        
-        // Map of TankID -> { sensorType: latestAlert }
         const alertsByTankAndType = {};
         dbAlerts.forEach(a => {
           const tId = a.tankId;
           const sType = a.type.replace(/\s+/g, '').toLowerCase();
-          
           if (!alertsByTankAndType[tId]) alertsByTankAndType[tId] = {};
-          
-          if (!alertsByTankAndType[tId][sType] || 
+          if (!alertsByTankAndType[tId][sType] ||
               new Date(a.createdAt) > new Date(alertsByTankAndType[tId][sType].createdAt)) {
             alertsByTankAndType[tId][sType] = a;
           }
@@ -148,7 +162,7 @@ export default function Dashboard() {
 
         setRecentAlerts(alertsByTankAndType);
         setUnresolvedCount(dbAlerts.length);
-      } catch (err) { 
+      } catch (err) {
         console.error("Dashboard load error:", err);
       }
       setLoading(false);
@@ -169,23 +183,14 @@ export default function Dashboard() {
         [data.tankId]: (prev[data.tankId] || []).map(r => {
           const rName = (r.sensorType?.sensorName || r.sensorTypeName || '').replace(/\s+/g, '').toLowerCase();
           const dType = data.sensorType.replace(/\s+/g, '').toLowerCase();
-          if (rName === dType) {
-            return { ...r, value: data.value, readingTime: data.timestamp };
-          }
+          if (rName === dType) return { ...r, value: data.value, readingTime: data.timestamp };
           return r;
         })
       }));
 
-      // Update the device's lastReadingTime so the online dot turns green instantly
       setDevices(prev => prev.map(d => {
         if (d.deviceId === data.tankId) {
-          return {
-            ...d,
-            currentStats: {
-              ...d.currentStats,
-              lastReadingTime: data.timestamp
-            }
-          };
+          return { ...d, currentStats: { ...d.currentStats, lastReadingTime: data.timestamp } };
         }
         return d;
       }));
@@ -194,7 +199,6 @@ export default function Dashboard() {
     const handleAlertResolved = (data) => {
       const { tankId, sensorType } = data;
       const sType = sensorType.replace(/\s+/g, '').toLowerCase();
-
       setRecentAlerts(prev => {
         const tankAlerts = { ...prev[tankId] };
         delete tankAlerts[sType];
@@ -207,8 +211,7 @@ export default function Dashboard() {
       setDevices(prev => prev.map(d => {
         if (d.deviceId === tankId) {
           return {
-            ...d,
-            status,
+            ...d, status,
             currentStats: {
               ...d.currentStats,
               lastReadingTime: status === 'online' ? new Date().toISOString() : '1970-01-01T00:00:00.000Z'
@@ -225,29 +228,29 @@ export default function Dashboard() {
         if (d.deviceId === tankId) {
           return {
             ...d,
-            tempOk: health.temp_ok ?? true,
+            tempOk:  health.temp_ok  ?? true,
             waterOk: health.water_ok ?? true,
-            tdsOk: health.tds_ok ?? true,
-            phOk: health.ph_ok ?? true,
-            turbOk: health.turb_ok ?? true
+            tdsOk:   health.tds_ok   ?? true,
+            phOk:    health.ph_ok    ?? true,
+            turbOk:  health.turb_ok  ?? true,
           };
         }
         return d;
       }));
     };
 
-    socket.on('sensor_data', handleSensorData);
-    socket.on('alert_resolved_auto', handleAlertResolved);
-    socket.on('alert_resolved_all', handleAlertResolved);
-    socket.on('device_status', handleDeviceStatus);
-    socket.on('sensor_health', handleSensorHealth);
+    socket.on('sensor_data',           handleSensorData);
+    socket.on('alert_resolved_auto',   handleAlertResolved);
+    socket.on('alert_resolved_all',    handleAlertResolved);
+    socket.on('device_status',         handleDeviceStatus);
+    socket.on('sensor_health',         handleSensorHealth);
 
     return () => {
-      socket.off('sensor_data', handleSensorData);
-      socket.off('alert_resolved_auto', handleAlertResolved);
-      socket.off('alert_resolved_all', handleAlertResolved);
-      socket.off('device_status', handleDeviceStatus);
-      socket.off('sensor_health', handleSensorHealth);
+      socket.off('sensor_data',          handleSensorData);
+      socket.off('alert_resolved_auto',  handleAlertResolved);
+      socket.off('alert_resolved_all',   handleAlertResolved);
+      socket.off('device_status',        handleDeviceStatus);
+      socket.off('sensor_health',        handleSensorHealth);
     };
   }, []);
 
@@ -260,16 +263,23 @@ export default function Dashboard() {
     );
   });
 
-  if (loading) return <div className="empty-state"><p>Loading dashboard...</p></div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-[60vh] text-text-muted text-lg">
+      Loading dashboard...
+    </div>
+  );
 
   return (
-    <div className="dashboard-page">
+    /* .dashboard-page → transparent, full-bleed to use the body mesh gradient */
+    <div className="min-h-[calc(100vh-62px)] -mx-7 px-7 py-7 bg-transparent">
 
-      {/* Search Bar */}
-      <div className="dash-search-wrap">
-        <h1 className="dash-title">Dashboard</h1>
+      {/* Search Bar — .dash-search-wrap */}
+      <div className="flex justify-center items-center mb-7 gap-4 flex-wrap">
+        <h1 className="text-[1.6rem] font-bold text-[#0e3454] dark:text-[#e6edf3] mr-auto tracking-tight">
+          Dashboard
+        </h1>
         <input
-          className="dash-search"
+          className="w-full max-w-[520px] px-6 py-[0.65rem] rounded-full border-[1.5px] border-white/20 dark:border-white/10 bg-white/40 dark:bg-white/[0.06] backdrop-blur-sm text-[#0e3454] dark:text-[#e6edf3] text-[0.95rem] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/15"
           type="text"
           placeholder="Search here..."
           value={search}
@@ -277,13 +287,15 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Main grid: tank cards */}
-      <div className="dash-main-grid">
-        <div className="dash-tanks">
+      {/* Tank Grid — .dash-main-grid / .dash-tanks / .tank-grid */}
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        <div>
           {filtered.length === 0 ? (
-            <div className="empty-state"><p>No tanks found.</p></div>
+            <div className="text-center py-12 text-text-muted">
+              <p>No tanks found.</p>
+            </div>
           ) : (
-            <div className="tank-grid">
+            <div className="grid grid-cols-3 xl:grid-cols-3 lg:grid-cols-2 md:grid-cols-1 gap-6">
               {filtered.map((d) => (
                 <TankCard
                   key={d.deviceId}
@@ -297,15 +309,22 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom Stats */}
-      <div className="dash-stats">
-        <div className="dash-stat-card">
-          <div className="stat-label">Total Devices</div>
-          <div className="stat-value">{devices.length}</div>
+      {/* Bottom Stat Cards — .dash-stats */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+
+        {/* Total Devices */}
+        <div className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-[20px] border border-white/40 dark:border-white/10 rounded-[20px] p-7 shadow-[0_4px_20px_rgba(14,52,84,0.08)] border-l-4 border-l-primary hover:-translate-y-1 transition-transform">
+          <div className="text-[0.75rem] text-text-muted dark:text-slate-400 uppercase tracking-[0.7px] font-bold">Total Devices</div>
+          <div className="text-[2rem] font-bold mt-2 text-text-main dark:text-[#e6edf3] font-mono tracking-tight">{devices.length}</div>
         </div>
-        <div className={`dash-stat-card ${unresolvedCount > 0 ? 'danger' : 'success'}`}>
-          <div className="stat-label">Active Alerts</div>
-          <div className="stat-value">{unresolvedCount}</div>
+
+        {/* Active Alerts */}
+        <div className={[
+          'bg-white/60 dark:bg-slate-800/40 backdrop-blur-[20px] border border-white/40 dark:border-white/10 rounded-[20px] p-7 shadow-[0_4px_20px_rgba(14,52,84,0.08)] border-l-4 hover:-translate-y-1 transition-transform',
+          unresolvedCount > 0 ? 'border-l-danger' : 'border-l-success',
+        ].join(' ')}>
+          <div className="text-[0.75rem] text-text-muted dark:text-slate-400 uppercase tracking-[0.7px] font-bold">Active Alerts</div>
+          <div className="text-[2rem] font-bold mt-2 text-text-main dark:text-[#e6edf3] font-mono tracking-tight">{unresolvedCount}</div>
         </div>
       </div>
     </div>

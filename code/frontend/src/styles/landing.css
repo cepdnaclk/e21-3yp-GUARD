@@ -1,3 +1,4 @@
+/* DEPRECATED — landing.css: styles migrated to Tailwind in Landing.jsx and About.jsx */
 /* ========== Landing Page Styles ========== */
 
 .landing-page {
@@ -121,6 +122,12 @@
   display: flex;
   justify-content: center;
   gap: 1rem;
+}
+
+.hero-mobile-app-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
 }
 
 .hero-actions .landing-btn {
