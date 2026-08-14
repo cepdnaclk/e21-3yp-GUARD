@@ -111,78 +111,115 @@ G.U.A.R.D is an enterprise-grade aquaculture real-time monitoring and alerting s
 e21-3yp-GUARD/
 ├── code/
 │   ├── backend/                        ← Node.js / Express Backend
-│   │   └── src/
-│   │       ├── controllers/            ← Request handlers per domain
-│   │       ├── routes/                 ← Express route definitions
-│   │       ├── services/               ← Business logic & DB queries
-│   │       ├── middleware/
-│   │       │   └── authMiddleware.js   ← JWT Bearer guard & role verifiers
-│   │       ├── lib/                    ← Prisma & InfluxDB connections
-│   │       └── index.js                ← HTTP & WebSocket server entry
+│   │   ├── src/
+│   │   │   ├── controllers/            ← Request handlers per domain
+│   │   │   ├── routes/                 ← Express route definitions
+│   │   │   ├── services/               ← Business logic & DB queries
+│   │   │   ├── middleware/
+│   │   │   │   └── authMiddleware.js   ← JWT Bearer guard & role verifiers
+│   │   │   ├── lib/                    ← Prisma & InfluxDB connections
+│   │   │   └── index.js                ← HTTP & WebSocket server entry
+│   │   ├── prisma/                     ← Prisma schema & migrations
+│   │   ├── docker-compose.yml          ← MongoDB + InfluxDB containers
+│   │   ├── dummy-sensor.js             ← Simulated sensor data publisher
+│   │   ├── fishSeed.js                 ← Fish species data seeder
+│   │   ├── seed-analytics.js           ← Analytics history seeder
+│   │   ├── seed.js                     ← General DB seeder
+│   │   ├── check-services.js           ← Service health checker
+│   │   ├── BACKEND_DOCUMENTATION_v2.md ← Full backend API documentation
+│   │   └── CHANGELOG.md               ← Backend change history
 │   │
-│   └── frontend/                       ← React 19 / Vite / Tailwind CSS Frontend
-│       ├── tailwind.config.js          ← Tailwind design tokens & dark mode config
-│       ├── postcss.config.js           ← PostCSS configuration
-│       └── src/
-│           ├── App.jsx                 ← Router root with SmartRedirect
-│           ├── main.jsx                ← Base CSS & global tour.css import
-│           ├── components/
-│           │   ├── Layout.jsx          ← Production glass nav (with 🗺️ Tour button)
-│           │   ├── PublicNav.jsx       ← Public top navigation bar
-│           │   ├── SensorGauge.jsx     ← SVG arc gauge component (Tailwind)
-│           │   ├── WaterTankLevel.jsx  ← Water level visualiser
-│           │   ├── ThresholdsPanel.jsx ← Dual-range threshold sliders (Tailwind)
-│           │   ├── ActuatorPanel.jsx   ← Pump & feeder controls (Tailwind)
-│           │   ├── DatePicker.jsx      ← Glass calendar popup
-│           │   ├── admin/              ← Admin-only table & form components
-│           │   ├── auth/               ← Auth form components
-│           │   ├── demo/
-│           │   │   └── DemoLayout.jsx  ← Demo nav (Demo badge + Exit Demo)
-│           │   └── tour/
-│           │       └── TourOverlay.jsx ← driver.js tour controller
-│           ├── context/
-│           │   ├── AuthContext.jsx     ← Auth state & user/role
-│           │   ├── ThemeContext.jsx    ← Light/Dark mode toggle
-│           │   ├── DemoContext.jsx     ← Static demo data provider
-│           │   └── TourContext.jsx     ← Tour state machine (skip/finish/reset)
-│           ├── data/
-│           │   └── demoData.json       ← Static mock payload for /demo
-│           ├── hooks/
-│           │   └── useTourSteps.js     ← Role-aware step builder (7 / 11 steps)
-│           ├── pages/
-│           │   ├── Dashboard.jsx       ← Multi-tank monitoring & live gauges
-│           │   ├── Devices.jsx         ← Device inventory & registration
-│           │   ├── DeviceDetail.jsx    ← Per-tank detail & threshold config
-│           │   ├── SensorHistory.jsx   ← Recharts time-series analytics
-│           │   ├── Alerts.jsx          ← Alert queue & resolution
-│           │   ├── FishInfo.jsx        ← Fish species library & compatibility drawer
-│           │   ├── Users.jsx           ← Admin user & tank assignment
-│           │   ├── Profile.jsx         ← Profile details, OTP & Telegram verification
-│           │   ├── Login.jsx           ← Login page
-│           │   ├── Register.jsx        ← Registration page
-│           │   ├── VerifyEmail.jsx     ← Email verification gate
-│           │   ├── DemoPage.jsx        ← /demo route shell & tour bootstrap
-│           │   ├── Landing/            ← Landing.jsx & About.jsx (Tailwind)
-│           │   └── demo/               ← Demo page wrappers (Tailwind)
-│           │       ├── DashboardDemo.jsx
-│           │       ├── DevicesDemo.jsx
-│           │       ├── SensorHistoryDemo.jsx
-│           │       ├── AlertsDemo.jsx
-│           │       ├── FishInfoDemo.jsx
-│           │       ├── UsersDemo.jsx
-│           │       └── ProfileDemo.jsx
-│           ├── services/
-│           │   ├── api.js              ← Axios REST client
-│           │   └── socket.js           ← socket.io client
-│           └── styles/
-│               ├── base.css            ← Tailwind directives (@tailwind) & bridge classes
-│               ├── tour.css            ← driver.js popover & tour-active styles
-│               └── [deprecated CSS]    ← Legacy CSS files deprecated in favor of Tailwind
-├── docs/
+│   ├── frontend/                       ← React 19 / Vite / Tailwind CSS Frontend
+│   │   ├── tailwind.config.js          ← Tailwind design tokens & dark mode config
+│   │   ├── postcss.config.js           ← PostCSS configuration
+│   │   └── src/
+│   │       ├── App.jsx                 ← Router root with SmartRedirect
+│   │       ├── main.jsx                ← Base CSS & global tour.css import
+│   │       ├── components/
+│   │       │   ├── Layout.jsx          ← Production glass nav (with 🗺️ Tour button)
+│   │       │   ├── PublicNav.jsx       ← Public top navigation bar
+│   │       │   ├── PublicLayout.jsx    ← Public page layout wrapper
+│   │       │   ├── SensorGauge.jsx     ← SVG arc gauge component (Tailwind)
+│   │       │   ├── WaterTankLevel.jsx  ← Water level visualiser
+│   │       │   ├── ThresholdsPanel.jsx ← Dual-range threshold sliders (Tailwind)
+│   │       │   ├── ActuatorPanel.jsx   ← Pump & feeder controls (Tailwind)
+│   │       │   ├── DatePicker.jsx      ← Glass calendar popup
+│   │       │   ├── TankTimeSeriesChart.jsx ← Tank sensor time-series chart
+│   │       │   ├── admin/              ← Admin-only table & form components
+│   │       │   │   ├── AddDeviceForm.jsx
+│   │       │   │   ├── AdminTable.jsx
+│   │       │   │   ├── AssignTankForm.jsx
+│   │       │   │   ├── CreateAccountForm.jsx
+│   │       │   │   ├── DeviceInventoryTable.jsx
+│   │       │   │   ├── DeviceRequestsTable.jsx
+│   │       │   │   └── UserTable.jsx
+│   │       │   ├── auth/               ← Auth form components
+│   │       │   ├── demo/
+│   │       │   │   └── DemoLayout.jsx  ← Demo nav (Demo badge + Exit Demo)
+│   │       │   └── tour/
+│   │       │       └── TourOverlay.jsx ← driver.js tour controller
+│   │       ├── context/
+│   │       │   ├── AuthContext.jsx     ← Auth state & user/role
+│   │       │   ├── ThemeContext.jsx    ← Light/Dark mode toggle
+│   │       │   ├── DemoContext.jsx     ← Static demo data provider
+│   │       │   └── TourContext.jsx     ← Tour state machine (skip/finish/reset)
+│   │       ├── data/
+│   │       │   └── demoData.json       ← Static mock payload for /demo
+│   │       ├── hooks/
+│   │       │   ├── useTourSteps.js     ← Role-aware step builder (7 / 11 steps)
+│   │       │   └── useOnlineStatus.js  ← Device online/offline status hook
+│   │       ├── constants/
+│   │       │   └── sensorConstants.js  ← Sensor parameter limits & defaults
+│   │       ├── utils/
+│   │       │   ├── formatUtils.js      ← Date/value formatting helpers
+│   │       │   └── animations.jsx      ← Reusable animation utilities
+│   │       ├── pages/
+│   │       │   ├── Dashboard.jsx       ← Multi-tank monitoring & live gauges
+│   │       │   ├── Devices.jsx         ← Device inventory & registration
+│   │       │   ├── DeviceDetail.jsx    ← Per-tank detail & threshold config
+│   │       │   ├── SensorHistory.jsx   ← Recharts time-series analytics
+│   │       │   ├── Alerts.jsx          ← Alert queue & resolution
+│   │       │   ├── FishInfo.jsx        ← Fish species library & compatibility drawer
+│   │       │   ├── Users.jsx           ← Admin user & tank assignment
+│   │       │   ├── Profile.jsx         ← Profile details, OTP & Telegram verification
+│   │       │   ├── Login.jsx           ← Login page
+│   │       │   ├── Register.jsx        ← Registration page
+│   │       │   ├── VerifyEmail.jsx     ← Email verification gate
+│   │       │   ├── MobileAppDownload.jsx ← Mobile app download page (/mobile-download)
+│   │       │   ├── DemoPage.jsx        ← /demo route shell & tour bootstrap
+│   │       │   ├── Landing/            ← Landing.jsx & About.jsx (Tailwind)
+│   │       │   └── demo/               ← Demo page wrappers (Tailwind)
+│   │       │       ├── DashboardDemo.jsx
+│   │       │       ├── DevicesDemo.jsx
+│   │       │       ├── SensorHistoryDemo.jsx
+│   │       │       ├── AlertsDemo.jsx
+│   │       │       ├── FishInfoDemo.jsx
+│   │       │       ├── UsersDemo.jsx
+│   │       │       └── ProfileDemo.jsx
+│   │       ├── services/
+│   │       │   ├── api.js              ← Axios REST client
+│   │       │   └── socket.js           ← socket.io client
+│   │       └── styles/
+│   │           ├── base.css            ← Tailwind directives (@tailwind) & bridge classes
+│   │           ├── tour.css            ← driver.js popover & tour-active styles
+│   │           └── [legacy CSS]        ← Retained CSS files alongside Tailwind
+│   │
+│   ├── mobile_app/                     ← React Native / Expo Mobile App
+│   │   ├── App.js                      ← Expo root
+│   │   ├── app.json                    ← Expo config
+│   │   └── src/                        ← Mobile screens & components
+│   │
+│   ├── mqtt server/                    ← Standalone MQTT broker configuration
+│   │
+│   └── Esp32/                          ← ESP32 firmware source
+│       └── Sensor_unit/                ← Active firmware sketch
+│
+├── docs/                               ← GitHub Pages documentation site
 ├── start_all.ps1 / start_all.bat       ← Full-stack start helpers
 ├── kill_all.ps1 / kill_all.bat         ← Service shutdown helpers
 └── README.md
 ```
+
 
 ---
 
@@ -248,14 +285,15 @@ For the full design system reference, color hex codes, surface glass layering ru
 - **Telegram Verification QR Code (`Profile.jsx`):** Instant QR code scanning support (`https://t.me/GUARD_yp_bot`) for mobile Telegram phone verification.
 
 ### 4. Migrated Components & Pages
-- **Components:** `SensorGauge.jsx`, `WaterTankLevel.jsx`, `ThresholdsPanel.jsx`, `ActuatorPanel.jsx`, `DatePicker.jsx`.
-- **Production Pages:** `Dashboard.jsx`, `Alerts.jsx`, `Devices.jsx`, `DeviceDetail.jsx`, `SensorHistory.jsx`, `Users.jsx`, `Profile.jsx`, `FishInfo.jsx`, `Landing.jsx`, `About.jsx`.
+- **Components:** `SensorGauge.jsx`, `WaterTankLevel.jsx`, `ThresholdsPanel.jsx`, `ActuatorPanel.jsx`, `DatePicker.jsx`, `TankTimeSeriesChart.jsx`, `PublicLayout.jsx`.
+- **Production Pages:** `Dashboard.jsx`, `Alerts.jsx`, `Devices.jsx`, `DeviceDetail.jsx`, `SensorHistory.jsx`, `Users.jsx`, `Profile.jsx`, `FishInfo.jsx`, `MobileAppDownload.jsx`, `Landing.jsx`, `About.jsx`.
 - **Demo Sandbox Pages:** `DashboardDemo.jsx`, `AlertsDemo.jsx`, `DevicesDemo.jsx`, `UsersDemo.jsx`, `SensorHistoryDemo.jsx`, `FishInfoDemo.jsx`, `ProfileDemo.jsx`.
-- **Admin Sub-components:** `CreateAccountForm.jsx`, `AddDeviceForm.jsx`, `TourOverlay.jsx`.
+- **Admin Sub-components (`src/components/admin/`):** `AddDeviceForm.jsx`, `AdminTable.jsx`, `AssignTankForm.jsx`, `CreateAccountForm.jsx`, `DeviceInventoryTable.jsx`, `DeviceRequestsTable.jsx`, `UserTable.jsx`.
+- **Tour Sub-components (`src/components/tour/`):** `TourOverlay.jsx`.
 
-### 5. Deprecated Stylesheets
-The following legacy CSS files have been deprecated and wrapped in block comments:
-`layout.css`, `actuators.css`, `thresholds.css`, `datepicker.css`, `dashboard.css`, `device-detail.css`, `alerts.css`, `devices.css`, `sensor-history.css`, `users.css`, `CreateAccountForm.css`, `profile.css`, `fish-info.css`, `landing.css`, `about.css`, `navigation.css`.
+### 5. Legacy Stylesheets
+The following CSS files are retained alongside Tailwind for compatibility:
+`layout.css`, `actuators.css`, `thresholds.css`, `datepicker.css`, `dashboard.css`, `device-detail.css`, `alerts.css`, `devices.css`, `sensor-history.css`, `users.css`, `CreateAccountForm.css`, `profile.css`, `fish-info.css`, `landing.css`, `about.css`, `navigation.css`, `mobile-app-download.css`, `variables.css`, `water-tank.css`.
 
 ---
 
@@ -339,72 +377,76 @@ Fish (N) ──── standalone species knowledge base
 
 ## API Reference
 
-Base URL: `http://localhost:5000`
+Base URL: `http://localhost:5000/api`
 
-All endpoints except `GET /health` and `POST /auth/login` require:
+All endpoints except `POST /api/auth/login` and `POST /api/auth/register` require:
 
 ```
 Authorization: Bearer <jwt>
 ```
 
-### Health & Liveness
+### Authentication (`/api/auth`)
 
-| Method | Path      | Auth | Description           |
-| ------ | --------- | ---- | --------------------- |
-| GET    | `/health` | —    | Server liveness check |
+| Method | Path                          | Auth | Description                          |
+| ------ | ----------------------------- | ---- | ------------------------------------ |
+| POST   | `/api/auth/login`             | —    | Login with username & password       |
+| POST   | `/api/auth/register`          | —    | Register a new ADMIN account         |
+| GET    | `/api/auth/me`                | ✅   | Get current user profile             |
+| PUT    | `/api/auth/me`                | ✅   | Update profile (name, phone, address)|
+| POST   | `/api/auth/verify-email`      | —    | Verify email with OTP token          |
+| POST   | `/api/auth/change-password`   | ✅   | Change authenticated user's password |
 
-### Authentication (`/auth`)
+### Tanks / Devices (`/api/tanks`)
 
-| Method | Path                    | Auth | Description                          |
-| ------ | ----------------------- | ---- | ------------------------------------ |
-| POST   | `/auth/login`           | —    | Login with username & password       |
-| POST   | `/auth/register`        | —    | Register a new ADMIN account         |
-| GET    | `/auth/me`              | ✅   | Get current user profile             |
-| PUT    | `/auth/me`              | ✅   | Update profile (name, phone, address)|
-| POST   | `/auth/verify-email`    | —    | Verify email with OTP token          |
-| POST   | `/auth/change-password` | ✅   | Change authenticated user's password |
+| Method | Path                              | Auth | Description                          |
+| ------ | --------------------------------- | ---- | ------------------------------------ |
+| GET    | `/api/tanks`                      | ✅   | List tanks visible to the user       |
+| POST   | `/api/tanks/register`             | ✅   | Register a new tank (ADMIN only)     |
+| GET    | `/api/tanks/:tankId/status`       | ✅   | Get tank details & latest readings   |
+| DELETE | `/api/tanks/:tankId`              | ✅   | Remove a tank (ADMIN / SUPER_ADMIN)  |
+| POST   | `/api/tanks/:tankId/assign-user`  | ✅   | Assign a worker to a tank (ADMIN)    |
+| POST   | `/api/tanks/:tankId/unassign-user`| ✅   | Remove worker from a tank (ADMIN)    |
+| GET    | `/api/tanks/:tankId/thresholds`   | ✅   | Get threshold config for a tank      |
+| PATCH  | `/api/tanks/:tankId/thresholds`   | ✅   | Update thresholds for a tank (ADMIN) |
+| POST   | `/api/tanks/:tankId/actuators`    | ✅   | Send actuator command (pump/feeder)  |
 
-### Devices & Tanks (`/devices`)
+### Sensor Telemetry (`/api/sensors`)
 
-| Method | Path            | Auth | Description                      |
-| ------ | --------------- | ---- | -------------------------------- |
-| GET    | `/devices`      | ✅   | List devices visible to the user |
-| POST   | `/devices`      | ✅   | Register new ESP32 device        |
-| GET    | `/devices/:id`  | ✅   | Get device details & thresholds  |
-| PUT    | `/devices/:id`  | ✅   | Update device name / thresholds  |
-| DELETE | `/devices/:id`  | ✅   | Remove a device (ADMIN only)     |
+| Method | Path                    | Auth | Description                       |
+| ------ | ----------------------- | ---- | --------------------------------- |
+| GET    | `/api/sensors/latest`   | ✅   | Latest reading per sensor type    |
+| GET    | `/api/sensors/history`  | ✅   | Historical readings (date filter) |
 
-### Sensor Telemetry (`/sensor`)
+### Alerts (`/api/alerts`)
 
-| Method | Path               | Auth | Description                       |
-| ------ | ------------------ | ---- | --------------------------------- |
-| GET    | `/sensor/latest`   | ✅   | Latest reading per sensor type    |
-| GET    | `/sensor/history`  | ✅   | Historical readings (date filter) |
+| Method | Path                         | Auth | Description                      |
+| ------ | ---------------------------- | ---- | -------------------------------- |
+| GET    | `/api/alerts`                | ✅   | List active / resolved alerts    |
+| POST   | `/api/alerts/:id/resolve`    | ✅   | Mark an alert as resolved        |
 
-### Alerts (`/alerts`)
+### Users (`/api/auth`) — ADMIN / SUPER_ADMIN only
 
-| Method | Path               | Auth | Description                      |
-| ------ | ------------------ | ---- | -------------------------------- |
-| GET    | `/alerts`          | ✅   | List active / resolved alerts    |
-| POST   | `/alerts/:id/resolve` | ✅ | Mark an alert as resolved      |
+| Method | Path                           | Auth | Description                      |
+| ------ | ------------------------------ | ---- | -------------------------------- |
+| GET    | `/api/auth/users`              | ✅   | List all user accounts           |
+| POST   | `/api/auth/users`              | ✅   | Create a new USER account        |
+| DELETE | `/api/auth/users/:id`          | ✅   | Delete a user account            |
 
-### Users (`/users`) — ADMIN / SUPER_ADMIN only
+### Fish Species (`/api/fish`)
 
-| Method | Path                       | Auth | Description                      |
-| ------ | -------------------------- | ---- | -------------------------------- |
-| GET    | `/users`                   | ✅   | List all user accounts           |
-| POST   | `/users`                   | ✅   | Create a new USER account        |
-| PUT    | `/users/:id/assign-tanks`  | ✅   | Assign tanks to a worker         |
-| DELETE | `/users/:id`               | ✅   | Delete a user account            |
+| Method | Path             | Auth | Description                     |
+| ------ | ---------------- | ---- | ------------------------------- |
+| GET    | `/api/fish`      | ✅   | List all fish species           |
+| POST   | `/api/fish`      | ✅   | Add a new species (ADMIN)       |
+| PUT    | `/api/fish/:id`  | ✅   | Update species parameters       |
+| DELETE | `/api/fish/:id`  | ✅   | Remove a species (ADMIN)        |
 
-### Fish Species (`/fish`)
+### Device Requests (`/api/device-requests`)
 
-| Method | Path       | Auth | Description                     |
-| ------ | ---------- | ---- | ------------------------------- |
-| GET    | `/fish`    | ✅   | List all fish species           |
-| POST   | `/fish`    | ✅   | Add a new species (ADMIN)       |
-| PUT    | `/fish/:id`| ✅   | Update species parameters       |
-| DELETE | `/fish/:id`| ✅   | Remove a species (ADMIN)        |
+| Method | Path                      | Auth | Description                          |
+| ------ | ------------------------- | ---- | ------------------------------------ |
+| GET    | `/api/device-requests`    | ✅   | List pending device join requests    |
+| POST   | `/api/device-requests`    | ✅   | Submit a new device join request     |
 
 #### Fish Species Catalog & Parameter Ranges
 
@@ -505,18 +547,53 @@ Thresholds are **per-device** and configurable from the Devices → Details pane
 
 ## Environment Variables
 
-Configure `code/backend/.env`:
+Copy `code/backend/.env.example` → `code/backend/.env` and fill in your values:
 
 ```env
+# ─── Server ──────────────────────────────────────────────────────────────────
 PORT=5000
-DATABASE_URL="mongodb://localhost:27017/guard"
+
+# ─── MongoDB (Prisma) ────────────────────────────────────────────────────────
+DATABASE_URL=mongodb://localhost:27017/iot_db
+
+# ─── JWT ─────────────────────────────────────────────────────────────────────
 JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRY=1d
+
+# ─── Google OAuth ────────────────────────────────────────────────────────────
+GOOGLE_CLIENT_ID=your-google-client-id
+
+# ─── CORS ────────────────────────────────────────────────────────────────────
 CORS_ORIGIN=http://localhost:5173
-MQTT_BROKER_URL=mqtt://localhost:1883
-INFLUXDB_URL=http://localhost:8086
-INFLUXDB_TOKEN=your_influxdb_token
-INFLUXDB_ORG=guard
-INFLUXDB_BUCKET=telemetry
+
+# ─── Frontend URL (for email verification links) ─────────────────────────────
+FRONTEND_URL=http://localhost:5173
+
+# ─── MQTT Broker ─────────────────────────────────────────────────────────────
+MQTT_BROKER_URL=mqtts://your-cluster.s1.eu.hivemq.cloud:8883
+MQTT_USERNAME=your-mqtt-username
+MQTT_PASSWORD=your-mqtt-password
+
+# ─── InfluxDB ────────────────────────────────────────────────────────────────
+INFLUX_URL=http://localhost:8086
+INFLUX_TOKEN=your_influxdb_token
+INFLUX_ORG=G.U.A.R.D
+INFLUX_BUCKET=guard_sensors
+
+# ─── Email (SMTP) ────────────────────────────────────────────────────────────
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-gmail-app-password
+
+# ─── Super Admin (Initial Setup) ─────────────────────────────────────────────
+SUPER_ADMIN_EMAIL=admin@example.com
+SUPER_ADMIN_USERNAME=super_admin
+SUPER_ADMIN_PASSWORD=your_secure_password
+SUPER_ADMIN_FULLNAME=System Super Admin
+
+# ─── Telegram Bot ────────────────────────────────────────────────────────────
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 ```
 
 Configure `code/frontend/.env.local`:
